@@ -4,10 +4,12 @@ import uvicorn
 from src.common.core.config import API_HOST, API_PORT
 from src.api.services.process_service import ProcessService
 from src.api.services.properties_service import PropertiesService
+from src.api.services.plugins_service import PluginsService
 
 app = FastAPI(title="Minecraft Server Manager", description="API для управления Minecraft сервером.")
 process_service = ProcessService()
 properties_service = PropertiesService()
+plugins_service = PluginsService()
 
 @app.post("/start", description="Запустить сервер.")
 def start() -> JSONResponse:
@@ -54,6 +56,14 @@ def update_property(property: str, value: str) -> JSONResponse:
     success = properties_service.update_property(property, value)
     if success:
         return JSONResponse({"success": True, "data": {property: value}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
+    
+@app.get("/plugins", description="Получить список всех плагинов сервера.")
+def plugins() -> JSONResponse:
+    plugins = plugins_service.get_plugins()
+    if plugins is not None:
+        return JSONResponse({"success": True, "data": {"plugins": plugins}}, 200)
     else:
         raise HTTPException(500, {"success": False})
 
