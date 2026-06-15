@@ -3,8 +3,8 @@ import subprocess
 
 class ProcessService:
     def __init__(self):
-            self._process = None
-            self._status = None
+        self._process = None
+        self._status = None
     
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -36,7 +36,7 @@ class ProcessService:
         self.start()
         return True
 
-    def status(self) -> bool:
+    def status(self) -> str:
         if self._process is None:
             return "stopped"
 
