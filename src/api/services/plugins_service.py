@@ -24,8 +24,7 @@ class PluginsService:
         plugins = []
 
         for file in files:
-            ext = file[len(file)-4:len(file)]
-            if ext == ".jar":
+            if file.endswith(".jar"):
                 plugins.append(file[0:-4])
         
         return plugins

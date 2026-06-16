@@ -33,7 +33,7 @@ class PropertiesService:
         is_changed = False
 
         for i, line in enumerate(properties):
-            if line[:len(property)+1] == property+"=":
+            if line.startswith(property + "="):
                 properties[i] = property + "=" + value  + "\n"
                 is_changed = True
                 break

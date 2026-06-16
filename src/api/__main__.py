@@ -5,11 +5,13 @@ from src.common.core.config import API_HOST, API_PORT
 from src.api.services.process_service import ProcessService
 from src.api.services.properties_service import PropertiesService
 from src.api.services.plugins_service import PluginsService
+from src.api.services.eula_service import EulaService
 
 app = FastAPI(title="Minecraft Server Manager", description="API для управления Minecraft сервером.")
 process_service = ProcessService()
 properties_service = PropertiesService()
 plugins_service = PluginsService()
+eula_service = EulaService()
 
 @app.post("/start", description="Запустить сервер.")
 def start() -> JSONResponse:
@@ -64,6 +66,14 @@ def plugins() -> JSONResponse:
     plugins = plugins_service.get_plugins()
     if plugins is not None:
         return JSONResponse({"success": True, "data": {"plugins": plugins}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
+    
+@app.post("/eula", description="Принять или отклонить EULA.")
+def eula(accept_eula: bool = True) -> JSONResponse:
+    success = eula_service.set_eula_status(accept_eula)
+    if success:
+        return JSONResponse({"success": True, "data": {"eula": accept_eula}}, 200)
     else:
         raise HTTPException(500, {"success": False})
 
