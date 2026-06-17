@@ -24,3 +24,9 @@ class PluginsService:
                 plugins.append(item.name[:-4])
 
         return plugins
+
+plugins_service = PluginsService()
+
+def get_plugins_service() -> PluginsService:
+    return plugins_service
+

@@ -38,3 +38,9 @@ class BackupService:
 
     def get_backups(self) -> list[str]:
         return [f.name for f in self.backups_dir.glob("*.zip")]
+
+backup_service = BackupService()
+
+def get_backup_service() -> BackupService:
+    return backup_service
+ 

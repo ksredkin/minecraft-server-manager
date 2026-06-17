@@ -60,3 +60,8 @@ class ProcessService:
         self._process.stdin.flush()
 
         return True
+
+process_service = ProcessService()
+
+def get_process_service() -> ProcessService:
+    return process_service

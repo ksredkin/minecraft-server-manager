@@ -46,3 +46,8 @@ class EulaService:
         for line in lines:
             if line.startswith("eula="):
                 return line.strip("=")[1].rstrip() == "true"
+
+eula_service = EulaService()
+
+def get_eula_service() -> EulaService:
+    return eula_service

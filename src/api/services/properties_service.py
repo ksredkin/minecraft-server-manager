@@ -49,3 +49,8 @@ class PropertiesService:
                 f.writelines(properties)
 
         return is_changed
+
+properties_service = PropertiesService()
+
+def get_properties_service() -> PropertiesService:
+    return properties_service
