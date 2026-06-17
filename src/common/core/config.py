@@ -7,4 +7,4 @@ JAVA_ARGS = ["-Xms4G", "-Xmx6G"]
 JAR_NAME = "Spigot-26.1.2.jar"
 JAR_ARGS = ["nogui"]
 
-BACKUPS_PATH = "D:/backups" # Не указывайте папку внутри папки сервера
+BACKUPS_PATH = "D:/backups"  # Не указывайте папку внутри папки сервера

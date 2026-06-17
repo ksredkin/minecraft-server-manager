@@ -1,16 +1,18 @@
-from src.common.core.config import SERVER_PATH
 from pathlib import Path
+
+from src.common.core.config import SERVER_PATH
+
 
 class PropertiesService:
     def __init__(self, server_path: str = SERVER_PATH) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
-            
+
         self.server_dir = Path(server_path)
-            
+
         if not self.server_dir.exists():
             raise RuntimeError("Папки сервера не существует.")
-        
+
         self.properties_file = self.server_dir / "server.properties"
 
     def get_properties(self) -> dict[str, str]:
@@ -32,7 +34,7 @@ class PropertiesService:
     def update_property(self, property: str, value: str) -> bool:
         if not self.properties_file.exists():
             raise RuntimeError("Не найден файл настройки сервера.")
-        
+
         with self.properties_file.open("r") as f:
             properties = f.readlines()
 
@@ -40,7 +42,7 @@ class PropertiesService:
 
         for i, line in enumerate(properties):
             if line.startswith(property + "="):
-                properties[i] = property + "=" + value  + "\n"
+                properties[i] = property + "=" + value + "\n"
                 is_changed = True
                 break
 
@@ -50,7 +52,9 @@ class PropertiesService:
 
         return is_changed
 
+
 properties_service = PropertiesService()
+
 
 def get_properties_service() -> PropertiesService:
     return properties_service
