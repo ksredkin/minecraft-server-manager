@@ -6,12 +6,14 @@ from src.api.services.process_service import ProcessService
 from src.api.services.properties_service import PropertiesService
 from src.api.services.plugins_service import PluginsService
 from src.api.services.eula_service import EulaService
+from src.api.services.backup_service import BackupService
 
 app = FastAPI(title="Minecraft Server Manager", description="API для управления Minecraft сервером.")
 process_service = ProcessService()
 properties_service = PropertiesService()
 plugins_service = PluginsService()
 eula_service = EulaService()
+backup_service = BackupService()
 
 @app.post("/start", description="Запустить сервер.")
 def start() -> JSONResponse:
@@ -69,8 +71,16 @@ def plugins() -> JSONResponse:
     else:
         raise HTTPException(500, {"success": False})
     
+@app.get("/eula", description="Получить текущий статус EULA.")
+def get_eula() -> JSONResponse:
+    status = eula_service.get_eula_status()
+    if status is not None:
+        return JSONResponse({"success": True, "data": {"eula": status}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
+
 @app.post("/eula", description="Принять или отклонить EULA.")
-def eula(accept_eula: bool = True) -> JSONResponse:
+def set_eula(accept_eula: bool = True) -> JSONResponse:
     success = eula_service.set_eula_status(accept_eula)
     if success:
         return JSONResponse({"success": True, "data": {"eula": accept_eula}}, 200)
@@ -78,12 +88,25 @@ def eula(accept_eula: bool = True) -> JSONResponse:
         raise HTTPException(500, {"success": False})
 
 @app.post("/command", description="Выполнить команду.")
-def command(command: str):
+def command(command: str) -> JSONResponse:
     success = process_service.execute_command(command)
     if success:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
+
+@app.get("/backups", description="Просмотреть список резервных копий.")
+def get_backups() -> JSONResponse:
+    backups = backup_service.get_backups()
+    if backups is not None:
+        return JSONResponse({"success": True, "data": {"backups": backups}}, 201)
+    else:
+        raise HTTPException(500, {"success": False})
+
+@app.post("/backups", description="Создать резервную копию сервера.")
+def create_backup() -> JSONResponse:
+    backup_name = backup_service.create_backup()
+    return JSONResponse({"success": True, "data": {"name": backup_name}}, 201)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=API_HOST, port=API_PORT)

@@ -1,28 +1,26 @@
 from src.common.core.config import SERVER_PATH
-import os
+from pathlib import Path
 
 class PluginsService:
     def __init__(self, server_path: str = SERVER_PATH) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
-
-        self.plugins_folder_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "plugins"
+        
+        server_dir = Path(server_path)
+            
+        if not server_dir.exists():
+            raise RuntimeError("Папки сервера не существует.")
+        
+        self.plugins_dir = server_dir / "plugins"
 
     def get_plugins(self) -> list[str]:
-        if not os.path.exists(self.plugins_folder_path):
+        if not self.plugins_dir.exists():
             raise RuntimeError("Не найдена папка плагинов сервера.")
-
-        all_objects = os.listdir(self.plugins_folder_path)
-        
-        files = []
-        for object in all_objects:
-            if os.path.isfile(self.plugins_folder_path+"/"+object):
-                files.append(object)
         
         plugins = []
 
-        for file in files:
-            if file.endswith(".jar"):
-                plugins.append(file[0:-4])
-        
+        for item in self.plugins_dir.iterdir():
+            if item.is_file() and item.name.endswith(".jar"):
+                plugins.append(item.name[:-4])
+
         return plugins

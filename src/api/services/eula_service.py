@@ -1,18 +1,23 @@
 from src.common.core.config import SERVER_PATH
-import os
+from pathlib import Path
 
 class EulaService:
     def __init__(self, server_path: str = SERVER_PATH) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
+            
+        server_dir = Path(server_path)
 
-        self.eula_file_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "eula.txt"
+        if not server_dir.exists():
+            raise RuntimeError("Папки сервера не существует.")
+        
+        self.eula_file = server_dir / "eula.txt"
 
     def set_eula_status(self, accepted: bool) -> bool:
-        if not os.path.exists(self.eula_file_path):
-            raise RuntimeError("Не найден файл eula.")
+        if not self.eula_file.exists():
+            raise ValueError("Файл eula.txt не найден.")
 
-        with open(self.eula_file_path, "r") as f:
+        with self.eula_file.open("r") as f:
             lines = f.readlines()
 
         is_changed = False
@@ -26,7 +31,18 @@ class EulaService:
                 is_changed = True
         
         if is_changed:
-            with open(self.eula_file_path, "w") as f:
+            with self.eula_file.open("w") as f:
                 f.writelines(lines)
 
         return is_changed
+    
+    def get_eula_status(self) -> bool:
+        if not self.eula_file.exists():
+            raise ValueError("Файл eula.txt не найден.")
+
+        with self.eula_file.open("r") as f:
+            lines = f.readlines()
+
+        for line in lines:
+            if line.startswith("eula="):
+                return line.strip("=")[1].rstrip() == "true"

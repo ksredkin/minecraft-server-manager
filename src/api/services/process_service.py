@@ -1,15 +1,27 @@
 from src.common.core.config import SERVER_PATH, JAVA, JAVA_ARGS, JAR_NAME, JAR_ARGS
 import subprocess
+from pathlib import Path
 
 class ProcessService:
-    def __init__(self):
+    def __init__(self, server_path: str = SERVER_PATH):
+        if not server_path:
+            raise ValueError("В конфиге не установлен путь к серверу.")
+        
+        self.server_dir = Path(server_path)
+            
+        if not self.server_dir.exists():
+            raise RuntimeError("Папки сервера не существует.")
+
         self._process = None
         self._status = None
     
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
-            if not SERVER_PATH:
+            if not self.server_path:
                 raise ValueError("В конфиге не установлен путь к серверу.")
+                
+            if not self.server_dir.exists(self.server_path):
+                raise RuntimeError("Папки сервера не существует.")
             
             if not JAVA:
                 raise ValueError("В конфиге не указана java.")
@@ -24,12 +36,7 @@ class ProcessService:
         return False
 
     def stop(self) -> bool:
-        if not self._process or self._process.poll() is not None:
-            return False
-        
-        self._process.stdin.write("stop\n")
-        self._process.stdin.flush()
-        return True
+        return self.execute_command("stop")
 
     def restart(self) -> bool:
         self.stop()
