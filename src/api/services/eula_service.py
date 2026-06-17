@@ -5,15 +5,13 @@ class EulaService:
     def __init__(self, server_path: str = SERVER_PATH) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
-        
-        eula_file_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "eula.txt"
 
-        if not os.path.exists(eula_file_path):
-            raise RuntimeError("Не найдена папка плагинов сервера.")
-
-        self.eula_file_path = eula_file_path
+        self.eula_file_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "eula.txt"
 
     def set_eula_status(self, accepted: bool) -> bool:
+        if not os.path.exists(self.eula_file_path):
+            raise RuntimeError("Не найден файл eula.")
+
         with open(self.eula_file_path, "r") as f:
             lines = f.readlines()
 

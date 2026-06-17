@@ -44,3 +44,12 @@ class ProcessService:
             return "running"
 
         return "stopped"
+    
+    def execute_command(self, command: str) -> bool:
+        if not self._process or self._process.poll() is not None:
+            return False
+        
+        self._process.stdin.write(command + "\n")
+        self._process.stdin.flush()
+
+        return True

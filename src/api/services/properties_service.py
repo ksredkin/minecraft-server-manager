@@ -6,14 +6,12 @@ class PropertiesService:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
         
-        properties_file_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "server.properties"
-
-        if not os.path.exists(properties_file_path):
-            raise RuntimeError("Не найден файл настройки сервера.")
-
-        self.properties_file_path = properties_file_path
+        self.properties_file_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "server.properties"
 
     def get_properties(self) -> dict[str, str]:
+        if not os.path.exists(self.properties_file_path):
+            raise RuntimeError("Не найден файл настройки сервера.")
+
         with open(self.properties_file_path, "r") as f:
             lines = f.readlines()
 
@@ -27,6 +25,9 @@ class PropertiesService:
         return properties
 
     def update_property(self, property: str, value: str) -> bool:
+        if not os.path.exists(self.properties_file_path):
+            raise RuntimeError("Не найден файл настройки сервера.")
+        
         with open(self.properties_file_path, "r") as f:
             properties = f.readlines()
 

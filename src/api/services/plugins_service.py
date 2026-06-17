@@ -5,15 +5,13 @@ class PluginsService:
     def __init__(self, server_path: str = SERVER_PATH) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
-        
-        plugins_folder_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "plugins"
 
-        if not os.path.exists(plugins_folder_path):
-            raise RuntimeError("Не найдена папка плагинов сервера.")
-
-        self.plugins_folder_path = plugins_folder_path
+        self.plugins_folder_path = SERVER_PATH.rstrip("/").rstrip("\\") + "/" + "plugins"
 
     def get_plugins(self) -> list[str]:
+        if not os.path.exists(self.plugins_folder_path):
+            raise RuntimeError("Не найдена папка плагинов сервера.")
+
         all_objects = os.listdir(self.plugins_folder_path)
         
         files = []

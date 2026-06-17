@@ -15,24 +15,24 @@ eula_service = EulaService()
 
 @app.post("/start", description="Запустить сервер.")
 def start() -> JSONResponse:
-    result = process_service.start()
-    if result:
+    success = process_service.start()
+    if success:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
 
 @app.post("/stop", description="Остановить сервер.")
 def stop() -> JSONResponse:
-    result = process_service.stop()
-    if result:
+    success = process_service.stop()
+    if success:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
 
 @app.post("/restart", description="Перезапустить сервер.")
 def restart() -> JSONResponse:
-    result = process_service.restart()
-    if result:
+    success = process_service.restart()
+    if success:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
@@ -74,6 +74,14 @@ def eula(accept_eula: bool = True) -> JSONResponse:
     success = eula_service.set_eula_status(accept_eula)
     if success:
         return JSONResponse({"success": True, "data": {"eula": accept_eula}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
+
+@app.post("/command", description="Выполнить команду.")
+def command(command: str):
+    success = process_service.execute_command(command)
+    if success:
+        return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
 
