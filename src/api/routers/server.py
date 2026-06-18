@@ -59,3 +59,30 @@ def command(
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
+
+
+@server_router.get("/logs", description="Получить все логи сервера.")
+def get_logs(
+    process_service: ProcessService = Depends(get_process_service),
+) -> JSONResponse:
+    logs = process_service.get_logs()
+    if logs is not None:
+        return JSONResponse({"success": True, "data": {"logs": logs}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
+
+
+@server_router.get(
+    "/logs/tail", description="Получить последние N строк логов сервера."
+)
+def get_logs_tail(
+    limit: int,
+    process_service: ProcessService = Depends(get_process_service),
+) -> JSONResponse:
+    logs = process_service.get_logs()
+    if logs is not None:
+        return JSONResponse(
+            {"success": True, "data": {"logs": logs[: -limit - 1 : -1]}}, 200
+        )
+    else:
+        raise HTTPException(500, {"success": False})
