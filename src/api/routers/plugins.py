@@ -15,3 +15,13 @@ def plugins(
         return JSONResponse({"success": True, "data": {"plugins": plugins}}, 200)
     else:
         raise HTTPException(500, {"success": False})
+    
+@plugins_router.get("/search", description="Найти плагины.")
+def search_plugins(
+    query: str, plugins_service: PluginsService = Depends(get_plugins_service),
+) -> JSONResponse:
+    result = plugins_service.search_plugins(query)
+    if result is not None:
+        return JSONResponse({"success": True, "data": {"plugins": result}}, 200)
+    else:
+        raise HTTPException(500, {"success": False})
