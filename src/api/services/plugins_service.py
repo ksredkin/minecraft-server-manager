@@ -1,12 +1,16 @@
 from pathlib import Path
 
-from src.common.core.config import SERVER_PATH, MINECRAFT_VERSION
 from src.api.api_clients.interfaces import ApiClientInterface
 from src.api.api_clients.modrinth import ModrinthApiClient
+from src.common.core.config import MINECRAFT_VERSION, SERVER_PATH
 
 
 class PluginsService:
-    def __init__(self, api_client: ApiClientInterface = ModrinthApiClient, server_path: str = SERVER_PATH) -> None:
+    def __init__(
+        self,
+        api_client: ApiClientInterface = ModrinthApiClient(),
+        server_path: str = SERVER_PATH,
+    ) -> None:
         if not server_path:
             raise ValueError("В конфиге не установлен путь к серверу.")
 
@@ -29,9 +33,14 @@ class PluginsService:
                 plugins.append(item.name[:-4])
 
         return plugins
-    
-    def search_plugins(self, query: str) -> dict[str, str|int]:
-        hits = self.api_client.search_project(query, MINECRAFT_VERSION)["hits"]
+
+    async def search_plugins(self, query: str) -> list[dict[str, str | int | None]]:
+        result = await self.api_client.search_project(query, MINECRAFT_VERSION)
+        hits = result.get("hits")
+
+        if hits is None:
+            raise
+
         return [
             {
                 "id": plugin["project_id"],
@@ -39,10 +48,15 @@ class PluginsService:
                 "title": plugin["title"],
                 "description": plugin["description"],
                 "downloads": plugin["downloads"],
-                "icon_url": plugin["icon_url"]
+                "icon_url": plugin["icon_url"],
             }
             for plugin in hits
         ]
+
+    async def get_plugin_info(
+        self, plugin_id_or_slug: str
+    ) -> dict[str, str | int | None]:
+        return await self.api_client.get_plugin_info(plugin_id_or_slug)
 
 
 plugins_service = PluginsService()
