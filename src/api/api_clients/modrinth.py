@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from httpx import AsyncClient
 
@@ -10,7 +11,7 @@ class ModrinthApiClient(ApiClientInterface):
     async def search_project(
         query: str, minecraft_version: str
     ) -> dict[str, list[dict[str, str | int | None]]]:
-        async with AsyncClient() as client:
+        async with AsyncClient(timeout=10) as client:
             params = {
                 "query": query,
                 "facets": json.dumps(
@@ -22,8 +23,26 @@ class ModrinthApiClient(ApiClientInterface):
 
     @staticmethod
     async def get_plugin_info(project_id_or_slug: str) -> dict[str, str | int | None]:
-        async with AsyncClient() as client:
+        async with AsyncClient(timeout=10) as client:
             r = await client.get(
                 f"https://api.modrinth.com/v2/project/{project_id_or_slug}"
             )
             return r.json()  # type: ignore
+
+    @staticmethod
+    async def get_plugin_versions(
+        project_id_or_slug: str,
+    ) -> list[dict[str, str | int | None]]:
+        async with AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"https://api.modrinth.com/v2/project/{project_id_or_slug}/version"
+            )
+            return r.json()  # type: ignore
+
+    @staticmethod
+    async def download_plugin(url: str, file_path: Path) -> None:
+        async with AsyncClient(timeout=None) as client:
+            r = await client.get(url)
+
+            with file_path.open("wb") as f:
+                f.write(r.content)
