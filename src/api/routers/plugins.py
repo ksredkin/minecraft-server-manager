@@ -167,3 +167,23 @@ async def install_plugin(
             },
             500,
         )
+
+
+@plugins_router.delete(
+    "/delete/{jar_name_without_extension}", description="Удалить плагин."
+)
+def delete_plugin(
+    jar_name_without_extension: str,
+    plugins_service: PluginsService = Depends(get_plugins_service),
+) -> JSONResponse:
+    plugin = plugins_service.delete_plugin(jar_name_without_extension)
+    if plugin:
+        return JSONResponse({"success": True, "data": {"plugin": plugin}}, 200)
+    else:
+        return JSONResponse(
+            {
+                "success": False,
+                "error": "Файл не найден.",
+            },
+            404,
+        )

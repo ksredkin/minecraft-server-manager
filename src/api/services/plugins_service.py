@@ -45,6 +45,20 @@ class PluginsService:
 
         return plugins
 
+    def delete_plugin(self, jar_name_without_extension: str) -> str | None:
+        try:
+            if not self.plugins_dir.exists():
+                raise RuntimeError("Не найдена папка плагинов сервера.")
+
+            for item in self.plugins_dir.iterdir():
+                if item.is_file() and item.name == jar_name_without_extension + ".jar":
+                    item.unlink()
+                    return item.name[:-4]
+
+            return None
+        except FileNotFoundError:
+            return None
+
     async def search_plugins(
         self, query: str
     ) -> list[dict[str, str | int | list[str] | None]]:
