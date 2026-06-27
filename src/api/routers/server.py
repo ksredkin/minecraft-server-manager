@@ -11,7 +11,7 @@ def start(
     process_service: ProcessService = Depends(get_process_service),
 ) -> JSONResponse:
     success = process_service.start()
-    if success:
+    if success is not None:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
@@ -22,7 +22,7 @@ def stop(
     process_service: ProcessService = Depends(get_process_service),
 ) -> JSONResponse:
     success = process_service.stop()
-    if success:
+    if success is not None:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
@@ -33,7 +33,7 @@ def restart(
     process_service: ProcessService = Depends(get_process_service),
 ) -> JSONResponse:
     success = process_service.restart()
-    if success:
+    if success is not None:
         return JSONResponse({"success": True}, 200)
     else:
         raise HTTPException(500, {"success": False})
@@ -84,5 +84,16 @@ def get_logs_tail(
         return JSONResponse(
             {"success": True, "data": {"logs": logs[: -limit - 1 : -1]}}, 200
         )
+    else:
+        raise HTTPException(500, {"success": False})
+
+
+@server_router.get("/players", description="Получить список игроков.")
+def get_players(
+    process_service: ProcessService = Depends(get_process_service),
+) -> JSONResponse:
+    players = process_service.get_players()
+    if players is not None:
+        return JSONResponse({"success": True, "data": {"players": players}}, 200)
     else:
         raise HTTPException(500, {"success": False})

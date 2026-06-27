@@ -1,3 +1,4 @@
+import time
 from collections import deque
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -19,6 +20,7 @@ class ProcessService:
         self._process: Popen[str] | None = None
         self._status = None
         self._logs: deque[str] = deque(maxlen=1000)
+        self._players: list[str] = []
 
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -33,7 +35,12 @@ class ProcessService:
 
             start_command = [JAVA, *JAVA_ARGS, "-jar", JAR_NAME, *JAR_ARGS]
             self._process = Popen(
-                start_command, cwd=SERVER_PATH, stdin=PIPE, stdout=PIPE, text=True
+                start_command,
+                cwd=SERVER_PATH,
+                stdin=PIPE,
+                stdout=PIPE,
+                stderr=PIPE,
+                text=True,
             )
 
             Thread(target=self._reader, daemon=True).start()
@@ -46,8 +53,9 @@ class ProcessService:
 
     def restart(self) -> bool:
         self.stop()
-        self.start()
-        return True
+        time.sleep(5)
+        started = self.start()
+        return started
 
     def status(self) -> str:
         if self._process is None:
@@ -67,6 +75,11 @@ class ProcessService:
 
         return True
 
+    def get_players(self) -> list[str]:
+        self.execute_command("list")
+        time.sleep(0.5)
+        return self._players
+
     def _reader(self) -> None:
         process = self._process
 
@@ -80,6 +93,11 @@ class ProcessService:
                 break
 
             self._logs.append(line)
+
+            if "players online: " in line:
+                self._players = (
+                    line.replace("\n", "").split("players online: ")[1].split(" ") or []
+                )
 
     def get_logs(self) -> list[str]:
         return list(self._logs)
