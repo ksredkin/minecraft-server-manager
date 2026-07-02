@@ -1,10 +1,17 @@
-import time
 from collections import deque
 from pathlib import Path
 from subprocess import PIPE, Popen
-from threading import Thread
+from threading import Event, Thread
 
-from src.common.core.config import JAR_ARGS, JAR_NAME, JAVA, JAVA_ARGS, SERVER_PATH
+from src.common.core.config import (
+    JAR_ARGS,
+    JAR_NAME,
+    JAVA,
+    JAVA_ARGS,
+    MINECRAFT_VERSION,
+    SERVER_PATH,
+    SERVER_STOP_TIMEOUT,
+)
 
 
 class ProcessService:
@@ -21,6 +28,8 @@ class ProcessService:
         self._status = None
         self._logs: deque[str] = deque(maxlen=1000)
         self._players: list[str] = []
+        self._players_event: Event = Event()
+        self._stop_event: Event = Event()
 
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -36,7 +45,7 @@ class ProcessService:
             start_command = [JAVA, *JAVA_ARGS, "-jar", JAR_NAME, *JAR_ARGS]
             self._process = Popen(
                 start_command,
-                cwd=SERVER_PATH,
+                cwd=str(self.server_dir),
                 stdin=PIPE,
                 stdout=PIPE,
                 stderr=PIPE,
@@ -52,10 +61,15 @@ class ProcessService:
         return self.execute_command("stop")
 
     def restart(self) -> bool:
+        self._stop_event.clear()
         self.stop()
-        time.sleep(5)
-        started = self.start()
-        return started
+
+        if not self._stop_event.wait(timeout=SERVER_STOP_TIMEOUT):
+            raise TimeoutError(
+                f"Сервер не остановился за {SERVER_STOP_TIMEOUT} секунд."
+            )
+
+        return self.start()
 
     def status(self) -> str:
         if self._process is None:
@@ -75,29 +89,45 @@ class ProcessService:
 
         return True
 
-    def get_players(self) -> list[str]:
+    def get_players(self) -> list[str] | None:
+        if not self._process or self._process.poll() is not None:
+            return None
+
+        self._players_event.clear()
         self.execute_command("list")
-        time.sleep(0.5)
+
+        if not self._players_event.wait(timeout=5):
+            raise TimeoutError("Сервер не ответил на команду list.")
+
         return self._players
 
-    def _reader(self) -> None:
-        process = self._process
+    def get_server_info(self) -> dict[str, str | list[str] | None]:
+        if not self._process or self._process.poll() is not None:
+            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION}
 
-        if process is None:
+        info = {
+            "status": self.status(),
+            "players": self.get_players(),
+            "minecraft_version": MINECRAFT_VERSION,
+        }
+        return info
+
+    def _reader(self) -> None:
+        if self._process is None:
             return
 
         while True:
-            line = process.stdout.readline()  # type: ignore
+            line = self._process.stdout.readline()  # type: ignore
 
             if not line:
+                self._stop_event.set()
                 break
 
             self._logs.append(line)
 
             if "players online: " in line:
-                self._players = (
-                    line.replace("\n", "").split("players online: ")[1].split(" ") or []
-                )
+                self._players = line.split("players online: ")[1].split()
+                self._players_event.set()
 
     def get_logs(self) -> list[str]:
         return list(self._logs)

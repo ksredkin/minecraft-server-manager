@@ -8,5 +8,6 @@ JAR_NAME = "Spigot-26.1.2.jar"
 JAR_ARGS = ["nogui"]
 MINECRAFT_VERSION = "1.21.2"
 SERVER_SOFTWARE = "spigot"
+SERVER_STOP_TIMEOUT = 60
 
 BACKUPS_PATH = "D:/backups"  # Не указывайте папку внутри папки сервера
