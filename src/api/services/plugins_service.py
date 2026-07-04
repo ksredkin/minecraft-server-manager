@@ -4,12 +4,14 @@ from typing import Any
 from src.api.api_clients.interfaces import ApiClientInterface
 from src.api.api_clients.modrinth import ModrinthApiClient
 from src.common.core.config import MINECRAFT_VERSION, SERVER_PATH, SERVER_SOFTWARE
-from src.common.exceptions import (
-    ApiClientInvalidResponseError,
-    InvalidServerConfigurationError,
+from src.common.exceptions.api_client import ApiClientInvalidResponseError
+from src.common.exceptions.plugins import (
     PluginJarNotFoundError,
     PluginsFolderDoesNotExistError,
     PluginVersionNotFoundError,
+)
+from src.common.exceptions.server import (
+    InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
 

@@ -12,7 +12,7 @@ from src.common.core.config import (
     SERVER_PATH,
     SERVER_STOP_TIMEOUT,
 )
-from src.common.exceptions import (
+from src.common.exceptions.server import (
     InvalidServerConfigurationError,
     ServerAlreadyRunningError,
     ServerFolderDoesNotExistError,

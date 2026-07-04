@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.common.core.config import BACKUPS_PATH, SERVER_PATH
-from src.common.exceptions import (
+from src.common.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
