@@ -3,6 +3,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.common.core.config import BACKUPS_PATH, SERVER_PATH
+from src.common.exceptions import (
+    InvalidServerConfigurationError,
+    ServerFolderDoesNotExistError,
+)
 
 
 class BackupService:
@@ -10,17 +14,21 @@ class BackupService:
         self, backups_path: str = BACKUPS_PATH, server_path: str = SERVER_PATH
     ) -> None:
         if not server_path:
-            raise ValueError("В конфиге не установлен путь к серверу.")
+            raise InvalidServerConfigurationError(
+                "В конфиге не установлен путь к серверу."
+            )
 
         server_dir = Path(server_path)
 
         if not server_dir.exists():
-            raise RuntimeError("Папки сервера не существует.")
+            raise ServerFolderDoesNotExistError("Папки сервера не существует.")
 
         self.server_dir = server_dir
 
         if not backups_path:
-            raise ValueError("В конфиге не установлен путь к папке бэкапов.")
+            raise InvalidServerConfigurationError(
+                "В конфиге не установлен путь к папке бэкапов."
+            )
 
         backups_dir = Path(backups_path)
 

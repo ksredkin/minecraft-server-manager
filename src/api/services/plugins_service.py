@@ -4,6 +4,14 @@ from typing import Any
 from src.api.api_clients.interfaces import ApiClientInterface
 from src.api.api_clients.modrinth import ModrinthApiClient
 from src.common.core.config import MINECRAFT_VERSION, SERVER_PATH, SERVER_SOFTWARE
+from src.common.exceptions import (
+    ApiClientInvalidResponseError,
+    InvalidServerConfigurationError,
+    PluginJarNotFoundError,
+    PluginsFolderDoesNotExistError,
+    PluginVersionNotFoundError,
+    ServerFolderDoesNotExistError,
+)
 
 
 class PluginsService:
@@ -15,18 +23,22 @@ class PluginsService:
         server_software: str = SERVER_SOFTWARE,
     ) -> None:
         if not server_path:
-            raise ValueError("В конфиге не установлен путь к серверу.")
+            raise InvalidServerConfigurationError(
+                "В конфиге не установлен путь к серверу."
+            )
 
         server_dir = Path(server_path)
 
         if not server_dir.exists():
-            raise RuntimeError("Папки сервера не существует.")
+            raise ServerFolderDoesNotExistError("Папки сервера не существует.")
 
         if not minecraft_version:
-            raise ValueError("Не установлена версия minecraft сервера.")
+            raise InvalidServerConfigurationError(
+                "Не установлена версия minecraft сервера."
+            )
 
         if not server_software:
-            raise ValueError("Не установлен тип ядра сервера.")
+            raise InvalidServerConfigurationError("Не установлен тип ядра сервера.")
 
         self.plugins_dir = server_dir / "plugins"
         self.api_client = api_client
@@ -35,7 +47,7 @@ class PluginsService:
 
     def get_plugins(self) -> list[str]:
         if not self.plugins_dir.exists():
-            raise RuntimeError("Не найдена папка плагинов сервера.")
+            raise PluginsFolderDoesNotExistError("Не найдена папка плагинов сервера.")
 
         plugins = []
 
@@ -45,28 +57,34 @@ class PluginsService:
 
         return plugins
 
-    def delete_plugin(self, jar_name_without_extension: str) -> str | None:
+    def delete_plugin(self, jar_name_without_extension: str) -> str:
         try:
             if not self.plugins_dir.exists():
-                raise RuntimeError("Не найдена папка плагинов сервера.")
+                raise PluginsFolderDoesNotExistError(
+                    "Не найдена папка плагинов сервера."
+                )
 
             for item in self.plugins_dir.iterdir():
                 if item.is_file() and item.name == jar_name_without_extension + ".jar":
                     item.unlink()
                     return item.name[:-4]
 
-            return None
+            raise PluginJarNotFoundError(
+                f"Файл {jar_name_without_extension}.jar не найден."
+            )
         except FileNotFoundError:
-            return None
+            raise PluginJarNotFoundError(
+                f"Файл {jar_name_without_extension}.jar не найден."
+            )
 
     async def search_plugins(
         self, query: str
-    ) -> list[dict[str, str | int | list[str] | None]]:
+    ) -> list[dict[str, str | int | list[str]]]:
         result = await self.api_client.search_project(query, self.minecraft_version)
         hits = result.get("hits")
 
         if hits is None:
-            raise
+            raise ApiClientInvalidResponseError("API вернул некорректный ответ.")
 
         ret: list[Any] = []
         for plugin in hits:
@@ -91,11 +109,11 @@ class PluginsService:
     ) -> list[dict[str, str | int | None | list[str]]]:
         return await self.api_client.get_plugin_versions(plugin_id_or_slug)  # type: ignore
 
-    async def install_plugin(self, plugin_id_or_slug: str) -> list[str] | None:
+    async def install_plugin(self, plugin_id_or_slug: str) -> list[str]:
         result = await self.get_plugin_versions(plugin_id_or_slug)
 
         if result is None:
-            return None
+            raise ApiClientInvalidResponseError("API вернул некорректный ответ.")
 
         server_software = self.server_software.lower()
 
@@ -135,7 +153,9 @@ class PluginsService:
                     downloaded.append(filename_value)
 
             return downloaded
-        return None
+        raise PluginVersionNotFoundError(
+            f"Не найдена версия плагина для {self.minecraft_version} ({self.server_software})."
+        )
 
 
 plugins_service = PluginsService()
