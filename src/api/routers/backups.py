@@ -13,7 +13,7 @@ def get_backups(
     backup_service: BackupService = Depends(get_backup_service),
 ) -> JSONResponse:
     backups = backup_service.get_backups()
-    return JSONResponse({"success": True, "data": {"backups": backups}}, 201)
+    return JSONResponse({"success": True, "data": {"backups": backups}}, 200)
 
 
 @backups_router.post("/", description="Создать резервную копию сервера.")
@@ -22,4 +22,26 @@ def create_backup(
 ) -> JSONResponse:
     backup_name = backup_service.create_backup()
     logger.info(f"Создана резервная копия сервера: {backup_name}")
-    return JSONResponse({"success": True, "data": {"name": backup_name}}, 201)
+    return JSONResponse({"success": True, "data": {"backup": backup_name}}, 201)
+
+
+@backups_router.post(
+    "/restore/{backup}", description="Восстановить сервер из резервной копии."
+)
+def restore_backup(
+    backup: str,
+    backup_service: BackupService = Depends(get_backup_service),
+) -> JSONResponse:
+    backup_service.restore_backup(backup)
+    logger.info(f"Сервер восстановлен из резервной копии: {backup}")
+    return JSONResponse({"success": True, "data": {"backup": backup}}, 200)
+
+
+@backups_router.delete("/{backup}", description="Удалить резервную копию сервера.")
+def delete_backup(
+    backup: str,
+    backup_service: BackupService = Depends(get_backup_service),
+) -> JSONResponse:
+    backup_service.delete_backup(backup)
+    logger.info(f"Удалена резервная копия сервера: {backup}")
+    return JSONResponse({"success": True, "data": {"backup": backup}}, 200)
