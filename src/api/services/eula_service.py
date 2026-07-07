@@ -55,7 +55,7 @@ class EulaService:
 
         for line in lines:
             if line.startswith("eula="):
-                return line.strip("=")[1].rstrip() == "true"
+                return line.split("=")[1].rstrip() == "true"
 
         raise EulaStatusNotFoundError("Статус EULA не найден в файле eula.txt.")
 
