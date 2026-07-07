@@ -1,8 +1,14 @@
+from asyncio import to_thread
 from collections import deque
 from pathlib import Path
+from queue import Queue
 from subprocess import PIPE, Popen
 from threading import Event, Thread
 
+from src.api.services.connection_manager import (
+    ConnectionManager,
+    get_connection_manager,
+)
 from src.common.core.config import (
     JAR_ARGS,
     JAR_NAME,
@@ -40,6 +46,7 @@ class ProcessService:
         self._players: list[str] = []
         self._players_event: Event = Event()
         self._stop_event: Event = Event()
+        self._queue: Queue[str] = Queue()
 
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -139,10 +146,18 @@ class ProcessService:
                 break
 
             self._logs.append(line)
+            self._queue.put(line)
 
             if "players online: " in line:
                 self._players = line.split("players online: ")[1].split()
                 self._players_event.set()
+
+    async def log_sender(
+        self, connection_manager: ConnectionManager = get_connection_manager()
+    ) -> None:
+        while True:
+            line = await to_thread(self._queue.get)
+            await connection_manager.broadcast(line)
 
     def get_logs(self) -> list[str]:
         return list(self._logs)

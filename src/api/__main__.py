@@ -1,3 +1,7 @@
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
+
 import uvicorn
 from fastapi import FastAPI
 
@@ -7,13 +11,23 @@ from src.api.routers.eula import eula_router
 from src.api.routers.plugins import plugins_router
 from src.api.routers.properties import properties_router
 from src.api.routers.server import server_router
+from src.api.services.process_service import ProcessService, get_process_service
 from src.common.core.config import API_HOST, API_PORT
+
+
+@asynccontextmanager
+async def lifespan(
+    app: FastAPI, process_service: ProcessService = get_process_service()
+) -> AsyncGenerator[Any, Any]:
+    asyncio.create_task(process_service.log_sender())
+    yield
 
 
 def main() -> None:
     app = FastAPI(
         title="Minecraft Server Manager",
         description="API для управления Minecraft сервером.",
+        lifespan=lifespan,
     )
 
     register_exception_handlers(app)

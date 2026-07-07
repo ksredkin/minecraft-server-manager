@@ -1,6 +1,12 @@
-from fastapi import APIRouter, Depends
+import asyncio
+
+from fastapi import APIRouter, Depends, WebSocket
 from fastapi.responses import JSONResponse
 
+from src.api.services.connection_manager import (
+    ConnectionManager,
+    get_connection_manager,
+)
 from src.api.services.process_service import ProcessService, get_process_service
 from src.common.utils.logger import Logger
 
@@ -76,6 +82,17 @@ def get_logs_tail(
         },
         200,
     )
+
+
+@server_router.websocket("/ws/logs")
+async def logs_websocket(
+    websocket: WebSocket,
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> None:
+    await connection_manager.connect(websocket)
+
+    while True:
+        await asyncio.sleep(1)
 
 
 @server_router.get("/players", description="Получить список игроков.")
