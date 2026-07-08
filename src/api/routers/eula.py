@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from src.api.services.eula_service import EulaService, get_eula_service
-from src.common.utils.logger import Logger
+from src.api.utils.logger import Logger
 
 logger = Logger(__name__)
 eula_router = APIRouter(prefix="/eula")

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from src.api.services.backup_service import BackupService, get_backup_service
-from src.common.utils.logger import Logger
+from src.api.utils.logger import Logger
 
 logger = Logger(__name__)
 backups_router = APIRouter(prefix="/backups")

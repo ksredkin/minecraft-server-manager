@@ -8,7 +8,7 @@ from src.api.services.connection_manager import (
     get_connection_manager,
 )
 from src.api.services.process_service import ProcessService, get_process_service
-from src.common.utils.logger import Logger
+from src.api.utils.logger import Logger
 
 server_router = APIRouter()
 logger = Logger(__name__)

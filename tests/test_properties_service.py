@@ -1,8 +1,8 @@
 from src.api.services.properties_service import PropertiesService, get_properties_service
 from typing import Any
 from pathlib import Path
-from src.common.exceptions.server import ServerFolderDoesNotExistError, InvalidServerConfigurationError
-from src.common.exceptions.settings import SettingsFileNotFoundError
+from src.api.exceptions.server import ServerFolderDoesNotExistError, InvalidServerConfigurationError
+from src.api.exceptions.settings import SettingsFileNotFoundError
 import pytest
 
 

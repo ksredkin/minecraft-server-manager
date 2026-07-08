@@ -1,4 +1,4 @@
-from src.common.exceptions.server import MSMError
+from src.api.exceptions.server import MSMError
 
 
 class ApiClientError(MSMError):

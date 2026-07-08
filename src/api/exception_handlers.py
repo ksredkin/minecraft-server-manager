@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.common.exceptions.api_client import (
+from src.api.exceptions.api_client import (
     ApiClientConnectionError,
     ApiClientHttpError,
     ApiClientInvalidResponseError,
@@ -9,16 +9,16 @@ from src.common.exceptions.api_client import (
     ApiClientProtocolError,
     ApiClientTimeoutError,
 )
-from src.common.exceptions.eula import (
+from src.api.exceptions.eula import (
     EulaFileNotFoundError,
     EulaStatusNotFoundError,
 )
-from src.common.exceptions.plugins import (
+from src.api.exceptions.plugins import (
     PluginJarNotFoundError,
     PluginsFolderDoesNotExistError,
     PluginVersionNotFoundError,
 )
-from src.common.exceptions.server import (
+from src.api.exceptions.server import (
     InvalidServerConfigurationError,
     MSMError,
     ServerAlreadyRunningError,
@@ -27,7 +27,7 @@ from src.common.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
-from src.common.exceptions.settings import SettingsFileNotFoundError
+from src.api.exceptions.settings import SettingsFileNotFoundError
 
 ERRORS = {
     # Server

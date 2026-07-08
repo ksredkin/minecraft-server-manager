@@ -5,7 +5,7 @@ from src.api.services.properties_service import (
     PropertiesService,
     get_properties_service,
 )
-from src.common.utils.logger import Logger
+from src.api.utils.logger import Logger
 
 logger = Logger(__name__)
 properties_router = APIRouter(prefix="/properties")

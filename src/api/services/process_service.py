@@ -9,7 +9,7 @@ from src.api.services.connection_manager import (
     ConnectionManager,
     get_connection_manager,
 )
-from src.common.core.config import (
+from src.api.core.config import (
     JAR_ARGS,
     JAR_NAME,
     JAVA,
@@ -18,7 +18,7 @@ from src.common.core.config import (
     SERVER_PATH,
     SERVER_STOP_TIMEOUT,
 )
-from src.common.exceptions.server import (
+from src.api.exceptions.server import (
     InvalidServerConfigurationError,
     ServerAlreadyRunningError,
     ServerFolderDoesNotExistError,

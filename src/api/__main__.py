@@ -12,7 +12,7 @@ from src.api.routers.plugins import plugins_router
 from src.api.routers.properties import properties_router
 from src.api.routers.server import server_router
 from src.api.services.process_service import ProcessService, get_process_service
-from src.common.core.config import API_HOST, API_PORT
+from src.api.core.config import API_HOST, API_PORT
 
 
 @asynccontextmanager

@@ -2,8 +2,8 @@ from src.api.services.eula_service import EulaService, get_eula_service
 from typing import Any
 from pathlib import Path
 import pytest
-from src.common.exceptions.eula import EulaFileNotFoundError, EulaStatusNotFoundError
-from src.common.exceptions.server import InvalidServerConfigurationError, ServerFolderDoesNotExistError
+from src.api.exceptions.eula import EulaFileNotFoundError, EulaStatusNotFoundError
+from src.api.exceptions.server import InvalidServerConfigurationError, ServerFolderDoesNotExistError
 
 
 test_eula = """#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).

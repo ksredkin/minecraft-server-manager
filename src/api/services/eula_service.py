@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from src.common.core.config import SERVER_PATH
-from src.common.exceptions.eula import (
+from src.api.core.config import SERVER_PATH
+from src.api.exceptions.eula import (
     EulaFileNotFoundError,
     EulaStatusNotFoundError,
 )
-from src.common.exceptions.server import (
+from src.api.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )

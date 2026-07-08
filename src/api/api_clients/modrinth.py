@@ -11,7 +11,7 @@ from httpx import (
 )
 
 from src.api.api_clients.interfaces import ApiClientInterface
-from src.common.exceptions.api_client import (
+from src.api.exceptions.api_client import (
     ApiClientConnectionError,
     ApiClientHttpError,
     ApiClientNetworkError,

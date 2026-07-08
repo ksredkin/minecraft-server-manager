@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from src.common.core.config import SERVER_PATH
-from src.common.exceptions.server import (
+from src.api.core.config import SERVER_PATH
+from src.api.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
-from src.common.exceptions.settings import SettingsFileNotFoundError
+from src.api.exceptions.settings import SettingsFileNotFoundError
 
 
 class PropertiesService:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from src.api.services.plugins_service import PluginsService, get_plugins_service
-from src.common.utils.logger import Logger
+from src.api.utils.logger import Logger
 
 logger = Logger(__name__)
 plugins_router = APIRouter(prefix="/plugins")

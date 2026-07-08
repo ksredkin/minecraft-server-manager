@@ -2,15 +2,15 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.common.core.config import BACKUPS_PATH, SERVER_PATH
-from src.common.exceptions.backups import (
+from src.api.core.config import BACKUPS_PATH, SERVER_PATH
+from src.api.exceptions.backups import (
     BackupNotFoundError,
     BackupPermisionError,
     BackupRestoreError,
     CleanupError,
     InvalidBackupError,
 )
-from src.common.exceptions.server import (
+from src.api.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
