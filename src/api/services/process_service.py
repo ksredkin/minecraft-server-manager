@@ -50,6 +50,7 @@ class ProcessService:
         self._stop_event: Event = Event()
         self._queue: Queue[str] = Queue()
         self._start_time: datetime | None = None
+        self._max_players: int | None = None
 
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -134,7 +135,7 @@ class ProcessService:
 
     def get_server_info(self) -> dict[str, str | list[str] | None]:
         if not self._process or self._process.poll() is not None:
-            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION, "server_software": SERVER_SOFTWARE, "uptime": self.get_uptime()}
+            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION, "server_software": SERVER_SOFTWARE, "uptime": self.get_uptime(), "max_players": self._max_players}
 
         try:
             players = self.get_players()
@@ -147,6 +148,7 @@ class ProcessService:
             "minecraft_version": MINECRAFT_VERSION,
             "server_software": SERVER_SOFTWARE,
             "uptime": self.get_uptime(),
+            "max_players": self._max_players,
         }
         return info
 
@@ -166,6 +168,7 @@ class ProcessService:
 
             if "players online: " in line:
                 self._players = line.split("players online: ")[1].split()
+                self._max_players = line.split("max of ")[1].split()[0]
                 self._players_event.set()
             elif "Done (" in line and ')! For help, type "help"' in line:
                 self._status = "running"

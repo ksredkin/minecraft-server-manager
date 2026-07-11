@@ -2,10 +2,31 @@ import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import {Home, Terminal, Clock, User} from 'lucide-react'
 
-const API_URL = "http://127.0.0.1:8000/"
-
 function App() {
+  const API_URL = "http://127.0.0.1:8000/"
+
   const [api_works, setApiWorks] = useState(false)
+
+  const [server_works_level, setServerWorksLevel] = useState(0)
+  const [server_software, setServerSoftware] = useState(undefined)
+  const [minecraft_version, setMinecraftVersion] = useState(undefined)
+  const [players, setPlayers] = useState([])
+  const [max_players, setMaxPlayers] = useState(0)
+  
+  const [uptime_hours, setUptimeHours] = useState(0)
+  const [uptime_minutes, setUptimeMinutes] = useState(0)
+  const [uptime_seconds, setUptimeSeconds] = useState(0)
+  
+  const [active_section, setActiveSection] = useState(1)
+  
+  let logs_websocket = useRef(null)
+  const [logs, setLogs] = useState([])
+  
+  const console_input = useRef(null)
+  const logsRef = useRef(null)
+  const big_logsRef = useRef(null)
+  const big_console_input = useRef(null)
+
 
   const get_server_status = async () => {
     try {
@@ -19,83 +40,84 @@ function App() {
     }
   }
 
-  const [server_works_level, setServerWorksLevel] = useState(0)
-  const [server_software, setServerSoftware] = useState(undefined)
-  const [minecraft_version, setMinecraftVersion] = useState(undefined)
-  const [uptime_hours, setUptimeHours] = useState(0)
-  const [uptime_minutes, setUptimeMinutes] = useState(0)
-  const [uptime_seconds, setUptimeSeconds] = useState(0)
-
   const check_server_status = async () => {
     const data = await get_server_status()
-    if (!data) {
-      return
-    }
+    if (!data) return undefined
 
     const software = data.data.info.server_software
     const status = data.data.info.status
     const version = data.data.info.minecraft_version
     const players = data.data.info.players
+    const max_players = data.data.info.max_players
     const uptime = data.data.info.uptime.split(":")
-    console.log("Статус сервера:", status)
 
-    setPlayers((players == undefined) ? [] : players)
+    if (players !== undefined) setPlayers(players)
 
-    if (status == "running") {
-      setServerWorksLevel(2)
-    } else if (status == "starting") {
-      setServerWorksLevel(1)
-    } else if (status == "stopping") {
-      setServerWorksLevel(3)
-    } else {
-      setServerWorksLevel(0)
-    }
+    if (status == "running") setServerWorksLevel(2)
+    else if (status == "starting") setServerWorksLevel(1)
+    else if (status == "stopping") setServerWorksLevel(3)
+    else setServerWorksLevel(0)
 
-    if (software !== undefined) {
-      setServerSoftware(software[0].toUpperCase() + software.slice(1))
-    }
+    if (software !== undefined) setServerSoftware(software[0].toUpperCase() + software.slice(1))
 
-    if (version !== undefined) {
-      setMinecraftVersion(version)
-    }
+    if (version !== undefined) setMinecraftVersion(version)
 
     setUptimeHours(uptime[0])
     setUptimeMinutes(uptime[1])
     setUptimeSeconds(uptime[2])
+    setMaxPlayers(max_players)
   }
 
-  const [active_section, setActiveSection] = useState(1)
-  const [logs, setLogs] = useState([])
-  const [players, setPlayers] = useState([])
-  const [max_players, setMaxPlayers] = useState(0)
-  const console_input = useRef(null)
-
-  useEffect(() => {
-    const logs_websocket = new WebSocket("ws://"+API_URL.slice(5, API_URL.length)+"ws/logs")
-
-    logs_websocket.onmessage = (event) => {
-      update_logs(event.data)
-    }
-
-    logs_websocket.onclose = (event) => {}
-
-    check_server_status()
-    setInterval(async () => {check_server_status()}, 1000)
-
-    return () => {
-      logs_websocket.close();
-    }
-  }, [])
 
   const update_logs = (log) => {
-    console.log(log)
-    if (log == undefined) {
-      return
-    }
+    if (log == undefined) return undefined
+    
     setLogs(prev => {
         let updated = [...prev, log]
         return updated.slice(-1000)
     })
+  }
+
+  const connect_logs_ws = () => {
+    if (logs_websocket.current && logs_websocket.current.readyState !== 3) return undefined
+
+    logs_websocket.current = new WebSocket("ws://"+API_URL.slice(5, API_URL.length)+"ws/logs")
+
+    logs_websocket.current.onmessage = (event) => {update_logs(event.data)}
+    logs_websocket.current.onclose = (event) => {setTimeout(connect_logs_ws, 3000)}
+    logs_websocket.current.onerror = (error) => {logs_websocket.current.close()}
+  }
+
+
+  const handle_console_input_key_down = async (event) => {
+    if (event.key == "Enter") {
+      await send_command(console_input.current.value)
+      console_input.current.value = ""
+    }
+  }
+  
+  const handle_console_send_button = async () => {
+    await send_command(console_input.current.value)
+    console_input.current.value = ""
+  }
+
+
+  const handle_big_console_input_key_down = async (event) => {
+    if (event.key == "Enter") {
+      await send_command(big_console_input.current.value)
+      big_console_input.current.value = ""
+    }
+  }
+
+  const handle_big_console_send_button = async () => {
+    await send_command(big_console_input.current.value)
+    big_console_input.current.value = ""
+  }
+
+
+  const send_command = async (command) => {
+      if (!command) return undefined
+      const result = await fetch(API_URL + "command?command=" + command, {method: "POST"})
   }
 
   const start_server = async () => {
@@ -113,26 +135,33 @@ function App() {
     setServerWorksLevel(3)
   }
 
-  const send_command = async (command) => {
-      if (!command) {
-        return undefined
-      }
-      const result = await fetch(API_URL + "command?command=" + command, {method: "POST"})
-  }
 
-  const handle_console_input_key_down = async (event) => {
-    if (event.key == "Enter") {
-      await send_command(console_input.current.value)
-      console_input.current.value = ""
-    }
-  }
-  
-  const handle_console_send_button = async () => {
-    await send_command(console_input.current.value)
-    console_input.current.value = ""
-  }
+  useEffect(() => {
+    connect_logs_ws()
+    check_server_status()
+    const interval = setInterval(async () => {check_server_status()}, 1000)
+    return () => {clearTimeout(interval)}
+  }, [])
 
-  const logsRef = useRef(null)
+  useEffect(() => {
+    const container = big_logsRef.current
+    if (!container) return undefined
+
+    if (container.scrollHeight - container.scrollTop - container.clientHeight < 50) container.scrollTop = container.scrollHeight      
+  }, [logs])
+
+  useEffect(() => {
+    const container = logsRef.current
+    if (!container) return undefined
+
+    if (container.scrollHeight - container.scrollTop - container.clientHeight < 50) container.scrollTop = container.scrollHeight      
+  }, [logs])
+
+  useEffect(() => {
+    if (active_section == 1) logsRef.current.scrollTop = logsRef.current.scrollHeight
+    else if (active_section == 2) big_logsRef.current.scrollTop = big_logsRef.current.scrollHeight
+  }, [active_section])
+
 
   const players_items = players.slice(0, 7).map((player, index) => {
     return (
@@ -144,13 +173,6 @@ function App() {
   })
 
   const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log_row">{log}</h5>})
-
-  useEffect(() => {
-    const container = logsRef.current
-    if (container.scrollHeight - container.scrollTop - container.clientHeight < 50) {
-      container.scrollTop = container.scrollHeight      
-    }
-  }, [logs])
 
   return (
     <div className="background">
@@ -191,7 +213,7 @@ function App() {
                   {(server_works_level == 0) && <h2 className="server-works-status" style={{color: "#de0a0a"}}>Сервер выключен</h2>}
                   {(server_works_level == 1) && <h2 className="server-works-status" style={{color: "#208d44"}}>Сервер запускается</h2>}
                   {(server_works_level == 2) && <h2 className="server-works-status" style={{color: "#26a550"}}>Сервер работает</h2>}
-                  {(server_works_level == 3) && <h2 className="server-works-status" style={{color: "#208d44"}}>Сервер работает</h2>}
+                  {(server_works_level == 3) && <h2 className="server-works-status" style={{color: "#208d44"}}>Сервер выключается</h2>}
                   <h5 className="software-and-version-text">{(server_software !== undefined) ? server_software : "-"} {(minecraft_version !== undefined) ? minecraft_version : "-"}</h5>
                 </div>
               </div>
@@ -251,6 +273,22 @@ function App() {
           </div>
           <div className="blocks3-div">
             <div className=""></div>
+          </div>
+        </div>}
+        {(active_section == 2) && <div className="screen-2">
+          <div className="big-logs-card">
+            <div className="logs-card-header">
+              <h3 className="logs-card-header-text">Логи сервера</h3>
+            </div>
+              
+            <div className="big-logs-background" ref={big_logsRef}>
+              {logs_rows}
+            </div>
+
+            <div className="logs-card-footer">
+              <input className="logs-card-input" type="text" placeholder="Введите команду..." ref={big_console_input} onKeyDown={handle_big_console_input_key_down}/>
+              <button className="logs-card-send-button" onClick={handle_big_console_send_button}>Отправить</button>
+            </div>
           </div>
         </div>}
       </div>
