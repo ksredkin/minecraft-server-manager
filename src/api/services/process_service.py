@@ -17,6 +17,7 @@ from src.api.core.config import (
     MINECRAFT_VERSION,
     SERVER_PATH,
     SERVER_STOP_TIMEOUT,
+    SERVER_SOFTWARE,
 )
 from src.api.exceptions.server import (
     InvalidServerConfigurationError,
@@ -26,6 +27,7 @@ from src.api.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
+from datetime import datetime
 
 
 class ProcessService:
@@ -47,6 +49,7 @@ class ProcessService:
         self._players_event: Event = Event()
         self._stop_event: Event = Event()
         self._queue: Queue[str] = Queue()
+        self._start_time: datetime | None = None
 
     def start(self) -> bool:
         if not self._process or self._process.poll() is not None:
@@ -73,11 +76,25 @@ class ProcessService:
 
             Thread(target=self._reader, daemon=True).start()
 
+            self._status = "starting"
+            self._start_time = datetime.now()
+
             return True
         raise ServerAlreadyRunningError("Сервер уже запущен.")
 
     def stop(self) -> None:
         self.execute_command("stop")
+
+    def get_uptime(self) -> str:
+        if not self._start_time:
+            return "0:0:0"
+
+        delta = datetime.now() - self._start_time
+        hours = int(delta.total_seconds() // (60*60))
+        minutes = int(delta.total_seconds() // 60)
+        seconds = round(delta.total_seconds() % 60)
+
+        return f"{hours}:{minutes}:{seconds}"
 
     def restart(self) -> bool:
         self._stop_event.clear()
@@ -91,13 +108,10 @@ class ProcessService:
         return self.start()
 
     def status(self) -> str:
-        if self._process is None:
-            return "stopped"
+        if self._process is None or self._process.poll() is not None:
+            self._status = "stopped"
 
-        if self._process.poll() is None:
-            return "running"
-
-        return "stopped"
+        return self._status
 
     def execute_command(self, command: str) -> None:
         if not self._process or self._process.poll() is not None:
@@ -120,7 +134,7 @@ class ProcessService:
 
     def get_server_info(self) -> dict[str, str | list[str] | None]:
         if not self._process or self._process.poll() is not None:
-            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION}
+            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION, "server_software": SERVER_SOFTWARE, "uptime": self.get_uptime()}
 
         try:
             players = self.get_players()
@@ -131,6 +145,8 @@ class ProcessService:
             "status": self.status(),
             "players": players,
             "minecraft_version": MINECRAFT_VERSION,
+            "server_software": SERVER_SOFTWARE,
+            "uptime": self.get_uptime(),
         }
         return info
 
@@ -151,6 +167,11 @@ class ProcessService:
             if "players online: " in line:
                 self._players = line.split("players online: ")[1].split()
                 self._players_event.set()
+            elif "Done (" in line and ')! For help, type "help"' in line:
+                self._status = "running"
+            elif "Stopping the server" in line:
+                self._status = "stopping"
+                self._start_time = None
 
     async def log_sender(
         self, connection_manager: ConnectionManager = get_connection_manager()

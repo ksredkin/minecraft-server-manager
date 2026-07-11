@@ -89,10 +89,13 @@ async def logs_websocket(
     websocket: WebSocket,
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> None:
-    await connection_manager.connect(websocket)
+    try:
+        await connection_manager.connect(websocket)
 
-    while True:
-        await asyncio.sleep(1)
+        while True:
+            await asyncio.sleep(1)
+    except Exception:
+        await connection_manager.disconnect(websocket)
 
 
 @server_router.get("/players", description="Получить список игроков.")
@@ -109,3 +112,11 @@ def get_server_info(
 ) -> JSONResponse:
     info = process_service.get_server_info()
     return JSONResponse({"success": True, "data": {"info": info}}, 200)
+
+
+@server_router.get("/uptime", description="Получить время работы сервера.")
+def get_uptime(
+    process_service: ProcessService = Depends(get_process_service),
+) -> JSONResponse:
+    uptime = process_service.get_uptime()
+    return JSONResponse({"success": True, "data": {"uptime": uptime}}, 200)

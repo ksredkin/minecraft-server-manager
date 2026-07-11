@@ -13,6 +13,7 @@ from src.api.routers.properties import properties_router
 from src.api.routers.server import server_router
 from src.api.services.process_service import ProcessService, get_process_service
 from src.api.core.config import API_HOST, API_PORT
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
@@ -28,6 +29,17 @@ def main() -> None:
         title="Minecraft Server Manager",
         description="API для управления Minecraft сервером.",
         lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     register_exception_handlers(app)
