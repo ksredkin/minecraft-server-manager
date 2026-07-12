@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import {Home, Terminal, Clock, User} from 'lucide-react'
+import {Home, Terminal, Clock, User, Save, Package, Settings, File} from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -12,6 +12,7 @@ function App() {
   const [minecraft_version, setMinecraftVersion] = useState(undefined)
   const [players, setPlayers] = useState([])
   const [max_players, setMaxPlayers] = useState(0)
+  const [backups, setBackups] = useState([])
   
   const [uptime_hours, setUptimeHours] = useState(0)
   const [uptime_minutes, setUptimeMinutes] = useState(0)
@@ -27,6 +28,35 @@ function App() {
   const big_logsRef = useRef(null)
   const big_console_input = useRef(null)
 
+
+  const send_command = async (command) => {
+      if (!command) return undefined
+      const result = await fetch(API_URL + "command?command=" + command, {method: "POST"})
+  }
+
+  const start_server = async () => {
+    await fetch(API_URL + "start", {method: "POST"})
+    setServerWorksLevel(1)
+  }
+
+  const stop_server = async () => {
+    await fetch(API_URL + "stop", {method: "POST"})
+    setServerWorksLevel(3)
+  }
+
+  const restart_server = async () => {
+    await fetch(API_URL + "restart", {method: "POST"})
+    setServerWorksLevel(3)
+  }
+
+  const get_backups = async () => {
+    const result = await fetch(API_URL + "backups/")
+    return await result.json()
+  }
+
+  const create_backup = async () => {
+    await fetch(API_URL + "backups/", {method: "POST"})
+  }
 
   const get_server_status = async () => {
     try {
@@ -66,6 +96,14 @@ function App() {
     setUptimeMinutes(uptime[1])
     setUptimeSeconds(uptime[2])
     setMaxPlayers(max_players)
+  }
+
+  const check_server_backups = async () => {
+    const result = await get_backups()
+    if (result.data !== undefined) {
+      const backups_list = result.data.backups
+      setBackups(backups_list)
+    }
   }
 
 
@@ -115,31 +153,14 @@ function App() {
   }
 
 
-  const send_command = async (command) => {
-      if (!command) return undefined
-      const result = await fetch(API_URL + "command?command=" + command, {method: "POST"})
-  }
-
-  const start_server = async () => {
-    await fetch(API_URL + "start", {method: "POST"})
-    setServerWorksLevel(1)
-  }
-
-  const stop_server = async () => {
-    await fetch(API_URL + "stop", {method: "POST"})
-    setServerWorksLevel(3)
-  }
-
-  const restart_server = async () => {
-    await fetch(API_URL + "restart", {method: "POST"})
-    setServerWorksLevel(3)
-  }
-
-
   useEffect(() => {
     connect_logs_ws()
     check_server_status()
-    const interval = setInterval(async () => {check_server_status()}, 1000)
+    check_server_backups()
+    const interval = setInterval(async () => {
+      check_server_status()
+      check_server_backups()
+    }, 1000)
     return () => {clearTimeout(interval)}
   }, [])
 
@@ -172,7 +193,15 @@ function App() {
     )
   })
 
-  const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log_row">{log}</h5>})
+  const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log-row">{log}</h5>})
+
+  const reversed_backups = [...backups].reverse();
+  const last_backups_backup_items = reversed_backups.slice(0,3).map((backup, index) => {
+    return <div className="last-backups-backup-item">
+        <File className="last-backups-file-svg"/>
+        <h5 key={index}>{backup}</h5>
+      </div>
+  })
 
   return (
     <div className="background">
@@ -272,7 +301,19 @@ function App() {
             </div>
           </div>
           <div className="blocks3-div">
-            <div className=""></div>
+            <div className="fast-actions-card">
+              <h3 style={{marginBottom: "5px"}}>Быстрые действия</h3>
+              <button className="fast-action-button" onClick={() => {setActiveSection(5)}}><Save className="fast-action-icon"/>Создать бэкап</button>
+              <button className="fast-action-button" onClick={() => {setActiveSection(6)}}><Settings className="fast-action-icon"/>Открыть server.properties</button>
+              <button className="fast-action-button" onClick={() => {setActiveSection(4)}}><Package className="fast-action-icon"/>Установить плагин</button>
+            </div>
+            <div className="last-backups-card">
+              <h3 style={{marginBottom: "5px"}}>Последние бэкапы</h3>
+              <div className="last-backups-backups-items-div">
+                {last_backups_backup_items}
+              </div>
+              <button onClick={() => setActiveSection(5)} className="last-backups-card-footer-button">Все бэкапы →</button>
+            </div>
           </div>
         </div>}
         {(active_section == 2) && <div className="screen-2">

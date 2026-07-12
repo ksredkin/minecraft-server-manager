@@ -5,8 +5,11 @@ html, body, #root {
 }
 
 .screen-1 {
-  margin-left: 25px;
+  margin-left: 20px;
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .background {
@@ -430,12 +433,12 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   min-height: 35px;
   background-color: #1F2A38;
-  color: white;
+  color: #8F9CA8;
   border: #263443 solid 2px;
   margin-right: 10px;
 }
 
-.log_row {
+.log-row {
   margin-left: 10px;
   margin-right: 10px;
   margin-top: 5px;
@@ -493,4 +496,84 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   &::-webkit-scrollbar-button { size: 0; }
+}
+
+.blocks3-div {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+}
+
+.fast-actions-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  max-width: 355px;
+  gap: 10px;
+}
+
+.fast-action-button {
+  border-radius: 8px;
+  min-height: 45px;
+  background-color: #1B2734;
+  color: white;
+  border: #263443 solid 2px;
+  text-align: left;
+}
+
+.fast-action-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: -5px;
+  margin-right: 10px;
+  stroke: #86909F;
+}
+
+.last-backups-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  max-width: 355px;
+  gap: 10px;
+  margin-left: 20px;
+}
+
+.last-backups-backup-item {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+}
+
+.last-backups-file-svg {
+  margin-bottom: -5px;
+  stroke: #86909F;
+  width: 28px;
+  height: 28px;
+}
+
+.last-backups-backups-items-div {
+  gap: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.last-backups-card-footer-button {
+  border-radius: 8px;
+  width: 100%;
+  min-height: 35px;
+  background-color: #1F2A38;
+  color: #8F9CA8;
+  border: #263443 solid 2px;
+  margin-top: auto;
 }
