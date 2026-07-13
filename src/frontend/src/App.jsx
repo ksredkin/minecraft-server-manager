@@ -13,6 +13,7 @@ function App() {
   const [players, setPlayers] = useState([])
   const [max_players, setMaxPlayers] = useState(0)
   const [backups, setBackups] = useState([])
+  const [plugins, setPlugins] = useState([])
   
   const [uptime_hours, setUptimeHours] = useState(0)
   const [uptime_minutes, setUptimeMinutes] = useState(0)
@@ -70,6 +71,12 @@ function App() {
     }
   }
 
+  const get_plugins = async () => {
+    const result = await fetch(API_URL + "plugins/")
+    return await result.json()
+  }
+
+
   const check_server_status = async () => {
     const data = await get_server_status()
     if (!data) return undefined
@@ -103,6 +110,14 @@ function App() {
     if (result.data !== undefined) {
       const backups_list = result.data.backups
       setBackups(backups_list)
+    }
+  }
+
+  const check_server_plugins = async () => {
+    const result = await get_plugins()
+    if (result.data !== undefined) {
+      const plugins_list = result.data.plugins
+      setPlugins(plugins_list)
     }
   }
 
@@ -157,9 +172,11 @@ function App() {
     connect_logs_ws()
     check_server_status()
     check_server_backups()
+    check_server_plugins()
     const interval = setInterval(async () => {
       check_server_status()
       check_server_backups()
+      check_server_plugins()
     }, 1000)
     return () => {clearTimeout(interval)}
   }, [])
@@ -197,9 +214,16 @@ function App() {
 
   const reversed_backups = [...backups].reverse();
   const last_backups_backup_items = reversed_backups.slice(0,3).map((backup, index) => {
-    return <div className="last-backups-backup-item">
+    return <div key={index} className="last-backups-backup-item">
         <File className="last-backups-file-svg"/>
-        <h5 key={index}>{backup}</h5>
+        <h5>{backup}</h5>
+      </div>
+  })
+
+  const plugins_card_plugins_items = plugins.slice(0, 3).map((plugin, index) => {
+    return <div key={index} className="plugins-card-plugin-item">
+        <Package className="plugins-card-file-svg"/>
+        <h5>{((plugin[0].toUpperCase() + plugin.slice(1)).length < 39) ? (plugin[0].toUpperCase() + plugin.slice(1)) : (plugin[0].toUpperCase() + plugin.slice(1)).slice(0, 35) + "..."}</h5>
       </div>
   })
 
@@ -280,6 +304,7 @@ function App() {
                 <h3 className="online-players-card-header-text">Список игроков</h3>
               </div>
               {players_items}
+              {(players.length == 0) && <h4 className="online-players-card-no-players-text">Сервер пуст</h4>}
               <div className="online-players-card-footer">
                 <button onClick={() => setActiveSection(3)} className="online-players-card-footer-button">Все игроки ({players.length}) →</button>
               </div>
@@ -307,6 +332,7 @@ function App() {
               <button className="fast-action-button" onClick={() => {setActiveSection(6)}}><Settings className="fast-action-icon"/>Открыть server.properties</button>
               <button className="fast-action-button" onClick={() => {setActiveSection(4)}}><Package className="fast-action-icon"/>Установить плагин</button>
             </div>
+            
             <div className="last-backups-card">
               <h3 style={{marginBottom: "5px"}}>Последние бэкапы</h3>
               <div className="last-backups-backups-items-div">
@@ -314,12 +340,20 @@ function App() {
               </div>
               <button onClick={() => setActiveSection(5)} className="last-backups-card-footer-button">Все бэкапы →</button>
             </div>
+
+            <div className="plugins-card">
+              <h3 style={{marginBottom: "5px"}}>Установленные плагины</h3>
+              <div className="plugins-card-items-div">
+                {plugins_card_plugins_items}
+              </div>
+              <button onClick={() => setActiveSection(4)} className="plugins-card-footer-button">Все плагины →</button>
+            </div>
           </div>
         </div>}
         {(active_section == 2) && <div className="screen-2">
           <div className="big-logs-card">
             <div className="logs-card-header">
-              <h3 className="logs-card-header-text">Логи сервера</h3>
+              <h3 className="logs-card-header-text">Консоль</h3>
             </div>
               
             <div className="big-logs-background" ref={big_logsRef}>

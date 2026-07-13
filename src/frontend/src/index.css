@@ -5,8 +5,7 @@ html, body, #root {
 }
 
 .screen-1 {
-  margin-left: 20px;
-  margin-top: 20px;
+  margin: 20px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -45,23 +44,22 @@ html, body, #root {
 .blocks1-div {
   display: flex;
   margin-top: 20px;
+  gap: 20px;
+  height: 160px;
 }
 
 .block-background {
   background-color: #131C27;
-  min-width: 375px;
-  min-height: 160px;
   border: #202C39 solid 2px;
   border-radius: 8px;
+  flex: 2;
 }
 
 .short-block-background {
-  margin-left: 20px;
   background-color: #131C27;
-  min-width: 185px;
-  min-height: 160px;
   border: #202C39 solid 2px;
   border-radius: 8px;
+  flex: 1;
 }
 
 .logo {
@@ -271,7 +269,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 500px;
   flex: 1;
   margin-right: 20px;
-  min-width: 395px;
+  min-width: 775px;
   max-width: 895px;
 }
 
@@ -517,6 +515,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 10px;
   max-width: 355px;
   gap: 10px;
+  max-height: 210px;
 }
 
 .fast-action-button {
@@ -547,6 +546,7 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 355px;
   gap: 10px;
   margin-left: 20px;
+  max-height: 210px;
 }
 
 .last-backups-backup-item {
@@ -556,10 +556,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .last-backups-file-svg {
-  margin-bottom: -5px;
   stroke: #86909F;
-  width: 28px;
-  height: 28px;
+  width: 27px;
+  height: 27px;
 }
 
 .last-backups-backups-items-div {
@@ -575,5 +574,53 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #1F2A38;
   color: #8F9CA8;
   border: #263443 solid 2px;
+  margin-top: auto;
+}
+
+.plugins-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  max-width: 355px;
+  gap: 10px;
+  margin-left: 20px;
+  max-height: 210px;
+}
+
+.plugins-card-plugin-item {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+}
+
+.plugins-card-footer-button {
+  border-radius: 8px;
+  width: 100%;
+  min-height: 35px;
+  background-color: #1F2A38;
+  color: #8F9CA8;
+  border: #263443 solid 2px;
+  margin-top: auto;
+}
+
+.plugins-card-file-svg {
+  stroke: #86909F;
+  width: 27px;
+  height: 27px;
+}
+
+.plugins-card-items-div {
+  gap: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.online-players-card-no-players-text {
+  color: #86909F;
+  text-align: center;
   margin-top: auto;
 }
