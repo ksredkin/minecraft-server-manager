@@ -1,6 +1,12 @@
-from src.api.services.backup_service import BackupService, get_backup_service
+import shutil
+from pathlib import Path
+from shutil import make_archive
+from typing import Any
+from unittest.mock import patch
+
 import pytest
-from src.api.exceptions.server import InvalidServerConfigurationError, ServerFolderDoesNotExistError
+from freezegun import freeze_time
+
 from src.api.exceptions.backups import (
     BackupNotFoundError,
     BackupPermisionError,
@@ -8,30 +14,29 @@ from src.api.exceptions.backups import (
     CleanupError,
     InvalidBackupError,
 )
-from typing import Any
-from pathlib import Path
-import shutil
-from shutil import make_archive
-from freezegun import freeze_time
-from unittest.mock import patch
+from src.api.exceptions.server import (
+    InvalidServerConfigurationError,
+    ServerFolderDoesNotExistError,
+)
+from src.api.services.backup_service import BackupService, get_backup_service
 
 
 def test_invalid_server_configuration_(tmp_path: Any) -> None:
     with pytest.raises(InvalidServerConfigurationError):
-        service = BackupService(server_path=None)
+        BackupService(server_path=None)  # type: ignore
 
     with pytest.raises(InvalidServerConfigurationError):
-        service = BackupService(server_path=str(tmp_path), backups_path=None)
+        BackupService(server_path=str(tmp_path), backups_path=None)  # type: ignore
 
 
 def test_server_folder_does_not_exist() -> None:
     with pytest.raises(ServerFolderDoesNotExistError):
-        service = BackupService(server_path="non_existent_folder")
+        BackupService(server_path="non_existent_folder")
 
 
 def test_remove_archive(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -40,20 +45,20 @@ def test_remove_archive(tmp_path: Any) -> None:
 
     backup = backups_dir / "backup-08-07-2026-11-09.zip"
 
-    assert backup.exists() == False
+    assert not backup.exists()
     make_archive(str(backup).rstrip(".zip"), "zip", str(server_dir))
-    assert backup.exists() == True
+    assert backup.exists()
 
     service = BackupService(backups_path=str(backups_dir), server_path=str(server_dir))
     service._remove_archive(backup)
 
-    assert backup.exists() == False
+    assert not backup.exists()
 
 
 @freeze_time("2026-08-07 11:09:00")
 def test_create_backup(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -68,7 +73,7 @@ def test_create_backup(tmp_path: Any) -> None:
 
 def test_delete_backup(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -82,12 +87,12 @@ def test_delete_backup(tmp_path: Any) -> None:
 
     service.delete_backup(backup)
 
-    assert (backups_dir / backup).exists() == False
+    assert not (backups_dir / backup).exists()
 
 
 def test_get_backups(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -103,7 +108,7 @@ def test_get_backups(tmp_path: Any) -> None:
 
 def test_check_backup_exists(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -114,14 +119,14 @@ def test_check_backup_exists(tmp_path: Any) -> None:
 
     with pytest.raises(BackupNotFoundError):
         service._check_backup_exists(Path(":)"))
-    
+
     backup = service.create_backup()
-    assert service._check_backup_exists(backups_dir / backup) is None
+    assert service._check_backup_exists(backups_dir / backup) is None  # type: ignore
 
 
 def test_cleanup(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -139,12 +144,12 @@ def test_cleanup(tmp_path: Any) -> None:
     assert server_old_dir.exists()
 
     service._cleanup("123")
-    assert server_old_dir.exists() == False
+    assert not server_old_dir.exists()
 
 
 def test_delete_server_dir(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
     assert server_dir.exists()
@@ -156,12 +161,12 @@ def test_delete_server_dir(tmp_path: Any) -> None:
 
     service._delete_server_dir()
 
-    assert server_dir.exists() == False
+    assert not server_dir.exists()
 
 
 def test_rollback(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
     assert server_dir.exists()
@@ -177,12 +182,12 @@ def test_rollback(tmp_path: Any) -> None:
     service._rollback()
 
     assert server_dir.exists()
-    assert server_old_dir.exists() == False
+    assert not server_old_dir.exists()
 
 
 def test_delete_old_server_dir(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -195,12 +200,12 @@ def test_delete_old_server_dir(tmp_path: Any) -> None:
 
     service = BackupService(backups_path=str(backups_dir), server_path=str(server_dir))
     service._delete_old_server_dir()
-    assert server_old_dir.exists() == False
+    assert not server_old_dir.exists()
 
 
 def test_restore_backup(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
-    
+
     server_dir = tmp_dir / "server"
     server_dir.mkdir()
 
@@ -269,7 +274,10 @@ def test_create_backup_permission_error(tmp_path: Any) -> None:
 
     service = BackupService(backups_path=str(backups_dir), server_path=str(server_dir))
 
-    with patch("src.api.services.backup_service.shutil.make_archive", side_effect=PermissionError):
+    with patch(
+        "src.api.services.backup_service.shutil.make_archive",
+        side_effect=PermissionError,
+    ):
         with pytest.raises(BackupPermisionError):
             service.create_backup()
 
@@ -287,7 +295,10 @@ def test_create_backup_restore_error(tmp_path: Any) -> None:
 
     service = BackupService(backups_path=str(backups_dir), server_path=str(server_dir))
 
-    with patch("src.api.services.backup_service.shutil.make_archive", side_effect=OSError("boom")):
+    with patch(
+        "src.api.services.backup_service.shutil.make_archive",
+        side_effect=OSError("boom"),
+    ):
         with pytest.raises(BackupRestoreError):
             service.create_backup()
 
@@ -308,7 +319,9 @@ def test_cleanup_error(tmp_path: Any) -> None:
 
     service = BackupService(backups_path=str(backups_dir), server_path=str(server_dir))
 
-    with patch("src.api.services.backup_service.shutil.rmtree", side_effect=OSError("boom")):
+    with patch(
+        "src.api.services.backup_service.shutil.rmtree", side_effect=OSError("boom")
+    ):
         with pytest.raises(CleanupError):
             service._cleanup("123")
 
@@ -326,7 +339,10 @@ def test_restore_backup_permission_error(tmp_path: Any) -> None:
 
     backup = service.create_backup()
 
-    with patch("src.api.services.backup_service.shutil.unpack_archive", side_effect=PermissionError):
+    with patch(
+        "src.api.services.backup_service.shutil.unpack_archive",
+        side_effect=PermissionError,
+    ):
         with pytest.raises(BackupPermisionError):
             service.restore_backup(backup)
 
@@ -344,7 +360,10 @@ def test_restore_backup_invalid_backup_error(tmp_path: Any) -> None:
 
     backup = service.create_backup()
 
-    with patch("src.api.services.backup_service.shutil.unpack_archive", side_effect=shutil.ReadError("bad")):
+    with patch(
+        "src.api.services.backup_service.shutil.unpack_archive",
+        side_effect=shutil.ReadError("bad"),
+    ):
         with pytest.raises(InvalidBackupError):
             service.restore_backup(backup)
 

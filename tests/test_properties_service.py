@@ -1,10 +1,17 @@
-from src.api.services.properties_service import PropertiesService, get_properties_service
-from typing import Any
 from pathlib import Path
-from src.api.exceptions.server import ServerFolderDoesNotExistError, InvalidServerConfigurationError
-from src.api.exceptions.settings import SettingsFileNotFoundError
+from typing import Any
+
 import pytest
 
+from src.api.exceptions.server import (
+    InvalidServerConfigurationError,
+    ServerFolderDoesNotExistError,
+)
+from src.api.exceptions.settings import SettingsFileNotFoundError
+from src.api.services.properties_service import (
+    PropertiesService,
+    get_properties_service,
+)
 
 test_server_properties_string = """#Minecraft server properties
 #Mon Jul 06 17:49:49 MSK 2026
@@ -24,11 +31,12 @@ def test_properties_service(tmp_path: Any) -> None:
     service = PropertiesService(str(server_dir_path))
 
     assert service.get_properties() == test_server_properties_dict
-    
+
     service.update_property("online-mode", "false")
     new_properties = test_server_properties_dict.copy()
     new_properties["online-mode"] = "false"
     assert service.get_properties() == new_properties
+
 
 def test_get_properties_service() -> None:
     service1 = get_properties_service()
@@ -36,9 +44,10 @@ def test_get_properties_service() -> None:
 
     assert service1 is service2
 
+
 def test_invalid_server_configuration() -> None:
     with pytest.raises(InvalidServerConfigurationError):
-        PropertiesService(server_path=None)
+        PropertiesService(server_path=None)  # type: ignore
 
 
 def test_server_folder_does_not_exist() -> None:

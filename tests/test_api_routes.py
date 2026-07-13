@@ -59,13 +59,22 @@ def test_server_routes() -> None:
     assert command_response.status_code == 200
     assert command_response.json() == {"success": True}
     assert logs_response.status_code == 200
-    assert logs_response.json() == {"success": True, "data": {"logs": ["one", "two", "three"]}}
+    assert logs_response.json() == {
+        "success": True,
+        "data": {"logs": ["one", "two", "three"]},
+    }
     assert logs_tail_response.status_code == 200
-    assert logs_tail_response.json() == {"success": True, "data": {"logs": ["three", "two"]}}
+    assert logs_tail_response.json() == {
+        "success": True,
+        "data": {"logs": ["three", "two"]},
+    }
     assert players_response.status_code == 200
     assert players_response.json() == {"success": True, "data": {"players": ["Steve"]}}
     assert info_response.status_code == 200
-    assert info_response.json() == {"success": True, "data": {"info": {"version": "1.21.2"}}}
+    assert info_response.json() == {
+        "success": True,
+        "data": {"info": {"version": "1.21.2"}},
+    }
 
 
 def test_backup_routes() -> None:
@@ -83,13 +92,25 @@ def test_backup_routes() -> None:
         delete_response = client.delete("/backups/backup1.zip")
 
     assert get_response.status_code == 200
-    assert get_response.json() == {"success": True, "data": {"backups": ["backup1.zip"]}}
+    assert get_response.json() == {
+        "success": True,
+        "data": {"backups": ["backup1.zip"]},
+    }
     assert create_response.status_code == 201
-    assert create_response.json() == {"success": True, "data": {"backup": "backup2.zip"}}
+    assert create_response.json() == {
+        "success": True,
+        "data": {"backup": "backup2.zip"},
+    }
     assert restore_response.status_code == 200
-    assert restore_response.json() == {"success": True, "data": {"backup": "backup1.zip"}}
+    assert restore_response.json() == {
+        "success": True,
+        "data": {"backup": "backup1.zip"},
+    }
     assert delete_response.status_code == 200
-    assert delete_response.json() == {"success": True, "data": {"backup": "backup1.zip"}}
+    assert delete_response.json() == {
+        "success": True,
+        "data": {"backup": "backup1.zip"},
+    }
 
 
 def test_eula_routes() -> None:
@@ -123,18 +144,32 @@ def test_plugins_routes() -> None:
     with TestClient(app) as client:
         list_response = client.get("/plugins/")
         search_response = client.get("/plugins/search", params={"query": "plugin"})
-        info_response = client.get("/plugins/info", params={"project_id_or_slug": "plugin-a"})
+        info_response = client.get(
+            "/plugins/info", params={"project_id_or_slug": "plugin-a"}
+        )
         install_response = client.post("/plugins/install/plugin-a")
         delete_response = client.delete("/plugins/delete/plugin-a")
 
     assert list_response.status_code == 200
-    assert list_response.json() == {"success": True, "data": {"plugins": ["plugin-a", "plugin-b"]}}
+    assert list_response.json() == {
+        "success": True,
+        "data": {"plugins": ["plugin-a", "plugin-b"]},
+    }
     assert search_response.status_code == 200
-    assert search_response.json() == {"success": True, "data": {"plugins": [{"id": "1"}]}}
+    assert search_response.json() == {
+        "success": True,
+        "data": {"plugins": [{"id": "1"}]},
+    }
     assert info_response.status_code == 200
-    assert info_response.json() == {"success": True, "data": {"plugin-a": {"name": "plugin-a"}}}
+    assert info_response.json() == {
+        "success": True,
+        "data": {"plugin-a": {"name": "plugin-a"}},
+    }
     assert install_response.status_code == 201
-    assert install_response.json() == {"success": True, "data": {"plugin-a": ["plugin-a.jar"]}}
+    assert install_response.json() == {
+        "success": True,
+        "data": {"plugin-a": ["plugin-a.jar"]},
+    }
     assert delete_response.status_code == 200
     assert delete_response.json() == {"success": True, "data": {"plugin": "plugin-a"}}
 
@@ -151,6 +186,9 @@ def test_properties_routes() -> None:
         update_response = client.put("/properties/difficulty", params={"value": "hard"})
 
     assert get_response.status_code == 200
-    assert get_response.json() == {"success": True, "data": {"properties": {"difficulty": "easy"}}}
+    assert get_response.json() == {
+        "success": True,
+        "data": {"properties": {"difficulty": "easy"}},
+    }
     assert update_response.status_code == 200
     assert update_response.json() == {"success": True, "data": {"difficulty": "hard"}}

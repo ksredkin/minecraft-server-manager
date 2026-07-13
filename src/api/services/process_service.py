@@ -1,14 +1,11 @@
 from asyncio import to_thread
 from collections import deque
+from datetime import datetime
 from pathlib import Path
 from queue import Queue
 from subprocess import PIPE, Popen
 from threading import Event, Thread
 
-from src.api.services.connection_manager import (
-    ConnectionManager,
-    get_connection_manager,
-)
 from src.api.core.config import (
     JAR_ARGS,
     JAR_NAME,
@@ -16,8 +13,8 @@ from src.api.core.config import (
     JAVA_ARGS,
     MINECRAFT_VERSION,
     SERVER_PATH,
-    SERVER_STOP_TIMEOUT,
     SERVER_SOFTWARE,
+    SERVER_STOP_TIMEOUT,
 )
 from src.api.exceptions.server import (
     InvalidServerConfigurationError,
@@ -27,7 +24,10 @@ from src.api.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
-from datetime import datetime
+from src.api.services.connection_manager import (
+    ConnectionManager,
+    get_connection_manager,
+)
 
 
 class ProcessService:
@@ -43,7 +43,7 @@ class ProcessService:
             raise ServerFolderDoesNotExistError("Папки сервера не существует.")
 
         self._process: Popen[str] | None = None
-        self._status = None
+        self._status: str | None = None
         self._logs: deque[str] = deque(maxlen=1000)
         self._players: list[str] = []
         self._players_event: Event = Event()
@@ -111,7 +111,7 @@ class ProcessService:
 
         return self.start()
 
-    def status(self) -> str:
+    def status(self) -> str | None:
         if self._process is None or self._process.poll() is not None:
             self._status = "stopped"
 
@@ -136,9 +136,15 @@ class ProcessService:
 
         return self._players
 
-    def get_server_info(self) -> dict[str, str | list[str] | None]:
+    def get_server_info(self) -> dict[str, str | list[str] | None | int]:
         if not self._process or self._process.poll() is not None:
-            return {"status": "stopped", "minecraft_version": MINECRAFT_VERSION, "server_software": SERVER_SOFTWARE, "uptime": self.get_uptime(), "max_players": self._max_players}
+            return {
+                "status": "stopped",
+                "minecraft_version": MINECRAFT_VERSION,
+                "server_software": SERVER_SOFTWARE,
+                "uptime": self.get_uptime(),
+                "max_players": self._max_players,
+            }
 
         try:
             players = self.get_players()
@@ -171,7 +177,7 @@ class ProcessService:
 
             if "players online: " in line:
                 self._players = line.split("players online: ")[1].split()
-                self._max_players = line.split("max of ")[1].split()[0]
+                self._max_players = line.split("max of ")[1].split()[0]  # type: ignore
                 self._players_event.set()
             elif "Done (" in line and ')! For help, type "help"' in line:
                 self._status = "running"

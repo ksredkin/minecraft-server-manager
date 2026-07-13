@@ -1,6 +1,11 @@
-from src.api.services.connection_manager import ConnectionManager, get_connection_manager
 from unittest.mock import AsyncMock
+
 from pytest import mark
+
+from src.api.services.connection_manager import (
+    ConnectionManager,
+    get_connection_manager,
+)
 
 
 @mark.asyncio

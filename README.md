@@ -5,7 +5,7 @@
 ![Poetry](https://img.shields.io/badge/Poetry-60A5FA?style=for-the-badge&logo=poetry&logoColor=white)
 ![Ruff](https://img.shields.io/badge/Ruff-FCC21B?style=for-the-badge&logo=ruff&logoColor=black)
 ![Mypy](https://img.shields.io/badge/mypy-checked-1f425f?style=for-the-badge)
-![Coverage](https://img.shields.io/badge/Coverage-82%25-brightgreen?style=for-the-badge)
+![Coverage](https://img.shields.io/badge/Coverage-76%25-brightgreen?style=for-the-badge)
 
 ## 📝 Описание
 

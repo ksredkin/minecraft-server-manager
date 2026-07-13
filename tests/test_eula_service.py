@@ -1,14 +1,19 @@
-from src.api.services.eula_service import EulaService, get_eula_service
-from typing import Any
 from pathlib import Path
-import pytest
-from src.api.exceptions.eula import EulaFileNotFoundError, EulaStatusNotFoundError
-from src.api.exceptions.server import InvalidServerConfigurationError, ServerFolderDoesNotExistError
+from typing import Any
 
+import pytest
+
+from src.api.exceptions.eula import EulaFileNotFoundError, EulaStatusNotFoundError
+from src.api.exceptions.server import (
+    InvalidServerConfigurationError,
+    ServerFolderDoesNotExistError,
+)
+from src.api.services.eula_service import EulaService, get_eula_service
 
 test_eula = """#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
 #Sun Jun 14 16:52:49 MSK 2026
 eula=false"""
+
 
 def test_eula_service(tmp_path: Any) -> None:
     tmp_dir = Path(str(tmp_path))
@@ -19,13 +24,13 @@ def test_eula_service(tmp_path: Any) -> None:
 
     eula_service = EulaService(server_path=str(tmp_dir))
 
-    assert eula_service.get_eula_status() == False
+    assert not eula_service.get_eula_status()
 
     eula_service.set_eula_status(True)
-    assert eula_service.get_eula_status() == True
+    assert eula_service.get_eula_status()
 
     eula_service.set_eula_status(False)
-    assert eula_service.get_eula_status() == False
+    assert not eula_service.get_eula_status()
 
 
 def test_eula_file_not_found(tmp_path: Any) -> None:
@@ -40,7 +45,7 @@ def test_eula_file_not_found(tmp_path: Any) -> None:
 
 def test_invalid_server_configuration() -> None:
     with pytest.raises(InvalidServerConfigurationError):
-        EulaService(server_path=None)
+        EulaService(server_path=None)  # type: ignore
 
 
 def test_server_folder_does_not_exist() -> None:

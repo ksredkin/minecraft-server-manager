@@ -14,7 +14,7 @@ from src.api.services.process_service import ProcessService, get_process_service
 
 def test_invalid_server_configuration() -> None:
     with pytest.raises(InvalidServerConfigurationError):
-        ProcessService(server_path=None)
+        ProcessService(server_path=None)  # type: ignore
 
 
 def test_server_folder_does_not_exist() -> None:
@@ -33,15 +33,18 @@ def test_start_and_execute_command(tmp_path: Path) -> None:
     process.stdout = MagicMock()
     process.stderr = MagicMock()
 
-    with patch("src.api.services.process_service.Popen", return_value=process) as mock_popen, patch(
-        "src.api.services.process_service.Thread"
-    ), patch("src.api.services.process_service.JAVA", "java"), patch(
-        "src.api.services.process_service.JAR_NAME", "server.jar"
-    ), patch("src.api.services.process_service.JAVA_ARGS", []), patch(
-        "src.api.services.process_service.JAR_ARGS", []
+    with (
+        patch(
+            "src.api.services.process_service.Popen", return_value=process
+        ) as mock_popen,
+        patch("src.api.services.process_service.Thread"),
+        patch("src.api.services.process_service.JAVA", "java"),
+        patch("src.api.services.process_service.JAR_NAME", "server.jar"),
+        patch("src.api.services.process_service.JAVA_ARGS", []),
+        patch("src.api.services.process_service.JAR_ARGS", []),
     ):
         assert service.start() is True
-        assert service.status() == "running"
+        assert service.status() == "starting"
 
         service.execute_command("stop")
 

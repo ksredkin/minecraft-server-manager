@@ -4,7 +4,9 @@ from typing import Any, AsyncGenerator
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.core.config import API_HOST, API_PORT
 from src.api.exception_handlers import register_exception_handlers
 from src.api.routers.backups import backups_router
 from src.api.routers.eula import eula_router
@@ -12,8 +14,6 @@ from src.api.routers.plugins import plugins_router
 from src.api.routers.properties import properties_router
 from src.api.routers.server import server_router
 from src.api.services.process_service import ProcessService, get_process_service
-from src.api.core.config import API_HOST, API_PORT
-from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
