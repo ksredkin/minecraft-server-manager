@@ -9,6 +9,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
 }
 
 .background {
@@ -192,6 +193,7 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .user-icon {
@@ -262,15 +264,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .logs-card {
-  margin-top: 20px;
   display: flex;
   flex-direction: column;
-  max-height: 500px;
-  height: 500px;
-  flex: 1;
-  margin-right: 20px;
-  min-width: 775px;
-  max-width: 895px;
+  flex: 4;
 }
 
 .logs-card-header {
@@ -293,7 +289,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
   border-left: 2px solid #202C39;
   border-right: 2px solid #202C39;
-  overflow-y: auto;
+  overflow: auto;
   flex: 1;
 
   scrollbar-width: thin;
@@ -374,19 +370,19 @@ h1, h2, h3, h4, h5, h6 {
 .blocks2-div {
   display: flex;
   flex-direction: row;
-  width: 100%;
+  margin-top: 20px;
+  flex: 1;
+  gap: 20px;
+  min-height: 0;
 }
 
 .online-players-card {
-  margin-top: 20px;
   background-color: #131C27;
   border: 2px solid #202C39;
   border-radius: 8px;
-  margin-right: 20px;
-  width: 375px;
-  max-height: 500px;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .online-players-card-header {
@@ -424,6 +420,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding-left: 10px;
   margin-top: auto;
+  padding-right: 10px;
 }
 
 .online-players-card-footer-button {
@@ -433,7 +430,6 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #1F2A38;
   color: #8F9CA8;
   border: #263443 solid 2px;
-  margin-right: 10px;
 }
 
 .log-row {
@@ -498,11 +494,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .blocks3-div {
   margin-top: 20px;
-  margin-right: 20px;
-  margin-bottom: 20px;
-  flex: 1;
   display: flex;
   flex-direction: row;
+  gap: 20px;
 }
 
 .fast-actions-card {
@@ -513,9 +507,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  max-width: 355px;
   gap: 10px;
-  max-height: 210px;
+  height: 210px;
 }
 
 .fast-action-button {
@@ -543,9 +536,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  max-width: 355px;
   gap: 10px;
-  margin-left: 20px;
   max-height: 210px;
 }
 
@@ -557,14 +548,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .last-backups-file-svg {
   stroke: #86909F;
-  width: 27px;
-  height: 27px;
+  min-width: 27px;
+  min-height: 27px;
 }
 
 .last-backups-backups-items-div {
   gap: 20px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .last-backups-card-footer-button {
@@ -585,9 +577,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  max-width: 355px;
   gap: 10px;
-  margin-left: 20px;
   max-height: 210px;
 }
 
@@ -617,10 +607,17 @@ h1, h2, h3, h4, h5, h6 {
   gap: 20px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .online-players-card-no-players-text {
   color: #86909F;
   text-align: center;
   margin-top: auto;
+}
+
+.background {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
 }

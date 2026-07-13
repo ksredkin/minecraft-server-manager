@@ -88,14 +88,17 @@ class ProcessService:
 
     def get_uptime(self) -> str:
         if not self._start_time:
-            return "0:0:0"
+            return "0:0:0:0"
 
         delta = datetime.now() - self._start_time
-        hours = int(delta.total_seconds() // (60*60))
-        minutes = int(delta.total_seconds() // 60)
-        seconds = round(delta.total_seconds() % 60)
+        total_seconds = int(delta.total_seconds())
 
-        return f"{hours}:{minutes}:{seconds}"
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        return f"{days}:{hours}:{minutes}:{seconds}"
 
     def restart(self) -> bool:
         self._stop_event.clear()

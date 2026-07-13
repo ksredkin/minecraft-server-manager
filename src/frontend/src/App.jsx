@@ -14,10 +14,7 @@ function App() {
   const [max_players, setMaxPlayers] = useState(0)
   const [backups, setBackups] = useState([])
   const [plugins, setPlugins] = useState([])
-  
-  const [uptime_hours, setUptimeHours] = useState(0)
-  const [uptime_minutes, setUptimeMinutes] = useState(0)
-  const [uptime_seconds, setUptimeSeconds] = useState(0)
+  const [uptime, setUptime] = useState("0:0:0:0")
   
   const [active_section, setActiveSection] = useState(1)
   
@@ -86,9 +83,9 @@ function App() {
     const version = data.data.info.minecraft_version
     const players = data.data.info.players
     const max_players = data.data.info.max_players
-    const uptime = data.data.info.uptime.split(":")
+    const uptime = data.data.info.uptime
 
-    if (players !== undefined) setPlayers(players)
+    if (players !== undefined) setPlayers(players ? players : [])
 
     if (status == "running") setServerWorksLevel(2)
     else if (status == "starting") setServerWorksLevel(1)
@@ -99,9 +96,7 @@ function App() {
 
     if (version !== undefined) setMinecraftVersion(version)
 
-    setUptimeHours(uptime[0])
-    setUptimeMinutes(uptime[1])
-    setUptimeSeconds(uptime[2])
+    setUptime(uptime)
     setMaxPlayers(max_players)
   }
 
@@ -201,7 +196,7 @@ function App() {
   }, [active_section])
 
 
-  const players_items = players.slice(0, 7).map((player, index) => {
+  const players_items = players.map((player, index) => {
     return (
       <div className="online-player-item" key={index}>
         <img className="online-player-item-image" src="steve.png" alt="player" width="35px" height="35px" />
@@ -213,14 +208,14 @@ function App() {
   const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log-row">{log}</h5>})
 
   const reversed_backups = [...backups].reverse();
-  const last_backups_backup_items = reversed_backups.slice(0,3).map((backup, index) => {
+  const last_backups_backup_items = reversed_backups.map((backup, index) => {
     return <div key={index} className="last-backups-backup-item">
         <File className="last-backups-file-svg"/>
         <h5>{backup}</h5>
       </div>
   })
 
-  const plugins_card_plugins_items = plugins.slice(0, 3).map((plugin, index) => {
+  const plugins_card_plugins_items = plugins.map((plugin, index) => {
     return <div key={index} className="plugins-card-plugin-item">
         <Package className="plugins-card-file-svg"/>
         <h5>{((plugin[0].toUpperCase() + plugin.slice(1)).length < 39) ? (plugin[0].toUpperCase() + plugin.slice(1)) : (plugin[0].toUpperCase() + plugin.slice(1)).slice(0, 35) + "..."}</h5>
@@ -293,7 +288,14 @@ function App() {
                   <h5 className="uptime-card-title">Время работы</h5>
                 </div>
                 <div style={{display: "flex", flexDirection: "row", alignItems: "center"}}>
-                  <h3 style={{fontSize: "30px", marginTop: "10px"}}>{uptime_hours ? uptime_hours : "-"}ч {uptime_minutes ? uptime_minutes : "-"}м {uptime_seconds ? uptime_seconds : "-"}с</h3>
+                  <h3 style={{fontSize: "30px", marginTop: "10px"}}>{uptime && typeof uptime === 'string' ? (
+                    <>
+                      {uptime.split(":")[0] !== "0" ? uptime.split(":")[0] + "д " : ""}
+                      {uptime.split(":")[1] !== "0" ? uptime.split(":")[1] + "ч " : ""}
+                      {uptime.split(":")[2] !== "0" ? uptime.split(":")[2] + "м " : ""}
+                      {uptime.split(":")[3] !== "0" ? uptime.split(":")[3] + "с " : "0с"}
+                    </>) : "0с"}
+                  </h3>
                 </div>
               </div>
             </div>
