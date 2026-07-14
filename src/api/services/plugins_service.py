@@ -137,22 +137,25 @@ class PluginsService:
                 continue
 
             downloaded: list[str] = []
-            files_value = item.get("files")
+            files_value: Any = item.get("files")
 
-            if isinstance(files_value, list):
-                for file in files_value:
-                    if not isinstance(file, dict):
-                        continue
+            if not isinstance(files_value, list) or not files_value:
+                continue
 
-                    filename_value = file.get("filename")
-                    if not isinstance(filename_value, str):
-                        continue
+            file: Any = files_value[0]
+            if not isinstance(file, dict):
+                continue
 
-                    download_url = file.get("url")
+            download_url = file.get("url")
 
-                    file_path = self.plugins_dir / filename_value
-                    await self.api_client.download_plugin(download_url, file_path)
-                    downloaded.append(filename_value)
+            if not isinstance(download_url, str):
+                continue
+
+            file_name = plugin_id_or_slug + ".jar"
+
+            file_path = self.plugins_dir / file_name
+            await self.api_client.download_plugin(download_url, file_path)
+            downloaded.append(file_name)
 
             return downloaded
         raise PluginVersionNotFoundError(

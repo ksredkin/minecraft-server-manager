@@ -162,6 +162,7 @@ async def test_install_plugin(tmp_path: Any) -> None:
             "files": [
                 {"filename": "plugin.jar", "url": "https://example.com/plugin.jar"}
             ],
+            "slug": "plugin",
         }
     ]
 

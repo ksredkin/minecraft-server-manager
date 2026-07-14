@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu} from 'lucide-react'
+import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash} from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -30,7 +30,13 @@ function App() {
   const big_logsRef = useRef(null)
   const big_console_input = useRef(null)
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("")
+  const [search_installed_plugins, setSearchInstalledPlugins] = useState("")
+
+  const [search_plugins_input_value, setSearchPluginsInputValue] = useState("")
+  const [searched_plugins, setSearchedPlugins] = useState([])
+  const [installingPlugins, setInstallingPlugins] = useState([])
+  const search_plugins_timer = useRef(null)
 
 
   const send_command = async (command) => {
@@ -75,7 +81,7 @@ function App() {
   const get_server_status = async () => {
     try {
       const result = await fetch(API_URL + "info")
-      const data = await result.json();
+      const data = await result.json()
       setApiWorks(true)
       return data
     } catch (error) {
@@ -89,6 +95,47 @@ function App() {
     return await result.json()
   }
 
+  const delete_plugin = async (plugin) => {
+    await fetch(API_URL + "plugins/delete/" + plugin, {method: "DELETE"})
+  }
+
+  const search_plugins = async (query) => {
+    const result = await fetch(API_URL + "plugins/search/?query=" + query)
+    return await result.json()
+  }
+
+  const install_plugin = async (project_id_or_slug) => {
+    await fetch(API_URL + "plugins/install/" + project_id_or_slug, {method: "POST"})
+  }
+
+
+  const handle_install_plugin = async (slug) => {
+    setInstallingPlugins(prev => [...prev, slug])
+
+    try {
+        await install_plugin(slug)
+    } finally {
+        setInstallingPlugins(prev => prev.filter(plugin => plugin !== slug))
+    }
+  }
+  
+  const create_smart_search_plugins_timer = async (plugin) => {
+    if (search_plugins_timer.current) clearTimeout(search_plugins_timer.current)
+    if (plugin == "") return setSearchedPlugins([])
+
+    search_plugins_timer.current = setTimeout(async () => {
+      const result = await search_plugins(plugin)
+      setSearchedPlugins(result.data.plugins)
+    }, 1000)
+  }
+  
+  const handle_delete_plugin_button = async (plugin_to_delete) => {
+    setPlugins(prev => {
+        let updated = [...prev].filter(plugin => plugin !== plugin_to_delete)
+        return updated
+    })
+    await delete_plugin(plugin_to_delete)
+  }
 
   const check_server_status = async () => {
     const data = await get_server_status()
@@ -252,9 +299,39 @@ function App() {
     )
   })
 
+  const filtered_installed_plugins = plugins.filter(plugin => plugin.toLowerCase().includes((search_installed_plugins.toLowerCase())))
+  const installed_plugins_items = filtered_installed_plugins.map((plugin, index) => {
+    return (
+      <div className="left-big-plugins-card-subcard-items-div-item" key={index}>
+        <Package className="big-plugins-card-subcard-items-div-package-image"/>
+        <h4 className="big-plugins-card-subcard-items-div-item-text">{plugin[0].toUpperCase() +plugin.slice(1)}</h4>
+        <button className="big-plugins-card-subcard-items-div-item-delete-button" onClick={() => delete_plugin(plugin)}><Trash className="big-plugins-card-subcard-items-div-item-delete-button-trash-image"/></button>
+      </div>
+    )
+  })
+
+  const get_install_plugin_button_or_status = (plugin) => {
+    if (plugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Установлен</h4>
+    if (installingPlugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Устанавливается...</h4>
+    return <button className="big-plugins-card-subcard-items-div-item-download-button" onClick={() => handle_install_plugin(plugin.slug)}>Установить</button>
+  }
+
+  const searched_plugins_items = searched_plugins.map((plugin, index) => {
+    return <div key={index} className="big-plugins-card-subcard-items-div-item">
+      <img className="big-plugins-card-subcard-items-div-item-image" src={plugin.icon_url}/>
+      <h3>{plugin.title}</h3>
+      <h4>{plugin.description}</h4>
+      <div className="big-plugins-card-subcard-items-div-item-version-downloads-download-div">
+        <h4 style={{marginTop: "5px"}}>✓ {minecraft_version}</h4>
+        <h4 style={{marginTop: "5px"}}>{plugin.downloads} загрузок</h4>
+        {get_install_plugin_button_or_status(plugin)}
+      </div>
+    </div>
+  })
+
   const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log-row">{log}</h5>})
 
-  const reversed_backups = [...backups].reverse();
+  const reversed_backups = [...backups].reverse()
   const last_backups_backup_items = reversed_backups.map((backup, index) => {
     return <div key={index} className="last-backups-backup-item">
         <File className="last-backups-file-svg"/>
@@ -292,6 +369,10 @@ function App() {
           <button className={(active_section == 3) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(3)}>
             <User className="home-svg"/>
             Игроки
+          </button>
+          <button className={(active_section == 4) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(4)}>
+            <Package className="home-svg"/>
+            Плагины
           </button>
         </div>
         <div className="sidebar-bottom-card">
@@ -427,6 +508,7 @@ function App() {
             </div>
           </div>
         </div>}
+        
         {(active_section == 2) && <div className="screen-2">
           <div className="big-logs-card">
             <div className="logs-card-header">
@@ -443,6 +525,7 @@ function App() {
             </div>
           </div>
         </div>}
+        
         {(active_section == 3) && <div className="screen-3">
           <div className="big-players-card">
             <div className="big-players-card-header">
@@ -453,9 +536,41 @@ function App() {
             </div>
             {(players.length == 0) && <h4 className="big-players-cardno-players-text">Сервер пуст</h4>}
             <div className="big-players-card-footer">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="Введите ник игрока..."/>
+              <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
             </div>
           </div>  
+        </div>}
+        
+        {(active_section == 4) && <div className="screen-4">
+          <div className="big-plugins-card">
+            <h2>Плагины</h2>
+            <div className="big-plugins-card-subcards-div">
+              <div className="big-plugins-card-subcard">
+                <div className="big-plugins-card-subcard-header">
+                  <h3 className="big-plugins-card-subcard-header-text">Установленные</h3>
+                </div>
+                <div className="left-big-plugins-card-subcard-items-div">
+                  {installed_plugins_items}
+                  {(plugins.length == 0) && <h4 className="big-plugins-card-subcard-no-plugins-text">Плагинов нет</h4>}
+                </div>
+                <div className="big-plugins-card-subcard-footer">
+                  <input value={search_installed_plugins} onChange={(e) => setSearchInstalledPlugins(e.target.value)} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
+                </div>
+              </div>
+              <div className="big-plugins-card-subcard">
+                <div className="big-plugins-card-subcard-header">
+                  <h3 className="big-plugins-card-subcard-header-text">Найти и установить</h3>
+                </div>
+                <div className="big-plugins-card-subcard-items-div">
+                  {searched_plugins_items}
+                  {(searched_plugins_items.length == 0) && <h4 className="big-plugins-card-subcard-no-plugins-text">Плагинов нет</h4>}
+                </div>
+                <div className="big-plugins-card-subcard-footer">
+                  <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value);create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>}
       </div>
     </div>

@@ -4,18 +4,18 @@ from unittest.mock import patch
 from src.api.services.metrics_service import MetricsService, get_metrics_service
 
 
-def test_get_memory_usage() -> None:
+def test_get_ram_usage() -> None:
     memory = SimpleNamespace(total=3 * 1024**3, used=1024**3)
 
     with patch("src.api.services.metrics_service.virtual_memory", return_value=memory):
-        result = MetricsService.get_memory_usage()
+        result = MetricsService.get_ram_usage()
 
     assert result == {"total": 3, "used": 1}
 
 
 def test_get_cpu_usage() -> None:
     with patch("src.api.services.metrics_service.cpu_percent", return_value=42):
-        result = MetricsService.get_cpu_usage()
+        result = MetricsService.get_cpu_percent()
 
     assert result == {"percent": 42}
 
