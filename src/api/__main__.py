@@ -14,6 +14,7 @@ from src.api.routers.plugins import plugins_router
 from src.api.routers.properties import properties_router
 from src.api.routers.server import server_router
 from src.api.services.process_service import ProcessService, get_process_service
+from src.api.routers.metrics import metrics_router
 
 
 @asynccontextmanager
@@ -49,6 +50,7 @@ def main() -> None:
     app.include_router(eula_router)
     app.include_router(plugins_router)
     app.include_router(properties_router)
+    app.include_router(metrics_router)
 
     uvicorn.run(app, host=API_HOST, port=API_PORT)
 

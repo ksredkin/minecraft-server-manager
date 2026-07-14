@@ -402,6 +402,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: row;
   align-items: center;
   padding: 10px;
+  flex-shrink: 0;
 }
 
 .online-player-item-text {
@@ -421,12 +422,13 @@ h1, h2, h3, h4, h5, h6 {
   padding-left: 10px;
   margin-top: auto;
   padding-right: 10px;
+  min-height: 0;
 }
 
 .online-players-card-footer-button {
   border-radius: 8px;
   width: 100%;
-  min-height: 35px;
+  height: 35px;
   background-color: #1F2A38;
   color: #8F9CA8;
   border: #263443 solid 2px;
@@ -613,11 +615,66 @@ h1, h2, h3, h4, h5, h6 {
 .online-players-card-no-players-text {
   color: #86909F;
   text-align: center;
-  margin-top: auto;
+  flex: 1;
 }
 
 .background {
   display: flex;
   flex-direction: row;
   flex: 1;
+}
+
+.ram-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 10px;
+  max-height: 210px;
+  align-items: center;
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+}
+
+.ram-card-memory-stick-svg {
+  width: 40px;
+  height: 40px;
+  stroke: #db0000;
+  margin-right: 10px;
+}
+
+.ram-card-header-div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.online-players-card-items-div {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.online-players-card-items-div::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 40px;
+
+    pointer-events: none;
+
+    background: linear-gradient(
+        to bottom,
+        rgba(19, 28, 39, 0),
+        #131C27 100%
+    );
 }

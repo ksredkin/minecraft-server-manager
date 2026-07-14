@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import {Home, Terminal, Clock, User, Save, Package, Settings, File} from 'lucide-react'
+import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick} from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -15,6 +15,9 @@ function App() {
   const [backups, setBackups] = useState([])
   const [plugins, setPlugins] = useState([])
   const [uptime, setUptime] = useState("0:0:0:0")
+
+  const [ram_total, setRamTotal] = useState(undefined)
+  const [ram_used, setRamUsed] = useState(undefined)
   
   const [active_section, setActiveSection] = useState(1)
   
@@ -30,6 +33,11 @@ function App() {
   const send_command = async (command) => {
       if (!command) return undefined
       const result = await fetch(API_URL + "command?command=" + command, {method: "POST"})
+  }
+
+  const get_ram_usage = async () => {
+      const result = await fetch(API_URL + "metrics/ram")
+      return result.json()
   }
 
   const start_server = async () => {
@@ -108,6 +116,14 @@ function App() {
     }
   }
 
+  const check_ram_usage = async () => {
+    const result = await get_ram_usage()
+    if (result.data !== undefined) {
+      setRamTotal(result.data.total)
+      setRamUsed(result.data.used)
+    }
+  }
+
   const check_server_plugins = async () => {
     const result = await get_plugins()
     if (result.data !== undefined) {
@@ -168,10 +184,12 @@ function App() {
     check_server_status()
     check_server_backups()
     check_server_plugins()
+    check_ram_usage()
     const interval = setInterval(async () => {
       check_server_status()
       check_server_backups()
       check_server_plugins()
+      check_ram_usage()
     }, 1000)
     return () => {clearTimeout(interval)}
   }, [])
@@ -299,13 +317,22 @@ function App() {
                 </div>
               </div>
             </div>
+            <div className="ram-card">
+              <div className="ram-card-header-div">
+                <MemoryStick className="ram-card-memory-stick-svg" />
+                <h5>RAM</h5>
+              </div>
+              <h2 style={{marginTop: "8px"}}>{ram_used ? ram_used : "-"}GB / {ram_total ? ram_total : "-"}GB</h2>
+            </div>
           </div>
           <div className="blocks2-div">
             <div className="online-players-card">
               <div className="online-players-card-header">
                 <h3 className="online-players-card-header-text">Список игроков</h3>
               </div>
-              {players_items}
+              <div className="online-players-card-items-div">
+                {players_items}
+              </div>
               {(players.length == 0) && <h4 className="online-players-card-no-players-text">Сервер пуст</h4>}
               <div className="online-players-card-footer">
                 <button onClick={() => setActiveSection(3)} className="online-players-card-footer-button">Все игроки ({players.length}) →</button>
