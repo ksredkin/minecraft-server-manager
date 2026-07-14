@@ -1,4 +1,4 @@
-from psutil import virtual_memory
+from psutil import virtual_memory, cpu_percent
 
 
 class MetricsService:
@@ -6,6 +6,11 @@ class MetricsService:
     def get_ram_usage() -> dict[str, int]:
         ram = virtual_memory()
         return {"total": round(ram.total / 1024**3, 1), "used": round(ram.used / 1024**3, 1)}
+    
+    @staticmethod
+    def get_cpu_percent() -> dict[str, int]:
+        percent = cpu_percent(interval=1)
+        return {"percent": percent}
 
 
 service = MetricsService()

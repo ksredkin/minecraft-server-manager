@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick} from 'lucide-react'
+import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu} from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -18,7 +18,8 @@ function App() {
 
   const [ram_total, setRamTotal] = useState(undefined)
   const [ram_used, setRamUsed] = useState(undefined)
-  
+  const [cpu_percent, setCpuPercent] = useState(undefined)
+
   const [active_section, setActiveSection] = useState(1)
   
   let logs_websocket = useRef(null)
@@ -37,6 +38,11 @@ function App() {
 
   const get_ram_usage = async () => {
       const result = await fetch(API_URL + "metrics/ram")
+      return result.json()
+  }
+
+  const get_cpu_percent = async () => {
+      const result = await fetch(API_URL + "metrics/cpu")
       return result.json()
   }
 
@@ -124,6 +130,13 @@ function App() {
     }
   }
 
+  const check_cpu_percent = async () => {
+    const result = await get_cpu_percent()
+    if (result.data !== undefined) {
+      setCpuPercent(result.data.percent)
+    }
+  }
+
   const check_server_plugins = async () => {
     const result = await get_plugins()
     if (result.data !== undefined) {
@@ -185,11 +198,13 @@ function App() {
     check_server_backups()
     check_server_plugins()
     check_ram_usage()
+    check_cpu_percent()
     const interval = setInterval(async () => {
       check_server_status()
       check_server_backups()
       check_server_plugins()
       check_ram_usage()
+      check_cpu_percent()
     }, 1000)
     return () => {clearTimeout(interval)}
   }, [])
@@ -198,14 +213,14 @@ function App() {
     const container = big_logsRef.current
     if (!container) return undefined
 
-    if (container.scrollHeight - container.scrollTop - container.clientHeight < 50) container.scrollTop = container.scrollHeight      
+    if (container.scrollHeight - container.scrollTop - container.clientHeight < 100) container.scrollTop = container.scrollHeight      
   }, [logs])
 
   useEffect(() => {
     const container = logsRef.current
     if (!container) return undefined
 
-    if (container.scrollHeight - container.scrollTop - container.clientHeight < 50) container.scrollTop = container.scrollHeight      
+    if (container.scrollHeight - container.scrollTop - container.clientHeight < 100) container.scrollTop = container.scrollHeight      
   }, [logs])
 
   useEffect(() => {
@@ -323,6 +338,14 @@ function App() {
                 <h5>RAM</h5>
               </div>
               <h2 style={{marginTop: "8px"}}>{ram_used ? ram_used : "-"}GB / {ram_total ? ram_total : "-"}GB</h2>
+            </div>
+
+            <div className="cpu-card">
+              <div className="cpu-card-header-div">
+                <Cpu className="cpu-card-cpu-svg"/>
+                <h5>CPU</h5>
+              </div>
+              <h2 style={{marginTop: "8px"}}>{cpu_percent ? cpu_percent : "-"}%</h2>
             </div>
           </div>
           <div className="blocks2-div">

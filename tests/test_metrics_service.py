@@ -13,6 +13,13 @@ def test_get_memory_usage() -> None:
     assert result == {"total": 3, "used": 1}
 
 
+def test_get_cpu_usage() -> None:
+    with patch("src.api.services.metrics_service.cpu_percent", return_value=42):
+        result = MetricsService.get_cpu_usage()
+
+    assert result == {"percent": 42}
+
+
 def test_get_metrics_service_returns_singleton() -> None:
     service1 = get_metrics_service()
     service2 = get_metrics_service()
