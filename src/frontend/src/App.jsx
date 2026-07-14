@@ -30,6 +30,8 @@ function App() {
   const big_logsRef = useRef(null)
   const big_console_input = useRef(null)
 
+  const [search, setSearch] = useState("");
+
 
   const send_command = async (command) => {
       if (!command) return undefined
@@ -238,6 +240,18 @@ function App() {
     )
   })
 
+  const filtered_players_to_big_card = players.filter(player => player.toLowerCase().includes((search.toLowerCase())))
+  const big_players_card_items = filtered_players_to_big_card.map((player, index) => {
+    return (
+      <div className="big-players-card-item" key={index}>
+        <img className="big-players-card-item-image" src="steve.png" alt="player" width="35px" height="35px" />
+        <h4 className="big-players-card-item-text">{player}</h4>
+        <button className="big-players-card-item-kick-button" onClick={() => send_command("kick " + player)}>Кикнуть</button>
+        <button className="big-players-card-item-ban-button" onClick={() => send_command("ban " + player)}>Бан</button>
+      </div>
+    )
+  })
+
   const logs_rows = logs.map((log, index) => {return <h5 key={index} className="log-row">{log}</h5>})
 
   const reversed_backups = [...backups].reverse();
@@ -254,6 +268,7 @@ function App() {
         <h5>{((plugin[0].toUpperCase() + plugin.slice(1)).length < 39) ? (plugin[0].toUpperCase() + plugin.slice(1)) : (plugin[0].toUpperCase() + plugin.slice(1)).slice(0, 35) + "..."}</h5>
       </div>
   })
+
 
   return (
     <div className="background">
@@ -273,6 +288,10 @@ function App() {
           <button className={(active_section == 2) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(2)}>
             <Terminal className="home-svg"/>
             Консоль
+          </button>
+          <button className={(active_section == 3) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(3)}>
+            <User className="home-svg"/>
+            Игроки
           </button>
         </div>
         <div className="sidebar-bottom-card">
@@ -379,7 +398,7 @@ function App() {
           </div>
           <div className="blocks3-div">
             <div className="fast-actions-card">
-              <h3 style={{marginBottom: "5px"}}>Быстрые действия</h3>
+              <h3 style={{marginBottom: "8px"}}>Быстрые действия</h3>
               <button className="fast-action-button" onClick={() => {setActiveSection(5)}}><Save className="fast-action-icon"/>Создать бэкап</button>
               <button className="fast-action-button" onClick={() => {setActiveSection(6)}}><Settings className="fast-action-icon"/>Открыть server.properties</button>
               <button className="fast-action-button" onClick={() => {setActiveSection(4)}}><Package className="fast-action-icon"/>Установить плагин</button>
@@ -390,6 +409,9 @@ function App() {
               <div className="last-backups-backups-items-div">
                 {last_backups_backup_items}
               </div>
+              <div className="last-backups-card-no-backups-text-div">
+                {(backups.length == 0) && <h4 className="last-backups-card-no-backups-text">Бэкапов нет</h4>}
+              </div>
               <button onClick={() => setActiveSection(5)} className="last-backups-card-footer-button">Все бэкапы →</button>
             </div>
 
@@ -397,6 +419,9 @@ function App() {
               <h3 style={{marginBottom: "5px"}}>Установленные плагины</h3>
               <div className="plugins-card-items-div">
                 {plugins_card_plugins_items}
+              </div>
+              <div className="plugins-card-no-plugins-text-div">
+                {(plugins.length == 0) && <h4 className="plugins-card-no-plugins-text">Плагинов нет</h4>}
               </div>
               <button onClick={() => setActiveSection(4)} className="plugins-card-footer-button">Все плагины →</button>
             </div>
@@ -417,6 +442,20 @@ function App() {
               <button className="logs-card-send-button" onClick={handle_big_console_send_button}>Отправить</button>
             </div>
           </div>
+        </div>}
+        {(active_section == 3) && <div className="screen-3">
+          <div className="big-players-card">
+            <div className="big-players-card-header">
+              <h3 className="big-players-card-header-text">Игроки</h3>
+            </div>
+            <div className="big-players-card-items-div">
+              {big_players_card_items}
+            </div>
+            {(players.length == 0) && <h4 className="big-players-cardno-players-text">Сервер пуст</h4>}
+            <div className="big-players-card-footer">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="Введите ник игрока..."/>
+            </div>
+          </div>  
         </div>}
       </div>
     </div>
