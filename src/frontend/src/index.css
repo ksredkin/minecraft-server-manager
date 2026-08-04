@@ -4,6 +4,18 @@ html, body, #root {
   background-color: #07101A;
 }
 
+button {
+  cursor: pointer;
+  transition:
+    background-color .15s ease,
+    transform .1s ease,
+    border-color .15s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
 .screen-1 {
   margin: 20px;
   display: flex;
@@ -1156,5 +1168,296 @@ h1, h2, h3, h4, h5, h6 {
 .big-plugins-card-subcard-items-div-item-downloaded-text {
   margin-left: auto;
   margin-right: 10px;
+  color: #86909F;
+}
+
+.screen-5 {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.backups-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 6px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.backups-card-header {
+  background-color: #111B26;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.backups-card-subheader {
+  background-color: #111B26;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.backups-card-subheader-button {
+  border-radius: 5px;
+  width: 110px;
+  height: 35px;
+  background-color: #26a550;
+  color: white;
+  border: none;
+  margin-left: 10px;
+}
+
+.backups-card-subheader-button:hover {
+  background-color: #2eb85c;
+}
+
+.backups-card-header-text {
+  margin-left: 15px;
+}
+
+.backups-card-footer {
+  background-color: #111B26;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-top: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.backups-card-footer-input {
+  background-color: #17232F;
+  border: 2px solid #182533;
+  border-radius: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: white;
+  margin-left: 10px;
+  margin-right: 10px;
+  flex: 1;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.backups-card-footer-input:focus {
+  border-color: #0D82D6;
+  box-shadow: 0 0 0 2px rgba(13, 130, 214, 0.3);
+}
+
+.backups-card-footer-input::placeholder {
+  color: #3E4A57;
+}
+
+.backups-card-footer-input:focus {
+  outline: none;
+}
+
+.backups-card-items-div {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  gap: 15px;
+  padding: 10px;
+  min-width: 0;
+
+  scrollbar-width: thin;
+  scrollbar-color: #222E3C #131C27;
+
+  &::-webkit-scrollbar {
+    width: 8px; 
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #131C27; 
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #222E3C; 
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #0D82D6; 
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  &::-webkit-scrollbar-button { size: 0; }
+}
+
+.backups-card-items-div-no-items-text {
+  color: #86909F;
+  text-align: center;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.backups-card-item-is-creating {
+  margin-left: 15px;
+  color: #86909F;
+}
+
+.backups-card-subheader-backups-total-text {
+  margin-left: auto;
+  margin-right: 10px;
+  color: #86909F;
+}
+
+.backups-card-items-div-item {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  align-items: center;
+  min-width: 0;
+  transition: background-color 0.15s ease;
+}
+
+.backups-card-items-div-item:hover {
+  background-color: #17222E;
+}
+
+.backups-card-items-div-item-image {
+  stroke: #86909F;
+  width: 25px;
+  height: 25px;
+}
+
+.backups-card-items-div-item-restore-button {
+  border-radius: 5px;
+  width: 110px;
+  height: 35px;
+  background-color: #26a550;
+  color: white;
+  border: none;
+  margin-left: auto;
+}
+
+.backups-card-items-div-item-restore-button:hover {
+  background-color: #2eb85c;
+}
+
+.backups-card-items-div-item-delete-button {
+  border-radius: 5px;
+  width: 110px;
+  height: 35px;
+  background-color: #B92D2D;
+  color: white;
+  border: none;
+}
+
+.backups-card-items-div-item-delete-button:hover {
+  background-color: #cf3636;
+}
+
+.confirm-action-card-background {
+  background-color: #131c27cb;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.confirm-action-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  position: absolute;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  min-width: 420px;
+  box-shadow: 0 10px 30px #00000059;
+}
+
+.confirm-action-card-confirm-button {
+  border-radius: 5px;
+  width: 110px;
+  height: 35px;
+  color: white;
+  border: none;
+  margin-left: auto;
+  transition:
+    background-color .15s ease,
+    transform .1s ease,
+    border-color .15s ease;
+}
+
+.confirm-action-card-confirm-button-danger {
+  background-color: #B92D2D;
+}
+
+.confirm-action-card-confirm-button-danger:hover {
+  background: #cf3636;
+}
+
+.confirm-action-card-confirm-button-success {
+  background-color: #26a550;
+}
+
+.confirm-action-card-confirm-button-success:hover {
+  background: #2eb85c;
+}
+
+.confirm-action-card-cancel-button {
+  border-radius: 5px;
+  width: 110px;
+  height: 35px;
+  background-color: #202C39;
+  color: white;
+  border: 2px solid #263443;
+  margin-right: auto;
+}
+
+.confirm-action-card-cancel-button:hover {
+  background: #273545;
+}
+
+.confirm-action-card-cancel-button:active,
+.confirm-action-card-confirm-button:active {
+  transform: scale(0.98);
+}
+
+.confirm-action-card-buttons-div {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.confirm-action-card-header-description {
   color: #86909F;
 }

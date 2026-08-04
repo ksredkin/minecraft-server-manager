@@ -35,8 +35,20 @@ function App() {
 
   const [search_plugins_input_value, setSearchPluginsInputValue] = useState("")
   const [searched_plugins, setSearchedPlugins] = useState([])
-  const [installingPlugins, setInstallingPlugins] = useState([])
+  const [installing_plugins, setInstallingPlugins] = useState([])
   const search_plugins_timer = useRef(null)
+
+  const [search_backups, setSearchBackups] = useState("")
+  const [backup_creates, setBackupCreates] = useState(false)
+
+  const confirm_action_ref = useRef(null)
+  const [confirm_dialog, setConfirmDialog] = useState({
+    show: false,
+    title: "",
+    description: "",
+    confirm_text: "",
+    confirm_type: "success",
+  })
 
 
   const send_command = async (command) => {
@@ -78,6 +90,14 @@ function App() {
     await fetch(API_URL + "backups/", {method: "POST"})
   }
 
+  const delete_backup = async (backup) => {
+    await fetch(API_URL + "backups/" + backup, {method: "DELETE"})
+  }
+
+  const restore_backup = async (backup) => {
+    await fetch(API_URL + "restore/" + backup, {method: "POST"})
+  }
+
   const get_server_status = async () => {
     try {
       const result = await fetch(API_URL + "info")
@@ -100,7 +120,7 @@ function App() {
   }
 
   const search_plugins = async (query) => {
-    const result = await fetch(API_URL + "plugins/search/?query=" + query)
+    const result = await fetch(API_URL + "plugins/search?query=" + query)
     return await result.json()
   }
 
@@ -108,6 +128,32 @@ function App() {
     await fetch(API_URL + "plugins/install/" + project_id_or_slug, {method: "POST"})
   }
 
+
+  const handle_create_backup = async () => {
+    try {
+      setBackupCreates(true)
+      await create_backup()
+    } finally {
+      setBackupCreates(false)
+    }
+  }
+
+  const ask_confirmation = (action, title = "Вы уверены?", description = "Действие невозможно отменить.", confirm_text = "Подтвердить", confirm_type = "success") => {
+    confirm_action_ref.current = action
+    setConfirmDialog({show: true, title: title, description: description, confirm_text: confirm_text, confirm_type: confirm_type})
+  }
+
+  async function handle_confirm() {
+      confirm_action_ref.current = null
+      setConfirmDialog(prev => ({...prev, show: false}))
+
+      if (confirm_action_ref.current) await confirm_action_ref.current()
+  }
+
+  function handle_cancel() {
+      confirm_action_ref.current = null
+      setConfirmDialog(prev => ({...prev, show: false}))
+  }
 
   const handle_install_plugin = async (slug) => {
     setInstallingPlugins(prev => [...prev, slug])
@@ -304,7 +350,7 @@ function App() {
     return (
       <div className="left-big-plugins-card-subcard-items-div-item" key={index}>
         <Package className="big-plugins-card-subcard-items-div-package-image"/>
-        <h4 className="big-plugins-card-subcard-items-div-item-text">{plugin[0].toUpperCase() +plugin.slice(1)}</h4>
+        <h4 className="big-plugins-card-subcard-items-div-item-text">{plugin[0].toUpperCase() + plugin.slice(1)}</h4>
         <button className="big-plugins-card-subcard-items-div-item-delete-button" onClick={() => delete_plugin(plugin)}><Trash className="big-plugins-card-subcard-items-div-item-delete-button-trash-image"/></button>
       </div>
     )
@@ -312,7 +358,7 @@ function App() {
 
   const get_install_plugin_button_or_status = (plugin) => {
     if (plugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Установлен</h4>
-    if (installingPlugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Устанавливается...</h4>
+    if (installing_plugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Устанавливается...</h4>
     return <button className="big-plugins-card-subcard-items-div-item-download-button" onClick={() => handle_install_plugin(plugin.slug)}>Установить</button>
   }
 
@@ -337,6 +383,16 @@ function App() {
         <File className="last-backups-file-svg"/>
         <h5>{backup}</h5>
       </div>
+  })
+
+  const filtered_backups = reversed_backups.filter(backup => backup.toLowerCase().includes(search_backups.toLowerCase()))
+  const backups_items = filtered_backups.map((backup, index) => {
+    return <div key={index} className="backups-card-items-div-item">
+      <File className="backups-card-items-div-item-image"/>
+      <h5 className="backups-card-items-div-item-text">{backup}</h5>
+      <button className="backups-card-items-div-item-restore-button" onClick={() => {ask_confirmation(() => restore_backup(backup), "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
+      <button className="backups-card-items-div-item-delete-button" onClick={() => {ask_confirmation(() => delete_backup(backup), "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
+    </div>
   })
 
   const plugins_card_plugins_items = plugins.map((plugin, index) => {
@@ -373,6 +429,10 @@ function App() {
           <button className={(active_section == 4) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(4)}>
             <Package className="home-svg"/>
             Плагины
+          </button>
+          <button className={(active_section == 5) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(5)}>
+            <File className="home-svg"/>
+            Бэкапы
           </button>
         </div>
         <div className="sidebar-bottom-card">
@@ -569,6 +629,39 @@ function App() {
                   <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value);create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>}
+
+        {(active_section == 5) && <div className="screen-5">
+          <div className="backups-card">
+            <div className="backups-card-header">
+              <h3 className="backups-card-header-text">Бэкапы</h3>
+            </div>
+
+            <div className="backups-card-subheader">
+              {backup_creates ? <h4 className="backups-card-item-is-creating">Создается бэкап...</h4> : <button className="backups-card-subheader-button" onClick={handle_create_backup}>Создать бэкап</button>}
+              <h4 className="backups-card-subheader-backups-total-text">Всего: {backups.length}</h4>
+            </div>
+
+            <div className="backups-card-items-div">
+              {backups_items}
+              {(backups_items.length == 0) && <h4 className="backups-card-items-div-no-items-text">Бэкапов нет</h4>}
+            </div>
+
+            <div className="backups-card-footer">
+              <input value={search_backups} onChange={(e) => {setSearchBackups(e.target.value)}} type="text" className="backups-card-footer-input" placeholder="🔍︎ Введите имя бэкапа..."/>
+            </div>
+          </div>
+        </div>}
+
+        {confirm_dialog.show && <div className="confirm-action-card-background">
+          <div className="confirm-action-card">
+            <h3 className="confirm-action-card-header-text">{confirm_dialog.title}</h3>
+            <h5 className="confirm-action-card-header-description">{confirm_dialog.description}</h5>
+            <div className="confirm-action-card-buttons-div">
+              <button className={"confirm-action-card-confirm-button confirm-action-card-confirm-button-" + confirm_dialog.confirm_type} onClick={handle_confirm}>{confirm_dialog.confirm_text}</button>
+              <button className="confirm-action-card-cancel-button" onClick={handle_cancel}>Отмена</button>
             </div>
           </div>
         </div>}
