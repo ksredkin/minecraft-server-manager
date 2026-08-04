@@ -10,6 +10,8 @@ button {
     background-color .15s ease,
     transform .1s ease,
     border-color .15s ease;
+  transform-origin: center;
+  backface-visibility: hidden;
 }
 
 button:active {
@@ -104,46 +106,46 @@ h1, h2, h3, h4, h5, h6 {
 
 .sections-div {
   background-color: #0B1622;
-  margin: 0;
   padding: 15px;
   gap: 5px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
 }
 
+.section-button,
 .active-section-button {
-  margin: 0px;
-  width: 100%;
-  padding-top: 7px;
-  padding-bottom: 13px;
-  font-size: medium;
-  border: 2px #174336 solid;
-  border-radius: 8px;
-  background-color: #13212C;
-  color: #26a550;
-  text-align: left;
+    min-height: 45px;
+    width: 100%;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding-left: 15px;
+
+    border-radius: 8px;
+    font-size: medium;
+    text-align: left;
 }
 
 .section-button {
-  margin: 0px;
-  width: 100%;
-  padding-top: 7px;
-  padding-bottom: 13px;
-  font-size: medium;
-  border-radius: 8px;
-  border: 2px #0B1622 solid;
-  background-color: #0B1622;
-  color: #A2ACBA;
-  text-align: left;
+    background: #0B1622;
+    border: 2px solid #0B1622;
+    color: #A2ACBA;
 }
 
-.home-svg {
-  width: 20px;
-  height: 20px;
-  top: 3.5px;
-  right: 10px;
-  margin-left: 25px;
-  position: relative;
+.active-section-button {
+    background: #13212C;
+    border: 2px solid #174336;
+    color: #26A550;
+}
+
+.section-button-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .server-works-status {
@@ -356,10 +358,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: 10px;
   margin-right: auto;
   width: 100%;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.logs-card-input:focus {
+  border-color: #2B3C4D;
+  background-color: #192734;
 }
 
 .logs-card-input::placeholder {
-  color: #3E4A57;
+  color: #6C7785;
 }
 
 .logs-card-input:focus {
@@ -789,10 +800,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: 10px;
   margin-right: 10px;
   width: 100%;
+  
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.big-players-card-footer-input:focus {
+  border-color: #2B3C4D;
+  background-color: #192734;
 }
 
 .big-players-card-footer-input::placeholder {
-  color: #3E4A57;
+  color: #6C7785;
 }
 
 .big-players-card-footer-input:focus {
@@ -1046,10 +1066,19 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: 10px;
   margin-right: 10px;
   flex: 1;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.big-plugins-card-subcard-footer-input:focus {
+  border-color: #2B3C4D;
+  background-color: #192734;
 }
 
 .big-plugins-card-subcard-footer-input::placeholder {
-  color: #3E4A57;
+  color: #6C7785;
 }
 
 .big-plugins-card-subcard-footer-input:focus {
@@ -1190,6 +1219,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 6px;
   min-height: 0;
   min-width: 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
 }
 
 .backups-card-header {
@@ -1262,12 +1292,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .backups-card-footer-input:focus {
-  border-color: #0D82D6;
-  box-shadow: 0 0 0 2px rgba(13, 130, 214, 0.3);
+  border-color: #2B3C4D;
+  background-color: #192734;
 }
 
 .backups-card-footer-input::placeholder {
-  color: #3E4A57;
+  color: #6C7785;
 }
 
 .backups-card-footer-input:focus {
@@ -1280,8 +1310,6 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 0;
   flex: 1;
   overflow: auto;
-  gap: 15px;
-  padding: 10px;
   min-width: 0;
 
   scrollbar-width: thin;
@@ -1338,6 +1366,10 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   min-width: 0;
   transition: background-color 0.15s ease;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .backups-card-items-div-item:hover {
@@ -1348,6 +1380,12 @@ h1, h2, h3, h4, h5, h6 {
   stroke: #86909F;
   width: 25px;
   height: 25px;
+  transition: stroke 0.15s ease;
+}
+
+.backups-card-items-div-item:hover
+.backups-card-items-div-item-image {
+  stroke: #acb8c9;
 }
 
 .backups-card-items-div-item-restore-button {
@@ -1358,6 +1396,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
   border: none;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .backups-card-items-div-item-restore-button:hover {
@@ -1371,6 +1410,7 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #B92D2D;
   color: white;
   border: none;
+  flex-shrink: 0;
 }
 
 .backups-card-items-div-item-delete-button:hover {

@@ -144,10 +144,9 @@ function App() {
   }
 
   async function handle_confirm() {
-      confirm_action_ref.current = null
       setConfirmDialog(prev => ({...prev, show: false}))
-
       if (confirm_action_ref.current) await confirm_action_ref.current()
+      confirm_action_ref.current = null
   }
 
   function handle_cancel() {
@@ -390,8 +389,8 @@ function App() {
     return <div key={index} className="backups-card-items-div-item">
       <File className="backups-card-items-div-item-image"/>
       <h5 className="backups-card-items-div-item-text">{backup}</h5>
-      <button className="backups-card-items-div-item-restore-button" onClick={() => {ask_confirmation(() => restore_backup(backup), "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
-      <button className="backups-card-items-div-item-delete-button" onClick={() => {ask_confirmation(() => delete_backup(backup), "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
+      <button className="backups-card-items-div-item-restore-button" onClick={() => {ask_confirmation(() => {restore_backup(backup)}, "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
+      <button className="backups-card-items-div-item-delete-button" onClick={() => {ask_confirmation(() => {delete_backup(backup)}, "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
     </div>
   })
 
@@ -415,23 +414,23 @@ function App() {
         </div>
         <div className="sections-div">
           <button className={(active_section == 1) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(1)}>
-            <Home className="home-svg"/>
+            <Home className="section-button-icon"/>
             Панель управления
           </button>
           <button className={(active_section == 2) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(2)}>
-            <Terminal className="home-svg"/>
+            <Terminal className="section-button-icon"/>
             Консоль
           </button>
           <button className={(active_section == 3) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(3)}>
-            <User className="home-svg"/>
+            <User className="section-button-icon"/>
             Игроки
           </button>
           <button className={(active_section == 4) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(4)}>
-            <Package className="home-svg"/>
+            <Package className="section-button-icon"/>
             Плагины
           </button>
           <button className={(active_section == 5) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(5)}>
-            <File className="home-svg"/>
+            <File className="section-button-icon"/>
             Бэкапы
           </button>
         </div>
