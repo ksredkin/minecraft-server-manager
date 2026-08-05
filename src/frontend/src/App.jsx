@@ -10,7 +10,7 @@ function App() {
   const [server_works_level, setServerWorksLevel] = useState(0)
   const [server_software, setServerSoftware] = useState(undefined)
   const [minecraft_version, setMinecraftVersion] = useState(undefined)
-  const [players, setPlayers] = useState(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
+  const [players, setPlayers] = useState([])
   const [max_players, setMaxPlayers] = useState(0)
   const [backups, setBackups] = useState([])
   const [plugins, setPlugins] = useState([])
@@ -49,6 +49,8 @@ function App() {
     confirm_text: "",
     confirm_type: "success",
   })
+
+  const server_works_level_texts = {0: "Сервер выключен", 1: "Сервер запускается", 2: "Сервер работает", 3: "Сервер выключается"}
 
 
   const send_command = async (command) => {
@@ -437,9 +439,9 @@ function App() {
         <div className="sidebar-bottom-card">
           <div className="msm-api-works-header">
             <h4 style={{color: "rgb(215, 215, 215)"}}>MSM API</h4>
-            <div className="circle" style={{background: (api_works == false) ? "#de0a0a" : "#26a550", width: "10px", height: "10px", marginTop: "6px", marginLeft: "auto"}}></div>
+            <div className="circle" style={{backgroundColor: (api_works == false) ? "#de0a0a" : "#26a550", width: "10px", height: "10px", marginTop: "6px", marginLeft: "auto", transition: "background-color 0.15s ease"}}></div>
           </div>
-          <h5 style={{color: (api_works == false) ? "#de0a0a" : "#26a550", marginTop: "-10px"}}>{(api_works == false) ? "Отключено" : "Подключено"}</h5>
+          <h5 style={{color: (api_works == false) ? "#de0a0a" : "#26a550", marginTop: "-10px", transition: "color 0.15s ease"}}>{(api_works == false) ? "Отключено" : "Подключено"}</h5>
         </div>
       </div>
       <div className="content">
@@ -448,12 +450,9 @@ function App() {
           <div className="blocks1-div">
             <div className="block-background">
               <div style={{display: "flex"}}>
-                <div className="circle" style={{background: (server_works_level == 0) ? "#de0a0a" : "#26a550"}}></div>
+                <div className={"circle server-works-circle-level-" + server_works_level}></div>
                 <div style={{marginLeft: "5px"}}>
-                  {(server_works_level == 0) && <h2 className="server-works-status" style={{color: "#de0a0a"}}>Сервер выключен</h2>}
-                  {(server_works_level == 1) && <h2 className="server-works-status" style={{color: "#208d44"}}>Сервер запускается</h2>}
-                  {(server_works_level == 2) && <h2 className="server-works-status" style={{color: "#26a550"}}>Сервер работает</h2>}
-                  {(server_works_level == 3) && <h2 className="server-works-status" style={{color: "#208d44"}}>Сервер выключается</h2>}
+                  <h2 className={"server-works-status server-works-status-level-" + server_works_level}>{server_works_level_texts[server_works_level]}</h2>
                   <h5 className="software-and-version-text">{(server_software !== undefined) ? server_software : "-"} {(minecraft_version !== undefined) ? minecraft_version : "-"}</h5>
                 </div>
               </div>
@@ -593,7 +592,7 @@ function App() {
             <div className="big-players-card-items-div">
               {big_players_card_items}
             </div>
-            {(players.length == 0) && <h4 className="big-players-cardno-players-text">Сервер пуст</h4>}
+            {(players.length == 0) && <h4 className="big-players-card-no-players-text">Сервер пуст</h4>}
             <div className="big-players-card-footer">
               <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
             </div>
