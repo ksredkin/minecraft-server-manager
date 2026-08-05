@@ -133,6 +133,7 @@ function App() {
 
   const handle_create_backup = async () => {
     try {
+      if (api_works == false) return undefined
       setBackupCreates(true)
       await create_backup()
     } finally {
@@ -340,8 +341,8 @@ function App() {
       <div className="big-players-card-item" key={index}>
         <img className="big-players-card-item-image" src="steve.png" alt="player" width="35px" height="35px" />
         <h4 className="big-players-card-item-text">{player}</h4>
-        <button className="big-players-card-item-kick-button" onClick={() => send_command("kick " + player)}>Кикнуть</button>
-        <button className="big-players-card-item-ban-button" onClick={() => send_command("ban " + player)}>Бан</button>
+        <button className={"big-players-card-item-kick-button button-enabled-" + api_works} onClick={() => send_command("kick " + player)}>Кикнуть</button>
+        <button className={"big-players-card-item-ban-button button-enabled-" + api_works} onClick={() => send_command("ban " + player)}>Бан</button>
       </div>
     )
   })
@@ -352,7 +353,7 @@ function App() {
       <div className="left-big-plugins-card-subcard-items-div-item" key={index}>
         <Package className="big-plugins-card-subcard-items-div-package-image"/>
         <h4 className="big-plugins-card-subcard-items-div-item-text">{plugin[0].toUpperCase() + plugin.slice(1)}</h4>
-        <button className="big-plugins-card-subcard-items-div-item-delete-button" onClick={() => delete_plugin(plugin)}><Trash className="big-plugins-card-subcard-items-div-item-delete-button-trash-image"/></button>
+        <button className={"big-plugins-card-subcard-items-div-item-delete-button button-enabled-" + api_works} onClick={() => delete_plugin(plugin)}><Trash className="big-plugins-card-subcard-items-div-item-delete-button-trash-image"/></button>
       </div>
     )
   })
@@ -391,8 +392,8 @@ function App() {
     return <div key={index} className="backups-card-items-div-item">
       <File className="backups-card-items-div-item-image"/>
       <h5 className="backups-card-items-div-item-text">{backup}</h5>
-      <button className="backups-card-items-div-item-restore-button" onClick={() => {ask_confirmation(() => {restore_backup(backup)}, "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
-      <button className="backups-card-items-div-item-delete-button" onClick={() => {ask_confirmation(() => {delete_backup(backup)}, "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
+      <button className={"backups-card-items-div-item-restore-button button-enabled-" + api_works} onClick={() => {ask_confirmation(() => {restore_backup(backup)}, "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
+      <button className={"backups-card-items-div-item-delete-button button-enabled-" + api_works} onClick={() => {ask_confirmation(() => {delete_backup(backup)}, "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
     </div>
   })
 
@@ -456,9 +457,9 @@ function App() {
                   <h5 className="software-and-version-text">{(server_software !== undefined) ? server_software : "-"} {(minecraft_version !== undefined) ? minecraft_version : "-"}</h5>
                 </div>
               </div>
-              {(server_works_level == 0) && <button className="start-server-button" onClick={start_server}>Запустить</button>}
-              {(server_works_level == 2) && <button className="stop-server-button" onClick={stop_server}>Стоп</button>}
-              {(server_works_level == 2) && <button className="restart-server-button" onClick={restart_server}>Перезапуск</button>}
+              {(server_works_level == 0) && <button className={"start-server-button button-enabled-" + api_works} onClick={start_server}>Запустить</button>}
+              {(server_works_level == 2) && <button className={"stop-server-button button-enabled-" + api_works} onClick={stop_server}>Стоп</button>}
+              {(server_works_level == 2) && <button className={"restart-server-button button-enabled-" + api_works} onClick={restart_server}>Перезапуск</button>}
             </div>
             <div className="short-block-background">
               <div className="online-card">
@@ -531,7 +532,7 @@ function App() {
 
               <div className="logs-card-footer">
                 <input className="logs-card-input" type="text" placeholder="Введите команду..." ref={console_input} onKeyDown={handle_console_input_key_down}/>
-                <button className="logs-card-send-button" onClick={handle_console_send_button}>Отправить</button>
+                <button className={"logs-card-send-button button-enabled-" + api_works} onClick={handle_console_send_button}>Отправить</button>
               </div>
             </div>
           </div>
@@ -579,7 +580,7 @@ function App() {
 
             <div className="logs-card-footer">
               <input className="logs-card-input" type="text" placeholder="Введите команду..." ref={big_console_input} onKeyDown={handle_big_console_input_key_down}/>
-              <button className="logs-card-send-button" onClick={handle_big_console_send_button}>Отправить</button>
+              <button className={"logs-card-send-button button-enabled-" + api_works} onClick={handle_big_console_send_button}>Отправить</button>
             </div>
           </div>
         </div>}
@@ -624,7 +625,7 @@ function App() {
                   {(searched_plugins_items.length == 0) && <h4 className="big-plugins-card-subcard-no-plugins-text">Плагинов нет</h4>}
                 </div>
                 <div className="big-plugins-card-subcard-footer">
-                  <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value);create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
+                  <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value); create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
                 </div>
               </div>
             </div>
@@ -639,7 +640,7 @@ function App() {
 
             <div className="backups-card-subheader">
               {(backup_creates && api_works) && <h4 className="backups-card-item-is-creating">Создается бэкап...</h4>}
-              {(!backup_creates && api_works) && <button className="backups-card-subheader-button" onClick={handle_create_backup}>Создать бэкап</button>}
+              {!backup_creates && <button className={"backups-card-subheader-button button-enabled-" + api_works} onClick={handle_create_backup}>Создать бэкап</button>}
               <h4 className="backups-card-subheader-backups-total-text">Всего: {backups.length}</h4>
             </div>
 

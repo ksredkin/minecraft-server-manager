@@ -7,11 +7,39 @@ html, body, #root {
 button {
   cursor: pointer;
   transition:
-    background-color .15s ease,
-    transform .1s ease,
-    border-color .15s ease;
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease;
   transform-origin: center;
   backface-visibility: hidden;
+}
+
+.block-background,
+.short-block-background,
+.fast-actions-card,
+.plugins-card,
+.last-backups-card,
+.ram-card,
+.cpu-card,
+.online-players-card,
+.logs-card-header,
+.logs-background,
+.logs-card-footer {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.block-background:hover,
+.short-block-background:hover,
+.fast-actions-card:hover,
+.plugins-card:hover,
+.last-backups-card:hover,
+.ram-card:hover,
+.cpu-card:hover,
+.online-players-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 button:active {
@@ -130,12 +158,23 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px;
   font-size: medium;
   text-align: left;
+
+  transition:
+    background-color .15s ease,
+    border-color .15s ease,
+    color .15s ease;
 }
 
 .section-button {
   background: #0B1622;
   border: 2px solid #0B1622;
   color: #A2ACBA;
+}
+
+.section-button:hover {
+  background: #111C28;
+  border-color: #243240;
+  color: #D6DEE7;
 }
 
 .active-section-button {
@@ -216,6 +255,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .restart-server-button:hover {
   background-color: #263443;
+  border-color:#324558;
+  color:white;
 }
 
 .circle {
@@ -330,13 +371,23 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   flex: 4;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border: 2px solid #202C39;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.logs-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .logs-card-header {
   background-color: #111B26;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
-  border: 2px solid #202C39;
+  border-bottom: 2px solid #202C39;
   height: 50px;
   display: flex;
   flex-direction: row;
@@ -350,8 +401,6 @@ h1, h2, h3, h4, h5, h6 {
 .logs-background {
   background-color: #090D15;
   color: white;
-  border-left: 2px solid #202C39;
-  border-right: 2px solid #202C39;
   overflow: auto;
   flex: 1;
 
@@ -388,7 +437,7 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #111B26;
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 6px;
-  border: 2px solid #202C39;
+  border-top: 2px solid #202C39;
   height: 50px;
   display: flex;
   flex-direction: row;
@@ -513,6 +562,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .online-players-card-footer-button:hover {
   background-color: #263443;
+  border-color:#324558;
+  color:white;
 }
 
 .log-row {
@@ -535,13 +586,22 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border: 2px solid #202C39;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.big-logs-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .big-logs-background {
   background-color: #090D15;
   color: white;
-  border-left: 2px solid #202C39;
-  border-right: 2px solid #202C39;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -606,6 +666,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .fast-action-button:hover {
   background-color: #263443;
+  border-color:#324558;
+  color:white;
 }
 
 .fast-action-icon {
@@ -660,6 +722,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .last-backups-card-footer-button:hover {
   background-color: #263443;
+  border-color:#324558;
+  color:white;
 }
 
 .plugins-card {
@@ -693,6 +757,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .plugins-card-footer-button:hover {
   background-color: #263443;
+  border-color: #324558;
+  color: white;
 }
 
 .plugins-card-file-svg {
@@ -819,14 +885,22 @@ h1, h2, h3, h4, h5, h6 {
 
 .big-players-card {
   background-color: #131C27;
-  border: #202C39 solid 2px;
-  border-radius: 7px;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 0;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border: 2px solid #202C39;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.big-players-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .big-players-card-header {
@@ -998,7 +1072,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-right: 10px;
   border-radius: 8px;
   min-height: 35px;
-  background-color: #C58B00;
+  background-color: #B88300;
   color: #ffffff;
   border: none;
   padding-left: 28px;
@@ -1006,7 +1080,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .big-players-card-item-kick-button:hover {
-  background-color: #D79B00;
+  background-color: #C89400;
 }
 
 .big-players-card-no-players-text {
@@ -1058,10 +1132,18 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   flex: 1;
   background-color: #131C27;
-  border: #202C39 solid 2px;
-  border-radius: 6px;
   min-height: 0;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border: 2px solid #202C39;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.big-plugins-card-subcard:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .big-plugins-card-subcard-header {
@@ -1316,11 +1398,19 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   flex: 1;
   background-color: #131C27;
-  border: #202C39 solid 2px;
-  border-radius: 6px;
   min-height: 0;
   min-width: 0;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border: 2px solid #202C39;
+  border-radius: 8px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.backups-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
 
 .backups-card-header {
@@ -1357,6 +1447,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .backups-card-subheader-button:hover {
   background-color: #2eb85c;
+}
+
+.button-enabled-false {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .backups-card-header-text {
@@ -1585,6 +1680,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .confirm-action-card-cancel-button:hover {
   background: #273545;
+  border-color: #324558;
+  color: white;
 }
 
 .confirm-action-card-cancel-button:active,
@@ -1601,4 +1698,29 @@ h1, h2, h3, h4, h5, h6 {
 
 .confirm-action-card-header-description {
   color: #86909F;
+}
+
+.section-button-icon,
+.fast-action-icon {
+  transition:
+    stroke 0.15s ease,
+    color 0.15s ease;
+}
+
+.section-button:hover
+.section-button-icon {
+  stroke: #D6DEE7;
+}
+
+.fast-action-button:hover
+.fast-action-icon {
+  stroke: #D6DEE7;
+}
+
+.logs-card-input:hover,
+.backups-card-footer-input:hover,
+.big-players-card-footer-input:hover,
+.big-plugins-card-subcard-footer-input:hover {
+  border-color: #243240;
+  background-color: #1A2735;
 }
