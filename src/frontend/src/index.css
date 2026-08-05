@@ -115,37 +115,37 @@ h1, h2, h3, h4, h5, h6 {
 
 .section-button,
 .active-section-button {
-    min-height: 45px;
-    width: 100%;
-    box-sizing: border-box;
+  min-height: 45px;
+  width: 100%;
+  box-sizing: border-box;
 
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
-    padding-left: 15px;
+  padding-left: 15px;
 
-    border-radius: 8px;
-    font-size: medium;
-    text-align: left;
+  border-radius: 8px;
+  font-size: medium;
+  text-align: left;
 }
 
 .section-button {
-    background: #0B1622;
-    border: 2px solid #0B1622;
-    color: #A2ACBA;
+  background: #0B1622;
+  border: 2px solid #0B1622;
+  color: #A2ACBA;
 }
 
 .active-section-button {
-    background: #13212C;
-    border: 2px solid #174336;
-    color: #26A550;
+  background: #13212C;
+  border: 2px solid #174336;
+  color: #26A550;
 }
 
 .section-button-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .server-works-status {
@@ -988,6 +988,7 @@ h1, h2, h3, h4, h5, h6 {
   border: #202C39 solid 2px;
   border-radius: 6px;
   min-height: 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
 }
 
 .big-plugins-card-subcard-header {
@@ -1003,14 +1004,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .big-plugins-card-subcard-header-text {
   margin-left: 15px;
+  margin-top: 15px;
+  margin-bottom: 15px;
 }
 
 .big-plugins-card-subcard-items-div {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin: 10px;
-  gap: 10px;
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
@@ -1052,6 +1053,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: row;
   align-items: center;
+  margin-top: auto;
 }
 
 .big-plugins-card-subcard-footer-input {
@@ -1066,6 +1068,8 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: 10px;
   margin-right: 10px;
   flex: 1;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   transition:
     border-color 0.15s ease,
@@ -1089,13 +1093,26 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: row;
   gap: 15px;
-  flex: 1;
+  transition: background-color 0.15s ease;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 10px;
+}
+
+.big-plugins-card-subcard-items-div-item:last-child {
+  margin-bottom: 10px;
 }
 
 .big-plugins-card-subcard-items-div-package-image {
   stroke: #86909F;
   width: 25px;
   height: 25px;
+  transition: stroke 0.15s ease;
+}
+
+.left-big-plugins-card-subcard-items-div-item:hover
+.big-plugins-card-subcard-items-div-package-image {
+  stroke: #acb8c9;
 }
 
 .big-plugins-card-subcard-items-div-item-delete-button {
@@ -1106,9 +1123,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .big-plugins-card-subcard-items-div-item-delete-button-trash-image {
   stroke: #86909F;
+  transition: stroke 0.15s ease;
 }
 
-.big-plugins-card-subcard-items-div-item-delete-button-trash-image:hover {
+.big-plugins-card-subcard-items-div-item-delete-button:hover
+.big-plugins-card-subcard-items-div-item-delete-button-trash-image {
   stroke: red;
 }
 
@@ -1138,6 +1157,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: auto;
 }
 
+.big-plugins-card-subcard-items-div-item-download-button:hover {
+  background: #2eb85c;
+}
+
 .big-plugins-card-subcard-items-div-item-version-downloads-download-div {
   display: flex;
   flex-direction: row;
@@ -1154,8 +1177,6 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin: 10px;
-  gap: 10px;
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
@@ -1192,6 +1213,13 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: row;
   gap: 15px;
+  padding: 10px;
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.left-big-plugins-card-subcard-items-div-item:hover {
+  background-color: #17222E;
 }
 
 .big-plugins-card-subcard-items-div-item-downloaded-text {

@@ -82,7 +82,7 @@ class PluginsService:
     async def search_plugins(
         self, query: str
     ) -> list[dict[str, str | int | list[str]]]:
-        result = await self.api_client.search_project(query, self.minecraft_version)
+        result = await self.api_client.search_project(query, self.minecraft_version, self.server_software)
         hits = result.get("hits")
 
         if hits is None:

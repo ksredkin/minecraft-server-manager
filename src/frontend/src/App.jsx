@@ -10,7 +10,7 @@ function App() {
   const [server_works_level, setServerWorksLevel] = useState(0)
   const [server_software, setServerSoftware] = useState(undefined)
   const [minecraft_version, setMinecraftVersion] = useState(undefined)
-  const [players, setPlayers] = useState([])
+  const [players, setPlayers] = useState(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"])
   const [max_players, setMaxPlayers] = useState(0)
   const [backups, setBackups] = useState([])
   const [plugins, setPlugins] = useState([])
@@ -639,7 +639,8 @@ function App() {
             </div>
 
             <div className="backups-card-subheader">
-              {backup_creates ? <h4 className="backups-card-item-is-creating">Создается бэкап...</h4> : <button className="backups-card-subheader-button" onClick={handle_create_backup}>Создать бэкап</button>}
+              {(backup_creates && api_works) && <h4 className="backups-card-item-is-creating">Создается бэкап...</h4>}
+              {(!backup_creates && api_works) && <button className="backups-card-subheader-button" onClick={handle_create_backup}>Создать бэкап</button>}
               <h4 className="backups-card-subheader-backups-total-text">Всего: {backups.length}</h4>
             </div>
 

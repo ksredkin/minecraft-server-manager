@@ -23,14 +23,14 @@ from src.api.exceptions.api_client import (
 class ModrinthApiClient(ApiClientInterface):
     @staticmethod
     async def search_project(
-        query: str, minecraft_version: str
+        query: str, minecraft_version: str, server_software: str
     ) -> dict[str, list[dict[str, str | int | None]]]:
         try:
             async with AsyncClient(timeout=10) as client:
                 params = {
                     "query": query,
                     "facets": json.dumps(
-                        [[f"versions:{minecraft_version}"], ["project_type:plugin"]]
+                        [[f"versions:{minecraft_version}"], ["project_type:plugin"], [f"categories:{server_software}"]]
                     ),
                 }
                 r = await client.get(

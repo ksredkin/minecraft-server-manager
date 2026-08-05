@@ -6,7 +6,7 @@ class ApiClientInterface(ABC):
     @staticmethod
     @abstractmethod
     async def search_project(
-        query: str, minecraft_version: str
+        query: str, minecraft_version: str, server_software: str
     ) -> dict[str, list[dict[str, str | int | None]]]:
         pass
 
