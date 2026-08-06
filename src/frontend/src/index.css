@@ -170,9 +170,9 @@ h1, h2, h3, h4, h5, h6 {
   text-align: left;
 
   transition:
-    background-color .15s ease,
-    border-color .15s ease,
-    color .15s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .section-button {
@@ -535,6 +535,18 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding: 10px;
   flex-shrink: 0;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.online-player-item:hover {
+  background-color: #16202B;
+}
+
+.online-player-item:not(:last-child) {
+  border-bottom: 1px solid #1C2935;
 }
 
 .online-player-item-text {
@@ -668,6 +680,9 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
   border: #263443 solid 2px;
   text-align: left;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
 }
 
 .fast-action-button:hover {
@@ -677,9 +692,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .fast-action-icon {
-  width: 20px;
-  height: 20px;
-  margin-bottom: -5px;
+  width: 25px;
+  height: 25px;
   margin-right: 10px;
   stroke: #86909F;
 }
@@ -691,16 +705,26 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 10px;
-  gap: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   max-height: 210px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  gap: 10px;
 }
 
 .last-backups-backup-item {
   display: flex;
   flex-direction: row;
-  gap: 15px;
+  gap: 10px;
+  padding: 10px;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.last-backups-backup-item:hover {
+  background-color: #16202B;
 }
 
 .last-backups-file-svg {
@@ -710,26 +734,46 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .last-backups-backups-items-div {
-  gap: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.last-backups-backups-items-div::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(19, 28, 39, 0),
+    #131C27 100%
+  );
 }
 
 .last-backups-card-footer-button {
   border-radius: 8px;
-  width: 100%;
   min-height: 35px;
   background-color: #1F2A38;
   color: #8F9CA8;
   border: #263443 solid 2px;
-  margin-top: auto;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .last-backups-card-footer-button:hover {
   background-color: #263443;
   border-color:#324558;
   color:white;
+}
+
+.last-backups-card-header-text {
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .plugins-card {
@@ -739,26 +783,41 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   gap: 10px;
   max-height: 210px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
+.plugins-card-header-text {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 .plugins-card-plugin-item {
   display: flex;
   flex-direction: row;
-  gap: 15px;
+  gap: 10px;
+  padding: 10px;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.plugins-card-plugin-item:hover {
+  background-color: #16202B;
 }
 
 .plugins-card-footer-button {
   border-radius: 8px;
-  width: 100%;
   min-height: 35px;
   background-color: #1F2A38;
   color: #8F9CA8;
   border: #263443 solid 2px;
-  margin-top: auto;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .plugins-card-footer-button:hover {
@@ -774,10 +833,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .plugins-card-items-div {
-  gap: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.plugins-card-items-div::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(19, 28, 39, 0),
+    #131C27 100%
+  );
 }
 
 .online-players-card-no-players-text {
@@ -828,8 +902,6 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 0;
   overflow: hidden;
   position: relative;
-  padding-top: 10px;
-  padding-bottom: 10px;
 }
 
 .online-players-card-items-div::after {
@@ -1046,6 +1118,13 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding-bottom: 10px;
   padding-top: 10px;
+  transition: 
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.big-players-card-item:not(:last-child) {
+  border-bottom: 1px solid #1C2935;
 }
 
 .big-players-card-item:hover {
@@ -1379,6 +1458,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: background-color 0.15s ease;
 }
 
+.left-big-plugins-card-subcard-items-div-item:not(:last-child) {
+  border-bottom: 1px solid #1C2935;
+}
+
 .left-big-plugins-card-subcard-items-div-item:hover {
   background-color: #16202B;
 }
@@ -1443,12 +1526,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .backups-card-subheader-button {
   border-radius: 5px;
-  width: 110px;
+  padding-left: 16px;
+  padding-right: 16px;
+  width: auto;
   height: 35px;
   background-color: #26a550;
   color: white;
   border: none;
   margin-left: 10px;
+  margin-right: 10px;
 }
 
 .backups-card-subheader-button:hover {
@@ -1485,7 +1571,6 @@ h1, h2, h3, h4, h5, h6 {
   padding-bottom: 8px;
   color: white;
   margin-left: 10px;
-  margin-right: 10px;
   flex: 1;
 
   transition:
@@ -1551,7 +1636,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .backups-card-item-is-creating {
-  margin-left: 15px;
+  margin-left: 10px;
+  margin-right: 10px;
   color: #86909F;
 }
 
@@ -1572,6 +1658,10 @@ h1, h2, h3, h4, h5, h6 {
   padding-right: 10px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+
+.backups-card-items-div-item:not(:last-child) {
+  border-bottom: 1px solid #1C2935;
 }
 
 .backups-card-items-div-item:hover {
@@ -2126,4 +2216,34 @@ h1, h2, h3, h4, h5, h6 {
 
 .eula-card-content-text-mojang-eula-link:active {
   color: #7CC2FF;
+}
+
+.sidebar-bottom-card {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sidebar-bottom-card:hover {
+  border-color: #2B3C4D;
+}
+
+.big-players-card-subheader {
+  width: 100%;
+  background-color: #111B26;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.big-plugins-card-subcard-header {
+  width: 100%;
+  background-color: #111B26;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }

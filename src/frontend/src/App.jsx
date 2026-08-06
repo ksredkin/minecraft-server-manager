@@ -394,7 +394,7 @@ function App() {
 
   const players_items = players.map((player, index) => {
     return (
-      <div className="online-player-item" key={index}>
+      <div className="online-player-item" key={index} onClick={() => {setActiveSection(3); setSearch(player)}}>
         <img className="online-player-item-image" src="steve.png" alt="player" width="35px" height="35px" />
         <h4 className="online-player-item-text">{player}</h4>
       </div>
@@ -427,7 +427,7 @@ function App() {
   const get_install_plugin_button_or_status = (plugin) => {
     if (plugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Установлен</h4>
     if (installing_plugins.includes(plugin.slug)) return <h4 className="big-plugins-card-subcard-items-div-item-downloaded-text">Устанавливается...</h4>
-    return <button className="big-plugins-card-subcard-items-div-item-download-button" onClick={() => handle_install_plugin(plugin.slug)}>Установить</button>
+    return <button className={"big-plugins-card-subcard-items-div-item-download-button button-enabled-" + (api_works && eula_status)} onClick={() => handle_install_plugin(plugin.slug)}>Установить</button>
   }
 
   const searched_plugins_items = searched_plugins.map((plugin, index) => {
@@ -447,7 +447,7 @@ function App() {
 
   const reversed_backups = [...backups].reverse()
   const last_backups_backup_items = reversed_backups.map((backup, index) => {
-    return <div key={index} className="last-backups-backup-item">
+    return <div key={index} className="last-backups-backup-item"  onClick={() => {setActiveSection(5); setSearchBackups(backup)}}>
         <File className="last-backups-file-svg"/>
         <h5>{backup}</h5>
       </div>
@@ -464,7 +464,7 @@ function App() {
   })
 
   const plugins_card_plugins_items = plugins.map((plugin, index) => {
-    return <div key={index} className="plugins-card-plugin-item">
+    return <div key={index} className="plugins-card-plugin-item" onClick={() => {setActiveSection(4); setSearchInstalledPlugins(plugin)}}>
         <Package className="plugins-card-file-svg"/>
         <h5>{((plugin[0].toUpperCase() + plugin.slice(1)).length < 39) ? (plugin[0].toUpperCase() + plugin.slice(1)) : (plugin[0].toUpperCase() + plugin.slice(1)).slice(0, 35) + "..."}</h5>
       </div>
@@ -565,7 +565,7 @@ function App() {
 
               <div className="eula-card-content">
                 <h5 className="eula-card-content-text">Для запуска сервера необходимо принять <a className="eula-card-content-text-mojang-eula-link" href="https://aka.ms/MinecraftEULA">лицензионное соглашение Minecraft (EULA)</a>.</h5>
-                <button className="eula-card-content-accept-eula-button" onClick={() => {set_eula_status(true); setEulaStatus(true)}}>Принять EULA</button>
+                <button className={"eula-card-content-accept-eula-button button-enabled-" + (api_works && eula_status)} onClick={() => {if (api_works) {set_eula_status(true); setEulaStatus(true)}}}>Принять EULA</button>
               </div>
             </div>}
 
@@ -620,12 +620,14 @@ function App() {
               <div className="online-players-card-header">
                 <h3 className="online-players-card-header-text">Список игроков</h3>
               </div>
+              
               <div className="online-players-card-items-div">
                 {players_items}
               </div>
               {(players.length == 0) && <h4 className="online-players-card-no-players-text">Сервер пуст</h4>}
+              
               <div className="online-players-card-footer">
-                <button onClick={() => setActiveSection(3)} className="online-players-card-footer-button">Все игроки ({players.length}) →</button>
+                <button onClick={() => setActiveSection(3)} className="online-players-card-footer-button">Все игроки →</button>
               </div>
             </div>
             
@@ -653,7 +655,7 @@ function App() {
             </div>
             
             <div className="last-backups-card">
-              <h3 style={{marginBottom: "5px"}}>Последние бэкапы</h3>
+              <h3 className="last-backups-card-header-text">Последние бэкапы</h3>
               <div className="last-backups-backups-items-div">
                 {last_backups_backup_items}
               </div>
@@ -664,7 +666,7 @@ function App() {
             </div>
 
             <div className="plugins-card">
-              <h3 style={{marginBottom: "5px"}}>Установленные плагины</h3>
+              <h3 className="plugins-card-header-text">Установленные плагины</h3>
               <div className="plugins-card-items-div">
                 {plugins_card_plugins_items}
               </div>
@@ -698,13 +700,15 @@ function App() {
             <div className="big-players-card-header">
               <h3 className="big-players-card-header-text">Игроки</h3>
             </div>
+
+            <div className="big-players-card-subheader">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
+            </div>
+            
             <div className="big-players-card-items-div">
               {big_players_card_items}
             </div>
             {(players.length == 0) && <h4 className="big-players-card-no-players-text">Сервер пуст</h4>}
-            <div className="big-players-card-footer">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
-            </div>
           </div>  
         </div>}
         
@@ -716,24 +720,29 @@ function App() {
                 <div className="big-plugins-card-subcard-header">
                   <h3 className="big-plugins-card-subcard-header-text">Установленные</h3>
                 </div>
+
+                <div className="big-plugins-card-subcard-header">
+                  <input value={search_installed_plugins} onChange={(e) => setSearchInstalledPlugins(e.target.value)} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
+                </div>
+
                 <div className="left-big-plugins-card-subcard-items-div">
                   {installed_plugins_items}
                   {(plugins.length == 0) && <h4 className="big-plugins-card-subcard-no-plugins-text">Плагинов нет</h4>}
                 </div>
-                <div className="big-plugins-card-subcard-footer">
-                  <input value={search_installed_plugins} onChange={(e) => setSearchInstalledPlugins(e.target.value)} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
-                </div>
               </div>
+
               <div className="big-plugins-card-subcard">
                 <div className="big-plugins-card-subcard-header">
                   <h3 className="big-plugins-card-subcard-header-text">Найти и установить</h3>
                 </div>
+
+                <div className="big-plugins-card-subcard-header">
+                  <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value); create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
+                </div>
+
                 <div className="big-plugins-card-subcard-items-div">
                   {searched_plugins_items}
                   {(searched_plugins_items.length == 0) && <h4 className="big-plugins-card-subcard-no-plugins-text">Плагинов нет</h4>}
-                </div>
-                <div className="big-plugins-card-subcard-footer">
-                  <input value={search_plugins_input_value} onChange={(e) => {setSearchPluginsInputValue(e.target.value); create_smart_search_plugins_timer(e.target.value)}} type="text" className="big-plugins-card-subcard-footer-input" placeholder="🔍︎ Введите имя плагина..."/>
                 </div>
               </div>
             </div>
@@ -747,18 +756,14 @@ function App() {
             </div>
 
             <div className="backups-card-subheader">
+              <input value={search_backups} onChange={(e) => {setSearchBackups(e.target.value)}} type="text" className="backups-card-footer-input" placeholder="🔍︎ Введите имя бэкапа..."/>
               {(backup_creates && api_works) && <h4 className="backups-card-item-is-creating">Создается бэкап...</h4>}
               {!backup_creates && <button className={"backups-card-subheader-button button-enabled-" + api_works} onClick={handle_create_backup}>Создать бэкап</button>}
-              <h4 className="backups-card-subheader-backups-total-text">Всего: {backups.length}</h4>
             </div>
 
             <div className="backups-card-items-div">
               {backups_items}
               {(backups_items.length == 0) && <h4 className="backups-card-items-div-no-items-text">Бэкапов нет</h4>}
-            </div>
-
-            <div className="backups-card-footer">
-              <input value={search_backups} onChange={(e) => {setSearchBackups(e.target.value)}} type="text" className="backups-card-footer-input" placeholder="🔍︎ Введите имя бэкапа..."/>
             </div>
           </div>
         </div>}
