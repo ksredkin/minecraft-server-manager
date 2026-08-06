@@ -19,7 +19,7 @@ async def test_search_project() -> None:
     client.get.return_value = response
 
     with patch("src.api.api_clients.modrinth.AsyncClient", return_value=client):
-        result = await ModrinthApiClient.search_project("plugin", "1.21.2")
+        result = await ModrinthApiClient.search_project("plugin", "1.21.2", "Spigot")
 
     assert result == {"hits": []}
     client.get.assert_awaited_once()
@@ -56,4 +56,4 @@ async def test_search_project_timeout_error() -> None:
 
     with patch("src.api.api_clients.modrinth.AsyncClient", return_value=client):
         with pytest.raises(ApiClientTimeoutError):
-            await ModrinthApiClient.search_project("plugin", "1.21.2")
+            await ModrinthApiClient.search_project("plugin", "1.21.2", "Spigot")

@@ -125,7 +125,7 @@ async def test_search_plugins(tmp_path: Any) -> None:
             "icon_url": "https://example.com/icon.png",
         }
     ]
-    api_client.search_project.assert_awaited_once_with("plugin", "1.21.2")
+    api_client.search_project.assert_awaited_once_with("plugin", "1.21.2", "spigot")
 
 
 @pytest.mark.asyncio
