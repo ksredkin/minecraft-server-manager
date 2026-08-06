@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import {Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash} from 'lucide-react'
+import { Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash, ChevronDown } from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -51,7 +51,32 @@ function App() {
   })
 
   const server_works_level_texts = {0: "Сервер выключен", 1: "Сервер запускается", 2: "Сервер работает", 3: "Сервер выключается"}
+  const server_properties_select_options = {
+    difficulty: [
+        "peaceful",
+        "easy",
+        "normal",
+        "hard"
+    ],
 
+    gamemode: [
+        "survival",
+        "creative",
+        "adventure",
+        "spectator"
+    ],
+
+    "level-type": [
+        "minecraft:normal",
+        "minecraft:flat",
+        "minecraft:large_biomes",
+        "minecraft:amplified"
+    ]
+  }
+
+  const [search_server_properties, setSearchServerProperties] = useState("")
+  const [server_properties, setServerProperties] = useState({})
+  const [edited_server_properties, setEditedServerProperties] = useState({})
 
   const send_command = async (command) => {
       if (!command) return undefined
@@ -107,7 +132,6 @@ function App() {
       setApiWorks(true)
       return data
     } catch (error) {
-      console.log("Ошибка при получении статуса сервера:", error)
       setApiWorks(false)
     }
   }
@@ -130,6 +154,14 @@ function App() {
     await fetch(API_URL + "plugins/install/" + project_id_or_slug, {method: "POST"})
   }
 
+  const get_server_properties = async () => {
+    const result = await fetch(API_URL + "properties/")
+    return await result.json()
+  }
+
+  const update_server_property = async (key, new_value) => {
+    await fetch(API_URL + "properties/" + encodeURIComponent(key) + `?value=${encodeURIComponent(new_value)}`, {method: "PUT"})
+  }
 
   const handle_create_backup = async () => {
     try {
@@ -242,6 +274,20 @@ function App() {
     }
   }
 
+  const check_server_properties = async () => {
+    const actual_server_properties = await get_server_properties()
+    setServerProperties(actual_server_properties.data.properties)
+    setEditedServerProperties(actual_server_properties.data.properties)
+  }
+
+  const update_server_properties = async () => {
+    const diff_keys = Object.keys(edited_server_properties).filter(key => edited_server_properties[key] !== server_properties[key])
+    for (const key in diff_keys) {
+      await update_server_property(diff_keys[key], edited_server_properties[diff_keys[key]])
+    }
+    setServerProperties(edited_server_properties)
+  }
+
 
   const update_logs = (log) => {
     if (log == undefined) return undefined
@@ -296,6 +342,7 @@ function App() {
     check_server_plugins()
     check_ram_usage()
     check_cpu_percent()
+    check_server_properties()
     const interval = setInterval(async () => {
       check_server_status()
       check_server_backups()
@@ -404,6 +451,31 @@ function App() {
       </div>
   })
 
+  const diff_keys = Object.keys(edited_server_properties).filter(key => edited_server_properties[key] !== server_properties[key])
+  const filtered_server_properties = Object.fromEntries(Object.entries(edited_server_properties).filter(([key, value]) => key.toLowerCase().includes(search_server_properties.toLowerCase())))
+  const server_properties_card_items = Object.entries(filtered_server_properties).map(([key, value], index) => {
+    const updateProperty = (key, value) => setEditedServerProperties(prev => ({...prev, [key]: value}))
+    let element = undefined
+
+    if (server_properties_select_options?.[key]) {
+      const sub_elements = server_properties_select_options[key].map(option => <option className="settings-card-item-select-option" key={option} value={option}>{option}</option>)
+      element = <div className="settings-card-item-select-div"><select className="settings-card-item-select" value={value} onChange={(e) => updateProperty(key, e.target.value)}>{sub_elements}</select><ChevronDown className="settings-card-item-select-chevron-down"/></div>
+    } else {
+      if (value === "true" || value === "false") {
+        element = <div className={`switch ${value === "true" ? "on" : ""}`} onClick={() => updateProperty(key, value === "true" ? "false" : "true")}>
+          <div className={`switch-thumb`}></div>
+        </div>
+      } else {
+        element = <input className="settings-card-item-value" placeholder="Введите значение..." value={value} onChange={(e) => updateProperty(key, e.target.value)}/>
+      }
+    }
+
+    return <div key={index} className={"settings-card-item settings-card-item-edited-" + diff_keys.includes(key)}>
+      <h4 className="settings-card-item-name">{key}</h4>
+      {element}
+    </div>
+  })
+
 
   return (
     <div className="background">
@@ -435,6 +507,10 @@ function App() {
           <button className={(active_section == 5) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(5)}>
             <File className="section-button-icon"/>
             Бэкапы
+          </button>
+          <button className={(active_section == 6) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(6)}>
+            <Settings className="section-button-icon"/>
+            Настройки
           </button>
         </div>
         <div className="sidebar-bottom-card">
@@ -651,6 +727,24 @@ function App() {
 
             <div className="backups-card-footer">
               <input value={search_backups} onChange={(e) => {setSearchBackups(e.target.value)}} type="text" className="backups-card-footer-input" placeholder="🔍︎ Введите имя бэкапа..."/>
+            </div>
+          </div>
+        </div>}
+
+        {(active_section == 6) && <div className="screen-6">
+          <div className="server-properties-card">
+            <div className="server-properties-card-header">
+              <h3 className="server-properties-card-header-text">Настройки</h3>
+            </div>
+
+            <div className="server-properties-card-subheader">
+              <input value={search_server_properties} onChange={(e) => setSearchServerProperties(e.target.value)} type="text" className="server-properties-card-search-input" placeholder="🔍︎ Введите имя настройки..."/>
+              <button className={"server-properties-card-subheader-save-button button-enabled-" + api_works} onClick={() => {ask_confirmation(async () => {await update_server_properties()}, "Сохранить настройки?", "Настройки будут сохранены в файл server.properties.", "Сохранить", "success")}}>{diff_keys.length == 0 ? "Сохранить настройки" : `Сохранить настройки (${diff_keys.length} изменения)`}</button>
+              <button className="server-properties-card-subheader-reset-button" onClick={() => {ask_confirmation(async () => {setEditedServerProperties(server_properties)}, "Сбросить настройки?", "Настройки вернутся к текущим значениям на сервере.", "Сбросить", "danger")}}>Сбросить настройки</button>
+            </div>
+
+            <div className="server-properties-card-items-div">
+              {server_properties_card_items}
             </div>
           </div>
         </div>}

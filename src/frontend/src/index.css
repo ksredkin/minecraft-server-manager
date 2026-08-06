@@ -1043,7 +1043,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .big-players-card-item:hover {
-  background-color: #17222E;
+  background-color: #16202B;
 }
 
 .big-players-card-item-image {
@@ -1374,7 +1374,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .left-big-plugins-card-subcard-items-div-item:hover {
-  background-color: #17222E;
+  background-color: #16202B;
 }
 
 .big-plugins-card-subcard-items-div-item-downloaded-text {
@@ -1569,7 +1569,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .backups-card-items-div-item:hover {
-  background-color: #17222E;
+  background-color: #16202B;
 }
 
 .backups-card-items-div-item-image {
@@ -1723,4 +1723,322 @@ h1, h2, h3, h4, h5, h6 {
 .big-plugins-card-subcard-footer-input:hover {
   border-color: #243240;
   background-color: #1A2735;
+}
+
+.screen-6 {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.server-properties-card {
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  min-height: 0;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.server-properties-card:hover {
+  border-color: #2B3C4D;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+}
+
+.server-properties-card-header {
+  background-color: #111B26;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.server-properties-card-header-text {
+  margin-left: 15px;
+}
+
+.server-properties-card-footer {
+  background-color: #111B26;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-top: 2px solid #202C39;
+  min-height: 50px;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: auto;
+}
+
+.server-properties-card-search-input {
+  background-color: #17232F;
+  border: 2px solid #182533;
+  border-radius: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: white;
+  margin-left: 10px;
+  width: 100%;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.server-properties-card-search-input:focus {
+  border-color: #2B3C4D;
+  background-color: #192734;
+}
+
+.server-properties-card-search-input::placeholder {
+  color: #6C7785;
+}
+
+.server-properties-card-search-input:hover {
+  border-color: #243240;
+  background-color: #1A2735;
+}
+
+.server-properties-card-search-input:focus {
+  outline: none;
+}
+
+.server-properties-card-items-div {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #222E3C #131C27;
+  scroll-margin: 10px;
+
+  &::-webkit-scrollbar {
+    width: 8px; 
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #131C27; 
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #222E3C; 
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #0D82D6; 
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  &::-webkit-scrollbar-button { size: 0; }
+}
+
+.server-properties-card-subheader {
+  background-color: #111B26;
+  border-bottom: 2px solid #202C39;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.server-properties-card-subheader-save-button {
+  border-radius: 5px;
+  width: auto;
+  height: 35px;
+  background-color: #26a550;
+  color: white;
+  border: none;
+  margin-left: 10px;
+  flex-shrink: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.server-properties-card-subheader-save-button:hover {
+  background-color: #2eb85c;
+}
+
+.server-properties-card-subheader-reset-button {
+  border-radius: 5px;
+  width: auto;
+  height: 35px;
+  background-color: #B92D2D;
+  color: white;
+  border: none;
+  margin-left: 10px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.server-properties-card-subheader-reset-button:hover {
+  background-color: #cf3636;
+}
+
+.settings-card-item {
+  display: flex;
+  flex-direction: row;
+  height: 50px;
+  transition: 
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  align-items: center;
+}
+
+.settings-card-item:not(:last-child) {
+  border-bottom: 1px solid #1C2935;
+}
+
+.settings-card-item:hover {
+  background-color: #16202B;
+}
+
+.settings-card-item-name {
+  margin-left: 10px;
+}
+
+.settings-card-item-value {
+  border-radius: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: white;
+  margin-right: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-left: auto;
+  background: #1D2B38;
+  border: 2px solid #253545;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.settings-card-item-value:hover {
+  background: #223342;
+  border-color: #2E455A;
+}
+
+.settings-card-item-value::placeholder {
+  color: #6C7785;
+}
+
+.settings-card-item-value:focus {
+  background: #273B4C;
+  border-color: #2E455A;
+}
+
+.settings-card-item-value:focus {
+  outline: none;
+}
+
+.settings-card-item-name {
+  color: #CDD6DF;
+}
+
+.settings-card-item-edited-true {
+  border-left: 3px solid #2A7CC7;
+}
+
+.switch {
+  width: 42px;
+  height: 18px;
+  border-radius: 999px;
+  background: #223342;
+  border: 2px solid #2E455A;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  transition: 0.15s;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 10px;
+}
+
+.switch-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s ease;
+}
+
+.switch.on {
+  background: #0D82D6;
+  border-color: #1693F0;
+}
+
+.switch.on .switch-thumb {
+  transform: translateX(26px);
+}
+
+.settings-card-item-select {
+  margin-left: auto;
+  margin-right: 10px;
+  background: #1D2B38;
+  border: 2px solid #253545;
+  border-radius: 6px;
+  color: white;
+  padding: 8px 10px 8px 10px;
+  transition:
+    background-color .15s ease,
+    border-color .15s ease;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 185px;
+}
+
+.settings-card-item-select:hover {
+  background: #223342;
+  border-color: #2E455A;
+}
+
+.settings-card-item-select:focus {
+  outline: none;
+  background: #243646;
+  border-color: #4A6882;
+}
+
+.settings-card-item-select-option {
+  background: #1D2B38;
+  color: white;
+}
+
+.settings-card-item-select-div {
+  position: relative;
+  margin-left: auto;
+  display: inline-block;
+}
+
+.settings-card-item-select-chevron-down {
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #8B98A6;
 }
