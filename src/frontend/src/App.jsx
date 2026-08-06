@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import { Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash, ChevronDown } from 'lucide-react'
+import { Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash, ChevronDown, FileText } from 'lucide-react'
 
 function App() {
   const API_URL = "http://127.0.0.1:8000/"
@@ -22,13 +22,13 @@ function App() {
 
   const [active_section, setActiveSection] = useState(1)
   
-  let logs_websocket = useRef(null)
+  let logs_websocket = useRef(undefined)
   const [logs, setLogs] = useState([])
   
-  const console_input = useRef(null)
-  const logsRef = useRef(null)
-  const big_logsRef = useRef(null)
-  const big_console_input = useRef(null)
+  const console_input = useRef(undefined)
+  const logsRef = useRef(undefined)
+  const big_logsRef = useRef(undefined)
+  const big_console_input = useRef(undefined)
 
   const [search, setSearch] = useState("")
   const [search_installed_plugins, setSearchInstalledPlugins] = useState("")
@@ -36,12 +36,12 @@ function App() {
   const [search_plugins_input_value, setSearchPluginsInputValue] = useState("")
   const [searched_plugins, setSearchedPlugins] = useState([])
   const [installing_plugins, setInstallingPlugins] = useState([])
-  const search_plugins_timer = useRef(null)
+  const search_plugins_timer = useRef(undefined)
 
   const [search_backups, setSearchBackups] = useState("")
   const [backup_creates, setBackupCreates] = useState(false)
 
-  const confirm_action_ref = useRef(null)
+  const confirm_action_ref = useRef(undefined)
   const [confirm_dialog, setConfirmDialog] = useState({
     show: false,
     title: "",
@@ -77,6 +77,9 @@ function App() {
   const [search_server_properties, setSearchServerProperties] = useState("")
   const [server_properties, setServerProperties] = useState({})
   const [edited_server_properties, setEditedServerProperties] = useState({})
+
+  const [eula_status, setEulaStatus] = useState(undefined)
+
 
   const send_command = async (command) => {
       if (!command) return undefined
@@ -159,9 +162,19 @@ function App() {
     return await result.json()
   }
 
+  const get_eula_status = async () => {
+    const result = await fetch(API_URL + "eula/")
+    return await result.json()
+  }
+
+  const set_eula_status = async (new_eula_status) => {
+    await fetch(API_URL + "eula/?accept_eula=" + String(new_eula_status), {method: "POST"})
+  }
+
   const update_server_property = async (key, new_value) => {
     await fetch(API_URL + "properties/" + encodeURIComponent(key) + `?value=${encodeURIComponent(new_value)}`, {method: "PUT"})
   }
+
 
   const handle_create_backup = async () => {
     try {
@@ -181,11 +194,11 @@ function App() {
   async function handle_confirm() {
       setConfirmDialog(prev => ({...prev, show: false}))
       if (confirm_action_ref.current) await confirm_action_ref.current()
-      confirm_action_ref.current = null
+      confirm_action_ref.current = undefined
   }
 
   function handle_cancel() {
-      confirm_action_ref.current = null
+      confirm_action_ref.current = undefined
       setConfirmDialog(prev => ({...prev, show: false}))
   }
 
@@ -241,6 +254,11 @@ function App() {
 
     setUptime(uptime)
     setMaxPlayers(max_players)
+  }
+
+  const check_eula_status = async () => {
+    const actual_eula_status = await get_eula_status()
+    setEulaStatus(actual_eula_status.data.eula)
   }
 
   const check_server_backups = async () => {
@@ -343,6 +361,7 @@ function App() {
     check_ram_usage()
     check_cpu_percent()
     check_server_properties()
+    check_eula_status()
     const interval = setInterval(async () => {
       check_server_status()
       check_server_backups()
@@ -533,10 +552,23 @@ function App() {
                   <h5 className="software-and-version-text">{(server_software !== undefined) ? server_software : "-"} {(minecraft_version !== undefined) ? minecraft_version : "-"}</h5>
                 </div>
               </div>
-              {(server_works_level == 0) && <button className={"start-server-button button-enabled-" + api_works} onClick={start_server}>Запустить</button>}
+              {(server_works_level == 0) && <button className={"start-server-button button-enabled-" + (api_works && eula_status)} onClick={start_server}>Запустить</button>}
               {(server_works_level == 2) && <button className={"stop-server-button button-enabled-" + api_works} onClick={stop_server}>Стоп</button>}
               {(server_works_level == 2) && <button className={"restart-server-button button-enabled-" + api_works} onClick={restart_server}>Перезапуск</button>}
             </div>
+
+            {!eula_status && <div className="eula-card">
+              <div className="eula-card-header">
+                <FileText className="eula-card-header-icon" />
+                <h5 className="eula-card-header-text">EULA</h5>
+              </div>
+
+              <div className="eula-card-content">
+                <h5 className="eula-card-content-text">Для запуска сервера необходимо принять <a className="eula-card-content-text-mojang-eula-link" href="https://aka.ms/MinecraftEULA">лицензионное соглашение Minecraft (EULA)</a>.</h5>
+                <button className="eula-card-content-accept-eula-button" onClick={() => {set_eula_status(true); setEulaStatus(true)}}>Принять EULA</button>
+              </div>
+            </div>}
+
             <div className="short-block-background">
               <div className="online-card">
                 <div className="online-header">
@@ -739,11 +771,12 @@ function App() {
 
             <div className="server-properties-card-subheader">
               <input value={search_server_properties} onChange={(e) => setSearchServerProperties(e.target.value)} type="text" className="server-properties-card-search-input" placeholder="🔍︎ Введите имя настройки..."/>
-              <button className={"server-properties-card-subheader-save-button button-enabled-" + api_works} onClick={() => {ask_confirmation(async () => {await update_server_properties()}, "Сохранить настройки?", "Настройки будут сохранены в файл server.properties.", "Сохранить", "success")}}>{diff_keys.length == 0 ? "Сохранить настройки" : `Сохранить настройки (${diff_keys.length} изменения)`}</button>
-              <button className="server-properties-card-subheader-reset-button" onClick={() => {ask_confirmation(async () => {setEditedServerProperties(server_properties)}, "Сбросить настройки?", "Настройки вернутся к текущим значениям на сервере.", "Сбросить", "danger")}}>Сбросить настройки</button>
+              <button className={"server-properties-card-subheader-save-button button-enabled-" + api_works} onClick={() => {ask_confirmation(async () => {await update_server_properties()}, "Сохранить изменения?", "Изменённые настройки будут записаны в server.properties.", "Сохранить", "success")}}>{diff_keys.length == 0 ? "Сохранить настройки" : `Сохранить (${diff_keys.length} изменения)`}</button>
+              <button className="server-properties-card-subheader-reset-button" onClick={() => {ask_confirmation(async () => {setEditedServerProperties(server_properties)}, "Отменить изменения?", "Все несохранённые изменения будут отменены.", "Отменить", "danger")}}>Отменить изменения</button>
             </div>
 
             <div className="server-properties-card-items-div">
+              {(server_properties_card_items.length == 0) && <h4 className="server-properties-card-items-div-no-items-text">Настроек нет</h4>}
               {server_properties_card_items}
             </div>
           </div>

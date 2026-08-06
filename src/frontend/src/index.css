@@ -14,6 +14,14 @@ button {
   backface-visibility: hidden;
 }
 
+.logs-card-input:hover,
+.backups-card-footer-input:hover,
+.big-players-card-footer-input:hover,
+.big-plugins-card-subcard-footer-input:hover {
+  border-color: #243240;
+  background-color: #1A2735;
+}
+
 .block-background,
 .short-block-background,
 .fast-actions-card,
@@ -24,7 +32,8 @@ button {
 .online-players-card,
 .logs-card-header,
 .logs-background,
-.logs-card-footer {
+.logs-card-footer,
+.eula-card {
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -37,7 +46,8 @@ button {
 .last-backups-card:hover,
 .ram-card:hover,
 .cpu-card:hover,
-.online-players-card:hover {
+.online-players-card:hover,
+.eula-card:hover {
   border-color: #2B3C4D;
   box-shadow: 0 12px 28px rgba(0,0,0,0.2);
 }
@@ -319,9 +329,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .online-card-title {
   margin-top: 10px;
-  margin-left: 10px; 
-  color: rgb(215, 215, 215); 
-  font-size: 15px;
+  margin-left: 10px;
 }
 
 .sidebar-bottom-card {
@@ -355,9 +363,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .uptime-card-title {
   margin-top: 10px;
-  margin-left: 10px; 
-  color: rgb(215, 215, 215); 
-  font-size: 15px;
+  margin-left: 10px;
 }
 
 .clock-icon {
@@ -1717,14 +1723,6 @@ h1, h2, h3, h4, h5, h6 {
   stroke: #D6DEE7;
 }
 
-.logs-card-input:hover,
-.backups-card-footer-input:hover,
-.big-players-card-footer-input:hover,
-.big-plugins-card-subcard-footer-input:hover {
-  border-color: #243240;
-  background-color: #1A2735;
-}
-
 .screen-6 {
   margin: 20px;
   display: flex;
@@ -1797,11 +1795,6 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow 0.15s ease;
 }
 
-.server-properties-card-search-input:focus {
-  border-color: #2B3C4D;
-  background-color: #192734;
-}
-
 .server-properties-card-search-input::placeholder {
   color: #6C7785;
 }
@@ -1812,10 +1805,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .server-properties-card-search-input:focus {
+  border-color: #2B3C4D;
+  background-color: #192734;
+}
+
+.server-properties-card-search-input:focus {
   outline: none;
 }
 
 .server-properties-card-items-div {
+  position: relative;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
@@ -2041,4 +2040,90 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-50%);
   pointer-events: none;
   color: #8B98A6;
+}
+
+.server-properties-card-items-div-no-items-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #86909F;
+  text-align: center;
+}
+
+.eula-card {
+  flex: 2;
+  background-color: #131C27;
+  border: #202C39 solid 2px;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.eula-card-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.eula-card-header-text {
+  margin-top: 10px;
+  margin-left: 10px; 
+}
+
+.eula-card-header-icon {
+  width: 36px;
+  height: 36px;
+  stroke: #ffffff;
+}
+
+.eula-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.eula-card-content-text {
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.eula-card-content-accept-eula-button {
+  border-radius: 5px;
+  width: auto;
+  height: 35px;
+  background-color: #26a550;
+  color: white;
+  border: none;
+  margin-left: 10px;
+  flex-shrink: 0;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.eula-card-content-accept-eula-button:hover {
+  background-color: #2eb85c;
+}
+
+.eula-card-content-text-mojang-eula-link:visited,
+.eula-card-content-text-mojang-eula-link {
+  color: #3A9EF5;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.eula-card-content-text-mojang-eula-link:hover {
+  color: #58AEF8;
+}
+
+.eula-card-content-text-mojang-eula-link:active {
+  color: #7CC2FF;
 }
