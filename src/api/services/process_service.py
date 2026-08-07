@@ -169,6 +169,14 @@ class ProcessService:
             line = self._process.stdout.readline()  # type: ignore
 
             if not line:
+                try:
+                    if self._process:
+                        self._process.wait(timeout=5)
+                except Exception:
+                    pass
+                self._status = "stopped"
+                self._start_time = None
+                self._process = None
                 self._stop_event.set()
                 break
 

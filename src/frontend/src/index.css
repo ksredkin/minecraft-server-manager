@@ -56,14 +56,6 @@ button:active {
   transform: scale(0.98);
 }
 
-.screen-1 {
-  margin: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
 .background {
   margin: 0;
   height: 100%;
@@ -591,14 +583,6 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 5px;
 }
 
-.screen-2 {
-  display: flex;
-  flex-direction: column;
-  margin: 20px;
-  flex: 1;
-  min-height: 0;
-}
-
 .big-logs-card {
   display: flex;
   flex-direction: column;
@@ -953,14 +937,6 @@ h1, h2, h3, h4, h5, h6 {
   margin-right: 10px;
 }
 
-.screen-3 {
-  margin: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
 .big-players-card {
   background-color: #131C27;
   flex: 1;
@@ -1171,14 +1147,6 @@ h1, h2, h3, h4, h5, h6 {
 .big-players-card-no-players-text {
   flex: 1;
   color: #86909F;
-}
-
-.screen-4 {
-  margin: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
 }
 
 .big-plugins-card {
@@ -1472,7 +1440,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #86909F;
 }
 
-.screen-5 {
+.panel {
   margin: 20px;
   display: flex;
   flex-direction: column;
@@ -1813,14 +1781,6 @@ h1, h2, h3, h4, h5, h6 {
   stroke: #D6DEE7;
 }
 
-.screen-6 {
-  margin: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
 .server-properties-card {
   background-color: #131C27;
   border: #202C39 solid 2px;
@@ -2078,7 +2038,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .switch.on .switch-thumb {
-  transform: translateX(26px);
+  transform: translateX(28px);
 }
 
 .settings-card-item-select {
