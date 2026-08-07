@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react"
 import "./App.css"
-import { Home, Terminal, Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, Trash, ChevronDown, FileText } from "lucide-react"
 import HomePanel from "./panels/HomePanel.jsx"
 import TerminalPanel from "./panels/TerminalPanel.jsx"
 import PlayersPanel from "./panels/PlayersPanel.jsx"
@@ -13,6 +12,8 @@ import { getEulaStatus, setEulaStatus as setEulaStatusApi } from "./api/eula.js"
 import { getCpuPercent, getRamUsage } from "./api/metrics.js"
 import { getPlugins, deletePlugin, searchPlugins, installPlugin } from "./api/plugins.js"
 import { getServerProperties, updateServerProperty } from "./api/properties.js"
+import ConfirmDialog from "./components/ConfirmDialog.jsx"
+import Sidebar from "./components/Sidebar.jsx"
 
 
 function App() {
@@ -44,7 +45,6 @@ function App() {
 
   const [search_installed_plugins, setSearchInstalledPlugins] = useState("")
   const [search_backups, setSearchBackups] = useState("")
-
 
   const confirm_action_ref = useRef(undefined)
   const [confirm_dialog, setConfirmDialog] = useState({
@@ -247,48 +247,7 @@ function App() {
 
   return (
     <div className="background">
-      <div className="sidebar">
-        <div className="logo-div">
-          <img className="logo" src="logo.png" alt="logo" />
-          <div className="tool-name-div">
-            <h1 className="short-tool-name">MSM</h1>
-            <h6 className="tool-name">Minecraft Server Manager</h6>
-          </div>
-        </div>
-        <div className="sections-div">
-          <button className={(active_section == 1) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(1)}>
-            <Home className="section-button-icon"/>
-            Панель управления
-          </button>
-          <button className={(active_section == 2) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(2)}>
-            <Terminal className="section-button-icon"/>
-            Консоль
-          </button>
-          <button className={(active_section == 3) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(3)}>
-            <User className="section-button-icon"/>
-            Игроки
-          </button>
-          <button className={(active_section == 4) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(4)}>
-            <Package className="section-button-icon"/>
-            Плагины
-          </button>
-          <button className={(active_section == 5) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(5)}>
-            <File className="section-button-icon"/>
-            Бэкапы
-          </button>
-          <button className={(active_section == 6) ? "active-section-button" : "section-button"} onClick={() => setActiveSection(6)}>
-            <Settings className="section-button-icon"/>
-            Настройки
-          </button>
-        </div>
-        <div className="sidebar-bottom-card">
-          <div className="msm-api-works-header">
-            <h4 style={{color: "rgb(215, 215, 215)"}}>MSM API</h4>
-            <div className="circle" style={{backgroundColor: (api_works == false) ? "#de0a0a" : "#26a550", width: "10px", height: "10px", marginTop: "6px", marginLeft: "auto", transition: "background-color 0.15s ease"}}></div>
-          </div>
-          <h5 style={{color: (api_works == false) ? "#de0a0a" : "#26a550", marginTop: "-10px", transition: "color 0.15s ease"}}>{(api_works == false) ? "Отключено" : "Подключено"}</h5>
-        </div>
-      </div>
+      <Sidebar api_works={api_works} active_section={active_section} setActiveSection={setActiveSection} />
       <div className="content">
         {(active_section == 1) && <HomePanel {...home_panel_props} />}
         {(active_section == 2) && <TerminalPanel executeCommand={executeCommand} api_works={api_works} logs={logs} />}
@@ -296,17 +255,7 @@ function App() {
         {(active_section == 4) && <PluginsPanel setSearchInstalledPlugins={setSearchInstalledPlugins} plugins={plugins} search_installed_plugins={search_installed_plugins} api_works={api_works} deletePlugin={deletePlugin} searchPlugins={searchPlugins} installPlugin={installPlugin} />}
         {(active_section == 5) && <BackupsPanel search_backups={search_backups} api_works={api_works} createBackup={createBackup} backups={backups} backup_creates={backup_creates} setBackupCreates={setBackupCreates} ask_confirmation={ask_confirmation} deleteBackup={deleteBackup} restoreBackup={restoreBackup} setSearchBackups={setSearchBackups} />}
         {(active_section == 6) && <PropertiesPanel ask_confirmation={ask_confirmation} setEditedServerProperties={setEditedServerProperties} server_properties={server_properties} edited_server_properties={edited_server_properties} api_works={api_works} update_server_properties={update_server_properties} />}
-
-        {confirm_dialog.show && <div className="confirm-action-card-background">
-          <div className="confirm-action-card">
-            <h3 className="confirm-action-card-header-text">{confirm_dialog.title}</h3>
-            <h5 className="confirm-action-card-header-description">{confirm_dialog.description}</h5>
-            <div className="confirm-action-card-buttons-div">
-              <button className={"confirm-action-card-confirm-button confirm-action-card-confirm-button-" + confirm_dialog.confirm_type} onClick={handle_confirm}>{confirm_dialog.confirm_text}</button>
-              <button className="confirm-action-card-cancel-button" onClick={handle_cancel}>Отмена</button>
-            </div>
-          </div>
-        </div>}
+        <ConfirmDialog dialog={confirm_dialog} onConfirm={handle_confirm} onCancel={handle_cancel} />
       </div>
     </div>
   )
