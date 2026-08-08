@@ -60,8 +60,8 @@ const PropertiesPanel = ({updateServerProperties, showConfirm, apiWorks, setEdit
 
       <div className="server-properties-card-subheader">
         <input value={searchServerProperties} onChange={(e) => setSearchServerProperties(e.target.value)} type="text" className="server-properties-card-search-input" placeholder="🔍︎ Введите имя настройки..."/>
-        <button className={"server-properties-card-subheader-save-button button-enabled-" + apiWorks} onClick={() => {showConfirm(async () => {await updateServerProperties()}, "Сохранить изменения?", "Изменённые настройки будут записаны в server.properties.", "Сохранить", "success")}}>{diffKeys.length == 0 ? "Сохранить настройки" : `Сохранить (${diffKeys.length} изменения)`}</button>
-        <button className="server-properties-card-subheader-reset-button" onClick={() => {showConfirm(async () => {setEditedServerProperties(serverProperties)}, "Отменить изменения?", "Все несохранённые изменения будут отменены.", "Отменить", "danger")}}>Отменить изменения</button>
+        <button className={"server-properties-card-subheader-save-button button-enabled-" + (apiWorks && (diffKeys.length > 0))} onClick={() => {showConfirm(async () => {await updateServerProperties()}, "Сохранить изменения?", "Изменённые настройки будут записаны в server.properties.", "Сохранить", "success")}}>{diffKeys.length == 0 ? "Сохранить настройки" : `Сохранить (${diffKeys.length} изменения)`}</button>
+        <button className={"server-properties-card-subheader-reset-button button-enabled-" + (apiWorks && (diffKeys.length > 0))} onClick={() => {showConfirm(async () => {setEditedServerProperties(serverProperties)}, "Отменить изменения?", "Все несохранённые изменения будут отменены.", "Отменить", "danger")}}>Отменить изменения</button>
       </div>
 
       <div className="server-properties-card-items-div">
