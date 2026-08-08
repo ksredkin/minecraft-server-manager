@@ -24,7 +24,7 @@ const server_properties_select_options = {
     ]
   }
 
-const PropertiesPanel = ({update_server_properties, ask_confirmation, api_works, setEditedServerProperties, server_properties = {}, edited_server_properties = {}}) => {
+const PropertiesPanel = ({update_server_properties, showConfirm, api_works, setEditedServerProperties, server_properties = {}, edited_server_properties = {}}) => {
   const [search_server_properties, setSearchServerProperties] = useState("")
 
   const diff_keys = Object.keys(edited_server_properties).filter(key => edited_server_properties[key] !== server_properties[key])
@@ -60,8 +60,8 @@ const PropertiesPanel = ({update_server_properties, ask_confirmation, api_works,
 
       <div className="server-properties-card-subheader">
         <input value={search_server_properties} onChange={(e) => setSearchServerProperties(e.target.value)} type="text" className="server-properties-card-search-input" placeholder="🔍︎ Введите имя настройки..."/>
-        <button className={"server-properties-card-subheader-save-button button-enabled-" + api_works} onClick={() => {ask_confirmation(async () => {await update_server_properties()}, "Сохранить изменения?", "Изменённые настройки будут записаны в server.properties.", "Сохранить", "success")}}>{diff_keys.length == 0 ? "Сохранить настройки" : `Сохранить (${diff_keys.length} изменения)`}</button>
-        <button className="server-properties-card-subheader-reset-button" onClick={() => {ask_confirmation(async () => {setEditedServerProperties(server_properties)}, "Отменить изменения?", "Все несохранённые изменения будут отменены.", "Отменить", "danger")}}>Отменить изменения</button>
+        <button className={"server-properties-card-subheader-save-button button-enabled-" + api_works} onClick={() => {showConfirm(async () => {await update_server_properties()}, "Сохранить изменения?", "Изменённые настройки будут записаны в server.properties.", "Сохранить", "success")}}>{diff_keys.length == 0 ? "Сохранить настройки" : `Сохранить (${diff_keys.length} изменения)`}</button>
+        <button className="server-properties-card-subheader-reset-button" onClick={() => {showConfirm(async () => {setEditedServerProperties(server_properties)}, "Отменить изменения?", "Все несохранённые изменения будут отменены.", "Отменить", "danger")}}>Отменить изменения</button>
       </div>
 
       <div className="server-properties-card-items-div">

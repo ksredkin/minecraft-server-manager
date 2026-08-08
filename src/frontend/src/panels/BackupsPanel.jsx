@@ -3,7 +3,7 @@ import { File} from "lucide-react"
 import { deleteBackup, restoreBackup } from "../api/backups"
 
 
-const BackupsPanel = ({search_backups, api_works, createBackup, backups, backup_creates, setBackupCreates, ask_confirmation, deleteBackup, restoreBackup, setSearchBackups}) => {
+const BackupsPanel = ({search_backups, api_works, createBackup, backups, backup_creates, setBackupCreates, showConfirm, deleteBackup, restoreBackup, setSearchBackups}) => {
   const handle_create_backup = async () => {
     try {
       if (api_works == false) return undefined
@@ -20,8 +20,8 @@ const BackupsPanel = ({search_backups, api_works, createBackup, backups, backup_
     return <div key={index} className="backups-card-items-div-item">
       <File className="backups-card-items-div-item-image"/>
       <h5 className="backups-card-items-div-item-text">{backup}</h5>
-      <button className={"backups-card-items-div-item-restore-button button-enabled-" + api_works} onClick={() => {ask_confirmation(() => {restoreBackup(backup)}, "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
-      <button className={"backups-card-items-div-item-delete-button button-enabled-" + api_works} onClick={() => {ask_confirmation(() => {deleteBackup(backup)}, "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
+      <button className={"backups-card-items-div-item-restore-button button-enabled-" + api_works} onClick={() => {showConfirm(() => {restoreBackup(backup)}, "Восстановить сервер?", "Текущее состояние сервера будет заменено выбранной резервной копией.", "Восстановить", "success")}}>Восстановить</button>
+      <button className={"backups-card-items-div-item-delete-button button-enabled-" + api_works} onClick={() => {showConfirm(() => {deleteBackup(backup)}, "Удалить резервную копию?", "После удаления восстановить её будет невозможно.", "Удалить", "danger")}}>Удалить</button>
     </div>
   })
 

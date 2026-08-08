@@ -1,9 +1,7 @@
 import { useState } from "react"
 
 
-const PlayersPanel = ({executeCommand, players = []}) => {
-  const [search, setSearch] = useState("")
-  
+const PlayersPanel = ({executeCommand, players = [], search, setSearch}) => {
   const filtered_players = players.filter(player => player.toLowerCase().includes((search.toLowerCase())))
   const players_items = filtered_players.map((player, index) => {
     return (
