@@ -25,17 +25,17 @@ MSM объединяет backend на **FastAPI** и интерактивный 
 
 ## 📌 Скриншоты
 
-<img src="home.png" width="700" alt="Главная панель">
+<img src="home.png" alt="Главная панель">
 <br></br>
-<img src="terminal.png" width="700" alt="Консоль сервера">
+<img src="terminal.png" alt="Консоль сервера">
 <br></br>
-<img src="players.png" width="700" alt="Игроки">
+<img src="players.png" alt="Игроки">
 <br></br>
-<img src="plugins.png" width="700" alt="Плагины">
+<img src="plugins.png" alt="Плагины">
 <br></br>
-<img src="backups.png" width="700" alt="Резервные копии">
+<img src="backups.png" alt="Резервные копии">
 <br></br>
-<img src="settings.png" width="700" alt="Настройки сервера">
+<img src="settings.png" alt="Настройки сервера">
 
 ## ✨ Возможности
 
