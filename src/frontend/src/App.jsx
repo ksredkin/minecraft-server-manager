@@ -20,117 +20,117 @@ import Sidebar from "./components/Sidebar.jsx"
 
 
 const App = () => {
-  const [server_software, setServerSoftware] = useState(undefined)
-  const [minecraft_version, setMinecraftVersion] = useState(undefined)
-  const [max_players, setMaxPlayers] = useState(0)
-  const [eula_status, setEulaStatus] = useState(true)
+  const [serverSoftware, setServerSoftware] = useState(undefined)
+  const [minecraftVersion, setMinecraftVersion] = useState(undefined)
+  const [maxPlayers, setMaxPlayers] = useState(0)
+  const [eulaStatus, setEulaStatus] = useState(true)
 
-  const [ram_total, setRamTotal] = useState(undefined)
-  const [ram_used, setRamUsed] = useState(undefined)
-  const [cpu_percent, setCpuPercent] = useState(undefined)
+  const [ramTotal, setRamTotal] = useState(undefined)
+  const [ramUsed, setRamUsed] = useState(undefined)
+  const [cpuPercent, setCpuPercent] = useState(undefined)
 
   const [uptime, setUptime] = useState("0:0:0:0")
-  const [api_works, setApiWorks] = useState(false)
-  const [server_works_level, setServerWorksLevel] = useState(0)
+  const [apiWorks, setApiWorks] = useState(false)
+  const [serverWorksLevel, setServerWorksLevel] = useState(0)
 
   const [players, setPlayers] = useState([])
   const [searchPlayers, setSearchPlayers] = useState("")
 
   const [backups, setBackups] = useState([])
-  const [search_backups, setSearchBackups] = useState("")
-  const [backup_creates, setBackupCreates] = useState(false)
+  const [searchBackups, setSearchBackups] = useState("")
+  const [backupCreates, setBackupCreates] = useState(false)
 
   const [plugins, setPlugins] = useState([])
-  const [search_installed_plugins, setSearchInstalledPlugins] = useState("")
+  const [searchInstalledPlugins, setSearchInstalledPlugins] = useState("")
   
-  const [active_section, setActiveSection] = useState(1)
+  const [activeSection, setActiveSection] = useState(1)
 
-  let logs_websocket = useRef(undefined)
+  let logsWebsocket = useRef(undefined)
   const [logs, setLogs] = useState([])
 
-  const confirm_action_ref = useRef(undefined)
-  const [confirm_dialog, setConfirmDialog] = useState({
+  const confirmActionRef = useRef(undefined)
+  const [confirmDialog, setConfirmDialog] = useState({
     show: false,
     title: "",
     description: "",
-    confirm_text: "",
-    confirm_type: "success",
+    confirmText: "",
+    confirmType: "success",
   })
 
-  const [server_properties, setServerProperties] = useState({})
-  const [edited_server_properties, setEditedServerProperties] = useState({})
+  const [serverProperties, setServerProperties] = useState({})
+  const [editedServerProperties, setEditedServerProperties] = useState({})
 
 
-  const handle_start_server = async () => {
+  const handleStartServer = async () => {
     await startServer()
     setServerWorksLevel(1)
   }
 
-  const handle_stop_server = async () => {
+  const handleStopServer = async () => {
     await stopServer()
     setServerWorksLevel(3)
   }
 
-  const handle_restart_server = async () => {
+  const handleRestartServer = async () => {
     await restartServer()
     setServerWorksLevel(3)
   }
 
-  const handle_accept_eula = async () => {
-    if (api_works) {
+  const handleAcceptEula = async () => {
+    if (apiWorks) {
       await setEulaStatusApi(true)
       setEulaStatus(true)
     }
   }
 
-  const handle_confirm = async () => {
+  const handleConfirm = async () => {
     setConfirmDialog(prev => ({...prev, show: false}))
-    if (confirm_action_ref.current) await confirm_action_ref.current()
-    confirm_action_ref.current = undefined
+    if (confirmActionRef.current) await confirmActionRef.current()
+    confirmActionRef.current = undefined
   }
 
-  const handle_cancel = async () => {
-    confirm_action_ref.current = undefined
+  const handleCancel = async () => {
+    confirmActionRef.current = undefined
     setConfirmDialog(prev => ({...prev, show: false}))
   }
   
-  const handle_delete_plugin_button = async (plugin_to_delete) => {
+  const handleDeletePluginButton = async (pluginToDelete) => {
     setPlugins(prev => {
-        let updated = [...prev].filter(plugin => plugin !== plugin_to_delete)
+        let updated = [...prev].filter(plugin => plugin !== pluginToDelete)
         return updated
     })
-    await deletePlugin(plugin_to_delete)
+    await deletePlugin(pluginToDelete)
   }
 
 
-  const check_server_info = async () => {
-    const server_info = await getServerInfo()
-    setServerSoftware(server_info.data.info.server_software[0].toUpperCase() + server_info.data.info.server_software.slice(1))
-    setMinecraftVersion(server_info.data.info.minecraft_version)
-    setMaxPlayers(server_info.data.info.max_players)
-    setUptime(server_info.data.info.uptime)
+  const checkServerInfo = async () => {
+    const serverInfo = await getServerInfo()
+    setServerSoftware(serverInfo.data.info.server_software[0].toUpperCase() + serverInfo.data.info.server_software.slice(1))
+    setMinecraftVersion(serverInfo.data.info.minecraft_version)
+    setMaxPlayers(serverInfo.data.info.max_players)
+    setUptime(serverInfo.data.info.uptime)
   }
 
-  const check_eula_status = async () => {
+  const checkEulaStatus = async () => {
     setEulaStatus((await getEulaStatus()).data.eula)
   }
 
-  const check_metrics = async () => {
-    const ram_usage = await getRamUsage()
-    const cpu_percent = await getCpuPercent()
-    setCpuPercent(cpu_percent.data.percent)
-    setRamTotal(ram_usage.data.total)
-    setRamUsed(ram_usage.data.used)
+  const checkMetrics = async () => {
+    const ramUsage = await getRamUsage()
+    const cpuPercent = await getCpuPercent()
+    setCpuPercent(cpuPercent.data.percent)
+    setRamTotal(ramUsage.data.total)
+    setRamUsed(ramUsage.data.used)
   }
 
-  const check_server_status = async () => {
+  const checkServerStatus = async () => {
     try {
-      const server_info = await getServerInfo()
+      const serverInfo = await getServerInfo()
       setApiWorks(true)
 
-      setPlayers(server_info.data.info.players)
+      setPlayers(serverInfo.data.info.players)
 
-      switch (server_info.data.info.status) {
+      switch (serverInfo.data.info.status) {
         case "starting":
           setServerWorksLevel(1)
           break
@@ -149,35 +149,35 @@ const App = () => {
     }
   }
 
-  const check_backups = async () => {
+  const checkBackups = async () => {
     setBackups((await getBackups()).data.backups)
   }
 
-  const check_server_plugins = async () => {
+  const checkServerPlugins = async () => {
     setPlugins((await getPlugins()).data.plugins)
   }
 
-  const check_server_properties = async () => {
-    const server_properties = (await getServerProperties()).data.properties
-    setServerProperties(server_properties)
-    setEditedServerProperties(server_properties)
+  const checkServerProperties = async () => {
+    const serverProperties = (await getServerProperties()).data.properties
+    setServerProperties(serverProperties)
+    setEditedServerProperties(serverProperties)
   }
 
 
-  const update_server_properties = async () => {
-    const diff_keys = Object.keys(edited_server_properties).filter(key => edited_server_properties[key] !== server_properties[key])
-    for (const key of diff_keys) {
-      await updateServerProperty(key, edited_server_properties[key])
+  const updateServerProperties = async () => {
+    const diffKeys = Object.keys(editedServerProperties).filter(key => editedServerProperties[key] !== serverProperties[key])
+    for (const key of diffKeys) {
+      await updateServerProperty(key, editedServerProperties[key])
     }
-    setServerProperties(edited_server_properties)
+    setServerProperties(editedServerProperties)
   }
 
-  const showConfirm = (action, title = "Вы уверены?", description = "Действие невозможно отменить.", confirm_text = "Подтвердить", confirm_type = "success") => {
-    confirm_action_ref.current = action
-    setConfirmDialog({show: true, title: title, description: description, confirm_text: confirm_text, confirm_type: confirm_type})
+  const showConfirm = (action, title = "Вы уверены?", description = "Действие невозможно отменить.", confirmText = "Подтвердить", confirmType = "success") => {
+    confirmActionRef.current = action
+    setConfirmDialog({show: true, title: title, description: description, confirmText: confirmText, confirmType: confirmType})
   }
 
-  const update_logs = (log) => {
+  const updateLogs = (log) => {
     if (log == undefined) return
     setLogs(prev => {
       let updated = [...prev, log]
@@ -186,74 +186,74 @@ const App = () => {
   }
 
   const openPlayer = (player) => {
-    setSearch(player)
+    setSearchPlayers(player)
     setActiveSection(3)
   }
 
 
   useEffect(() => {
-    createLogsWebSocket(update_logs, () => {logs_websocket.close()}, logs_websocket)
-    check_server_status()
-    check_backups()
-    check_server_plugins()
-    check_server_properties()
-    check_server_info()
-    check_eula_status()
-    check_metrics()
+    createLogsWebSocket(updateLogs, () => {logsWebsocket.close()}, logsWebsocket)
+    checkServerStatus()
+    checkBackups()
+    checkServerPlugins()
+    checkServerProperties()
+    checkServerInfo()
+    checkEulaStatus()
+    checkMetrics()
     const interval = setInterval(async () => {
-      check_server_status()
-      check_backups()
-      check_server_plugins()
-      check_server_info()
-      check_metrics()
+      checkServerStatus()
+      checkBackups()
+      checkServerPlugins()
+      checkServerInfo()
+      checkMetrics()
     }, 1000)
     return () => {clearInterval(interval)}
   }, [])
 
 
-  const backups_panel_props = {search_backups, api_works, createBackup, backups, backup_creates, setBackupCreates, showConfirm, deleteBackup, restoreBackup, setSearchBackups}
-  const properties_panel_props = {showConfirm, setEditedServerProperties, server_properties, edited_server_properties, api_works, update_server_properties}
-  const plugins_panel_props = {setSearchInstalledPlugins, plugins, search_installed_plugins, api_works, deletePlugin, searchPlugins, installPlugin}
-  const home_panel_props = {
-    active_section,
-    api_works,
-    server_works_level,
+  const backupsPanelProps = {searchBackups, apiWorks, createBackup, backups, backupCreates, setBackupCreates, showConfirm, deleteBackup, restoreBackup, setSearchBackups}
+  const propertiesPanelProps = {showConfirm, setEditedServerProperties, serverProperties, editedServerProperties, apiWorks, updateServerProperties}
+  const pluginsPanelProps = {setSearchInstalledPlugins, plugins, searchInstalledPlugins, apiWorks, deletePlugin, searchPlugins, installPlugin}
+  const homePanelProps = {
+    activeSection,
+    apiWorks,
+    serverWorksLevel,
     onPlayerClick: openPlayer,
     setServerWorksLevel,
     logs,
     players,
     backups,
     plugins,
-    server_software,
-    minecraft_version,
-    max_players,
-    eula_status,
-    ram_total,
-    ram_used,
-    cpu_percent,
+    serverSoftware,
+    minecraftVersion,
+    maxPlayers,
+    eulaStatus,
+    ramTotal,
+    ramUsed,
+    cpuPercent,
     uptime,
     setActiveSection,
     setSearchBackups,
     setSearchInstalledPlugins,
-    handle_start_server,
-    handle_stop_server,
-    handle_restart_server,
-    handle_accept_eula,
+    handleStartServer,
+    handleStopServer,
+    handleRestartServer,
+    handleAcceptEula,
     executeCommand
   }
 
 
   return (
     <div className="background">
-      <Sidebar api_works={api_works} active_section={active_section} setActiveSection={setActiveSection} />
+      <Sidebar apiWorks={apiWorks} activeSection={activeSection} setActiveSection={setActiveSection} />
       <div className="content">
-        {(active_section == 1) && <HomePanel {...home_panel_props} />}
-        {(active_section == 2) && <TerminalPanel executeCommand={executeCommand} api_works={api_works} logs={logs} />}
-        {(active_section == 3) && <PlayersPanel players={players} executeCommand={executeCommand} search={searchPlayers} setSearch={setSearchPlayers} />}
-        {(active_section == 4) && <PluginsPanel {...plugins_panel_props} />}
-        {(active_section == 5) && <BackupsPanel {...backups_panel_props} />}
-        {(active_section == 6) && <PropertiesPanel {...properties_panel_props} />}
-        <ConfirmDialog dialog={confirm_dialog} onConfirm={handle_confirm} onCancel={handle_cancel} />
+        {(activeSection == 1) && <HomePanel {...homePanelProps} />}
+        {(activeSection == 2) && <TerminalPanel executeCommand={executeCommand} apiWorks={apiWorks} logs={logs} />}
+        {(activeSection == 3) && <PlayersPanel players={players} executeCommand={executeCommand} searchPlayers={searchPlayers} setSearchPlayers={setSearchPlayers} apiWorks={apiWorks} />}
+        {(activeSection == 4) && <PluginsPanel {...pluginsPanelProps} />}
+        {(activeSection == 5) && <BackupsPanel {...backupsPanelProps} />}
+        {(activeSection == 6) && <PropertiesPanel {...propertiesPanelProps} />}
+        <ConfirmDialog dialog={confirmDialog} onConfirm={handleConfirm} onCancel={handleCancel} />
       </div>
     </div>
   )

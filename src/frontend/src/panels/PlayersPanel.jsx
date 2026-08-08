@@ -1,15 +1,18 @@
 import { useState } from "react"
 
 
-const PlayersPanel = ({executeCommand, players = [], search, setSearch}) => {
-  const filtered_players = players.filter(player => player.toLowerCase().includes((search.toLowerCase())))
-  const players_items = filtered_players.map((player, index) => {
+const PlayersPanel = ({executeCommand, players = [], search, setSearch, apiWorks}) => {
+  const filteredPlayers = players.filter(player => player.toLowerCase().includes((search.toLowerCase())))
+  const sendCommand = async (command) => {
+    if (command) await executeCommand(command)
+  }
+  const playersItems = filteredPlayers.map((player, index) => {
     return (
       <div className="big-players-card-item" key={index}>
         <img className="big-players-card-item-image" src="steve.png" alt="player" width="35px" height="35px" />
         <h4 className="big-players-card-item-text">{player}</h4>
-        <button className={"big-players-card-item-kick-button button-enabled-" + api_works} onClick={() => send_command("kick " + player)}>Кикнуть</button>
-        <button className={"big-players-card-item-ban-button button-enabled-" + api_works} onClick={() => send_command("ban " + player)}>Бан</button>
+        <button className={"big-players-card-item-kick-button button-enabled-" + apiWorks} onClick={() => sendCommand("kick " + player)}>Кикнуть</button>
+        <button className={"big-players-card-item-ban-button button-enabled-" + apiWorks} onClick={() => sendCommand("ban " + player)}>Бан</button>
       </div>
     )
   })
@@ -25,7 +28,7 @@ const PlayersPanel = ({executeCommand, players = [], search, setSearch}) => {
       </div>
             
       <div className="big-players-card-items-div">
-        {players_items}
+        {playersItems}
       </div>
       {(players.length == 0) && <h4 className="big-players-card-no-players-text">Сервер пуст</h4>}
     </div>  

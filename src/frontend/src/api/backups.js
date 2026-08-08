@@ -1,19 +1,19 @@
-import { API_URL } from '../constants/api.js'
+import { apiUrl } from '../constants/api.js'
 
 
 export const getBackups = async () => {
-  const response = await fetch(`${API_URL}/backups/`)
+  const response = await fetch(`${apiUrl}/backups/`)
   return await response.json()
 }
 
 export const createBackup = async () => {
-  await fetch(`${API_URL}/backups/`, {method: "POST"})
+  await fetch(`${apiUrl}/backups/`, {method: "POST"})
 }
 
 export const deleteBackup = async (backup) => {
-  await fetch(`${API_URL}/backups/${backup}`, {method: "DELETE"})
+  await fetch(`${apiUrl}/backups/${backup}`, {method: "DELETE"})
 }
 
 export const restoreBackup = async (backup) => {
-  await fetch(`${API_URL}/backups/restore/${backup}`, {method: "POST"})
+  await fetch(`${apiUrl}/backups/restore/${backup}`, {method: "POST"})
 }

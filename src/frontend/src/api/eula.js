@@ -1,11 +1,11 @@
-import { API_URL } from '../constants/api.js'
+import { apiUrl } from '../constants/api.js'
 
 
 export const getEulaStatus = async () => {
-  const response = await fetch(`${API_URL}/eula/`)
+  const response = await fetch(`${apiUrl}/eula/`)
   return await response.json()
 }
 
-export const setEulaStatus = async (new_eula_status) => {
-  await fetch(`${API_URL}/eula/?accept_eula=${String(new_eula_status)}`, {method: "POST"})
+export const setEulaStatus = async (newEulaStatus) => {
+  await fetch(`${apiUrl}/eula/?accept_eula=${String(newEulaStatus)}`, {method: "POST"})
 }
