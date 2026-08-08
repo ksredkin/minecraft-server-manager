@@ -5,11 +5,9 @@ const createLogsWebSocket = async (onMessage, onError, socketRef, reconnectInter
 
   socketRef.current = new WebSocket(`ws://${apiUrl.slice(5)}/ws/logs`)
 
-  socketRef.current.onmessage = (event) => { onMessage(event.data) }
-  socketRef.current.onclose = () => {
-    setTimeout(() => createLogsWebSocket(onMessage, onError, socketRef, reconnectInterval), reconnectInterval)
-  }
-  socketRef.current.onerror = (error) => { onError(error) }
+  socketRef.current.onmessage = (event) => {onMessage(event.data)}
+  socketRef.current.onclose = () => {setTimeout(() => createLogsWebSocket(onMessage, onError, socketRef, reconnectInterval), reconnectInterval)}
+  socketRef.current.onerror = (error) => {onError(error)}
 }
 
 export default createLogsWebSocket

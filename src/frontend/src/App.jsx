@@ -96,39 +96,23 @@ const App = () => {
   
   const handleDeletePluginButton = async (pluginToDelete) => {
     setPlugins(prev => {
-        let updated = [...prev].filter(plugin => plugin !== pluginToDelete)
-        return updated
+      let updated = [...prev].filter(plugin => plugin !== pluginToDelete)
+      return updated
     })
     await deletePlugin(pluginToDelete)
   }
 
 
   const checkServerInfo = async () => {
-    const serverInfo = await getServerInfo()
-    setServerSoftware(serverInfo.data.info.server_software[0].toUpperCase() + serverInfo.data.info.server_software.slice(1))
-    setMinecraftVersion(serverInfo.data.info.minecraft_version)
-    setMaxPlayers(serverInfo.data.info.max_players)
-    setUptime(serverInfo.data.info.uptime)
-  }
-
-  const checkEulaStatus = async () => {
-    setEulaStatus((await getEulaStatus()).data.eula)
-  }
-
-  const checkMetrics = async () => {
-    const ramUsage = await getRamUsage()
-    const cpuPercent = await getCpuPercent()
-    setCpuPercent(cpuPercent.data.percent)
-    setRamTotal(ramUsage.data.total)
-    setRamUsed(ramUsage.data.used)
-  }
-
-  const checkServerStatus = async () => {
     try {
       const serverInfo = await getServerInfo()
       setApiWorks(true)
 
-      setPlayers(serverInfo.data.info.players)
+      if (Array.isArray(serverInfo.data.info.players)) setPlayers(serverInfo.data.info.players)
+      setServerSoftware(serverInfo.data.info.server_software[0].toUpperCase() + serverInfo.data.info.server_software.slice(1))
+      setMinecraftVersion(serverInfo.data.info.minecraft_version)
+      setMaxPlayers(serverInfo.data.info.max_players)
+      setUptime(serverInfo.data.info.uptime)
 
       switch (serverInfo.data.info.status) {
         case "starting":
@@ -147,6 +131,18 @@ const App = () => {
     } catch {
       setApiWorks(false)
     }
+  }
+
+  const checkEulaStatus = async () => {
+    setEulaStatus((await getEulaStatus()).data.eula)
+  }
+
+  const checkMetrics = async () => {
+    const ramUsage = await getRamUsage()
+    const cpuPercent = await getCpuPercent()
+    setCpuPercent(cpuPercent.data.percent)
+    setRamTotal(ramUsage.data.total)
+    setRamUsed(ramUsage.data.used)
   }
 
   const checkBackups = async () => {
@@ -193,19 +189,19 @@ const App = () => {
 
   useEffect(() => {
     createLogsWebSocket(updateLogs, () => {logsWebsocket.close()}, logsWebsocket)
-    checkServerStatus()
+    
     checkBackups()
     checkServerPlugins()
-    checkServerProperties()
     checkServerInfo()
-    checkEulaStatus()
     checkMetrics()
+
+    checkServerProperties()
+    checkEulaStatus()
     const interval = setInterval(async () => {
-      checkServerStatus()
-      checkBackups()
-      checkServerPlugins()
-      checkServerInfo()
-      checkMetrics()
+      await checkBackups()
+      await checkServerPlugins()
+      await checkServerInfo()
+      await checkMetrics()
     }, 1000)
     return () => {clearInterval(interval)}
   }, [])

@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 
-const PlayersPanel = ({executeCommand, players = [], search, setSearch, apiWorks}) => {
-  const filteredPlayers = players.filter(player => player.toLowerCase().includes((search.toLowerCase())))
+const PlayersPanel = ({executeCommand, searchPlayers, setSearchPlayers, apiWorks, players = []}) => {
+  const filteredPlayers = players.filter(player => player.toLowerCase().includes((searchPlayers.toLowerCase())))
   const sendCommand = async (command) => {
     if (command) await executeCommand(command)
   }
@@ -24,7 +24,7 @@ const PlayersPanel = ({executeCommand, players = [], search, setSearch, apiWorks
       </div>
 
       <div className="big-players-card-subheader">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
+        <input value={searchPlayers} onChange={(e) => setSearchPlayers(e.target.value)} type="text" className="big-players-card-footer-input" placeholder="🔍︎ Введите ник игрока..."/>
       </div>
             
       <div className="big-players-card-items-div">
