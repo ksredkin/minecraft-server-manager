@@ -1,0 +1,12 @@
+FROM python:3.14
+
+COPY ./alembic /app/alembic
+COPY ./src/common/database /app/src/common/database
+COPY ./poetry.lock ./pyproject.toml ./alembic.ini /app 
+
+WORKDIR /app
+
+RUN pip install poetry
+RUN poetry install --only main --no-root
+
+CMD ["poetry", "run", "alembic", "upgrade", "head"]
