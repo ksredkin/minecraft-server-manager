@@ -30,7 +30,11 @@ class ModrinthApiClient(ApiClientInterface):
                 params = {
                     "query": query,
                     "facets": json.dumps(
-                        [[f"versions:{minecraft_version}"], ["project_type:plugin"], [f"categories:{server_software}"]]
+                        [
+                            [f"versions:{minecraft_version}"],
+                            ["project_type:plugin"],
+                            [f"categories:{server_software}"],
+                        ]
                     ),
                 }
                 r = await client.get(
