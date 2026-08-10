@@ -1,21 +1,34 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine, AsyncSession
-import os
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
 
-url = f"postgresql+asyncpg://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@{os.getenv("DB_HOST")}:{os.getenv("DB_PORT")}/{os.getenv("DB_NAME")}"
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-async_engine: AsyncEngine = create_async_engine(url, pool_size=10, max_overflow=20, pool_recycle=3600, pool_pre_ping=True, pool_timeout=5)
-session: async_sessionmaker = async_sessionmaker(bind=async_engine, expire_on_commit=False)
+from src.common.core.config import settings
 
-@asynccontextmanager
-async def get_db_session() -> AsyncGenerator[Any, Any, AsyncSession]:
+url = f"postgresql+asyncpg://{settings.db_user}:{settings.db_password}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+
+async_engine: AsyncEngine = create_async_engine(
+    url,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=3600,
+    pool_pre_ping=True,
+    pool_timeout=5,
+)
+session: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=async_engine, expire_on_commit=False
+)
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, Any]:
     async with session() as db_session:
-        db_session: AsyncSession
         try:
             yield db_session
-            db_session.commit()
-            db_session.close()
+            await db_session.commit()
         except Exception:
-            db_session.rollback()
+            await db_session.rollback()
             raise
