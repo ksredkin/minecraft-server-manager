@@ -44,8 +44,3 @@ async def login(
         content={"success": True, "access_token": token, "token_type": "Bearer"},
         status_code=200,
     )
-
-
-@auth_router.post("/test")
-async def test(current_user_id: int = Depends(get_current_user_id)) -> JSONResponse:
-    return JSONResponse({"success": True, "current_user_id": current_user_id})

@@ -3,13 +3,13 @@ from typing import Any
 
 from src.api.api_clients.interfaces import ApiClientInterface
 from src.api.api_clients.modrinth import ModrinthApiClient
-from src.api.exceptions.api_client import ApiClientInvalidResponseError
-from src.api.exceptions.plugins import (
+from src.daemon.exceptions.api_client import ApiClientInvalidResponseError
+from src.daemon.exceptions.plugins import (
     PluginJarNotFoundError,
     PluginsFolderDoesNotExistError,
     PluginVersionNotFoundError,
 )
-from src.api.exceptions.server import (
+from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )

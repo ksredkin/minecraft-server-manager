@@ -1,122 +1,20 @@
-import asyncio
-
-from fastapi import APIRouter, Depends, WebSocket
+from fastapi import Depends
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRouter
 
-from src.api.services.connection_manager import (
-    ConnectionManager,
-    get_connection_manager,
-)
-from src.api.services.process_service import ProcessService, get_process_service
-from src.api.utils.logger import Logger
-
-server_router = APIRouter()
-logger = Logger(__name__)
+from src.api.dependencies.auth import get_current_user_id
+from src.api.dependencies.server import get_server_service
+from src.api.dependencies.server_user import get_server_user_service
+from src.api.services.server_service import ServerService
+from src.api.services.server_user_service import ServerUserService
+from src.api.schemas.server import ServerResponse
 
 
-@server_router.post("/start", description="Запустить сервер.")
-def start(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    started = process_service.start()
-    logger.info("Сервер успешно запущен.")
-    return JSONResponse({"success": started}, 200)
+server_router = APIRouter(prefix="/server")
 
 
-@server_router.post("/stop", description="Остановить сервер.")
-def stop(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    process_service.stop()
-    logger.info("Сервер успешно остановлен.")
-    return JSONResponse({"success": True}, 200)
-
-
-@server_router.post("/restart", description="Перезапустить сервер.")
-def restart(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    restarted = process_service.restart()
-    logger.info("Сервер успешно перезапущен.")
-    return JSONResponse({"success": restarted}, 200)
-
-
-@server_router.get("/status", description="Получить текущий статус работы сервера.")
-def status(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    return JSONResponse(
-        {"success": True, "data": {"status": process_service.status()}}, 200
-    )
-
-
-@server_router.post("/command", description="Выполнить команду.")
-def command(
-    command: str, process_service: ProcessService = Depends(get_process_service)
-) -> JSONResponse:
-    process_service.execute_command(command)
-    logger.info(f"Успешно выполнена команда: {command}")
-    return JSONResponse({"success": True}, 200)
-
-
-@server_router.get("/logs", description="Получить все логи сервера.")
-def get_logs(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    return JSONResponse(
-        {"success": True, "data": {"logs": process_service.get_logs()}}, 200
-    )
-
-
-@server_router.get(
-    "/logs/tail", description="Получить последние N строк логов сервера."
-)
-def get_logs_tail(
-    limit: int,
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    return JSONResponse(
-        {
-            "success": True,
-            "data": {"logs": process_service.get_logs()[: -limit - 1 : -1]},
-        },
-        200,
-    )
-
-
-@server_router.websocket("/ws/logs")
-async def logs_websocket(
-    websocket: WebSocket,
-    connection_manager: ConnectionManager = Depends(get_connection_manager),
-) -> None:
-    try:
-        await connection_manager.connect(websocket)
-
-        while True:
-            await asyncio.sleep(1)
-    except Exception:
-        await connection_manager.disconnect(websocket)
-
-
-@server_router.get("/players", description="Получить список игроков.")
-def get_players(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    players = process_service.get_players()
-    return JSONResponse({"success": True, "data": {"players": players}}, 200)
-
-
-@server_router.get("/info", description="Получить информацию о сервере.")
-def get_server_info(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    info = process_service.get_server_info()
-    return JSONResponse({"success": True, "data": {"info": info}}, 200)
-
-
-@server_router.get("/uptime", description="Получить время работы сервера.")
-def get_uptime(
-    process_service: ProcessService = Depends(get_process_service),
-) -> JSONResponse:
-    uptime = process_service.get_uptime()
-    return JSONResponse({"success": True, "data": {"uptime": uptime}}, 200)
+@server_router.post("/", response_model=ServerResponse, status_code=201)
+async def create_server(display_name: str|None = None, current_user_id: int = Depends(get_current_user_id), server_service: ServerService = Depends(get_server_service), server_users_service: ServerUserService = Depends(get_server_user_service)) -> JSONResponse:
+    server = await server_service.create_server()
+    await server_users_service.create_server_user(server.id, current_user_id, display_name or str(server.uuid), "owner")
+    return server

@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers.auth import auth_router
+from src.api.routers.daemon import daemon_router
+from src.api.routers.server import server_router
 from src.common.core.config import settings
 
 
@@ -24,6 +26,8 @@ def main() -> None:
     )
 
     app.include_router(auth_router)
+    app.include_router(daemon_router)
+    app.include_router(server_router)
 
     uvicorn.run(app, host=settings.api_host, port=settings.api_port)
 

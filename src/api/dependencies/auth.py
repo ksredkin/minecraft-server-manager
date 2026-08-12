@@ -1,20 +1,13 @@
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.services.auth_service import AuthService
 from src.api.services.jwt_service import JwtService
 from src.api.services.password_service import PasswordService
 from src.api.services.user_service import UserService
 from src.common.core.config import settings
-from src.common.database.connection import get_db_session
 from src.common.repositories.user_repository import UserRespository
-
-
-def get_user_repository(
-    session: AsyncSession = Depends(get_db_session),
-) -> UserRespository:
-    return UserRespository(session)
+from src.api.dependencies.database import get_user_repository
 
 
 def get_password_service() -> PasswordService:

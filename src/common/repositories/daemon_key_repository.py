@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.database.models import DaemonKey
+from sqlalchemy import select
 
 
-class DaemonKeysRepository:
+class DaemonKeyRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -12,3 +13,7 @@ class DaemonKeysRepository:
         self.session.add(daemon_key)
         await self.session.flush()
         return daemon_key
+
+    async def get_by_key_hash(self, key_hash: str) -> DaemonKey|None:
+        result = await self.session.execute(select(DaemonKey).where(DaemonKey.key_hash == key_hash))
+        return result.scalar_one_or_none()

@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from src.api.exceptions.eula import (
+from src.daemon.exceptions.eula import (
     EulaFileNotFoundError,
     EulaStatusNotFoundError,
 )
-from src.api.exceptions.server import (
+from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )

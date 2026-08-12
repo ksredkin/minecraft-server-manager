@@ -1,0 +1,15 @@
+[daemon]
+api_host = '127.0.0.1'
+api_port = 8080
+local_backups_path = 'D:/backups'
+
+[[servers]]
+key = '74wir4YtC-yLPTyXBYHayrggnqB2rhG76jiyzynbO2U'
+path = 'D:\server'
+java = 'java'
+java_args = ['-Xms4G', '-Xmx6G']
+jar_name = 'Spigot-26.1.2.jar'
+jar_args = ['nogui']
+minecraft_version = '1.21.2'
+server_software = 'spigot'
+server_stop_timeout = 60

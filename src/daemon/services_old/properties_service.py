@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from src.api.exceptions.server import (
+from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
-from src.api.exceptions.settings import SettingsFileNotFoundError
+from src.daemon.exceptions.settings import SettingsFileNotFoundError
 from src.daemon.core.config import SERVER_PATH
 
 
