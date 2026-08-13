@@ -9,6 +9,13 @@ class ServerInfoResponse(BaseModel):
     role: str
 
 class ServerCreated(BaseModel):
-    id: int
     uuid: UUID
     daemon_key: str
+    created_at: datetime
+
+class ServerDeletedResponse(BaseModel):
+    uuid: UUID
+    daemon_key_hash: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

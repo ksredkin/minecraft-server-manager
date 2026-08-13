@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.database.models import Server, ServerUser
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from uuid import UUID
 from datetime import datetime
 
@@ -27,3 +27,7 @@ class ServerRepository:
     async def get_by_user(self, user_id: int) -> list[dict[str, str|datetime|UUID]]:
         result = await self.session.execute(select(Server.uuid, Server.created_at, ServerUser.display_name, ServerUser.role).join(Server.server_users).where(ServerUser.user_id == user_id))
         return result.mappings().all()
+
+    async def delete_by_uuid(self, uuid: UUID) -> Server|None:
+        result = await self.session.execute(delete(Server).where(Server.uuid == uuid).returning(Server))
+        return result.scalar_one_or_none()

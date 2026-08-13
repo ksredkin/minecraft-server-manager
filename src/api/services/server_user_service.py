@@ -14,15 +14,10 @@ class ServerUserService:
         return await self.server_user_repository.create_server_user(server_id, user_id, role, display_name)
 
     async def get_by_user_and_server(self, user_id: int, server_id: int) -> ServerUser|None:
-        server_user = await self.server_user_repository.get_by_user_and_server(user_id, server_id)
-
-        if not server_user:
-            return None
-
-        return server_user
+        return await self.server_user_repository.get_by_user_and_server(user_id, server_id)
 
     async def get_by_user(self, user_id: int) -> list[ServerUser]:
         return await self.server_user_repository.get_by_user(user_id)
 
-    async def is_owner(self, server_user: ServerUser) -> bool:
+    def is_owner(self, server_user: ServerUser) -> bool:
         return server_user.role == "owner"
