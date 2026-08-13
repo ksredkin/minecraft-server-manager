@@ -5,7 +5,6 @@ from src.common.database.connection import get_db_session, session
 from src.common.repositories.user_repository import UserRespository
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
-from src.common.repositories.daemon_key_repository import DaemonKeyRepository
 
 def get_async_sessionmaker() -> async_sessionmaker:
     return session
@@ -24,8 +23,3 @@ def get_server_user_repository(
     session: AsyncSession = Depends(get_db_session),
 ) -> ServerUserRepository:
     return ServerUserRepository(session)
-
-def get_daemon_key_repository(
-    session: AsyncSession = Depends(get_db_session),
-) -> DaemonKeyRepository:
-    return DaemonKeyRepository(session)

@@ -2,9 +2,13 @@ from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 
-class ServerResponse(BaseModel):
-    id: int
+class ServerInfoResponse(BaseModel):
     uuid: UUID
     created_at: datetime
+    display_name: str
+    role: str
 
-    model_config = ConfigDict(from_attributes=True)
+class ServerCreated(BaseModel):
+    id: int
+    uuid: UUID
+    daemon_key: str

@@ -1,17 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.database.models import Server
+from src.common.database.models import Server, ServerUser
 from sqlalchemy import select
 from uuid import UUID
-
+from datetime import datetime
 
 
 class ServerRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_server(self, uuid: str) -> Server:
-        server = Server(uuid=uuid)
+    async def create_server(self, uuid: str, daemon_key_hash: str) -> Server:
+        server = Server(uuid=uuid, daemon_key_hash=daemon_key_hash)
         self.session.add(server)
         await self.session.flush()
         return server
@@ -19,3 +19,11 @@ class ServerRepository:
     async def get_by_uuid(self, uuid: UUID) -> Server|None:
         result = await self.session.execute(select(Server).where(Server.uuid == uuid))
         return result.scalar_one_or_none()
+
+    async def get_by_daemon_key_hash(self, daemon_key_hash: str) -> Server|None:
+        result = await self.session.execute(select(Server).where(Server.daemon_key_hash == daemon_key_hash))
+        return result.scalar_one_or_none()
+
+    async def get_by_user(self, user_id: int) -> list[dict[str, str|datetime|UUID]]:
+        result = await self.session.execute(select(Server.uuid, Server.created_at, ServerUser.display_name, ServerUser.role).join(Server.server_users).where(ServerUser.user_id == user_id))
+        return result.mappings().all()

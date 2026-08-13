@@ -21,3 +21,7 @@ class ServerUserRepository:
     async def get_by_user_and_server(self, user_id: int, server_id: int) -> ServerUser|None:
         result = await self.session.execute(select(ServerUser).where(ServerUser.user_id == user_id, ServerUser.server_id == server_id))
         return result.scalar_one_or_none()
+
+    async def get_by_user(self, user_id: int) -> list[ServerUser]:
+        result = await self.session.execute(select(ServerUser).where(ServerUser.user_id == user_id))
+        return result.scalars().all()

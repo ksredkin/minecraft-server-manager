@@ -49,25 +49,12 @@ class Server(Base):
     uuid: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), unique=True, default=uuid.uuid4
     )
+    daemon_key_hash: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
-    daemon_keys: Mapped[list["DaemonKey"]] = relationship(back_populates="server")
     server_users: Mapped[list["ServerUser"]] = relationship(back_populates="server")
-
-
-class DaemonKey(Base):
-    __tablename__ = "daemon_keys"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    server_id: Mapped[int] = mapped_column(ForeignKey("servers.id", ondelete="CASCADE"))
-    key_hash: Mapped[str]
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-
-    server: Mapped["Server"] = relationship(back_populates="daemon_keys")
 
 
 class Subscription(Base):

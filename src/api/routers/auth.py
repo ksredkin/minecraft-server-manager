@@ -2,13 +2,13 @@ from fastapi import Depends
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
-from src.api.dependencies.auth import get_auth_service, get_current_user_id
+from src.api.dependencies.auth import get_auth_service
 from src.api.services.auth_service import AuthService
 
 auth_router = APIRouter(prefix="/auth")
 
 
-@auth_router.post("/register")
+@auth_router.post("/register", description="Создать аккаунт.")
 async def register(
     login: str,
     password: str,
@@ -28,7 +28,7 @@ async def register(
     )
 
 
-@auth_router.post("/login")
+@auth_router.post("/login", description="Войти в аккаунт.")
 async def login(
     login: str, password: str, auth_service: AuthService = Depends(get_auth_service)
 ) -> JSONResponse:

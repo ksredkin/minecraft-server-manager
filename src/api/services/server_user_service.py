@@ -21,5 +21,8 @@ class ServerUserService:
 
         return server_user
 
+    async def get_by_user(self, user_id: int) -> list[ServerUser]:
+        return await self.server_user_repository.get_by_user(user_id)
+
     async def is_owner(self, server_user: ServerUser) -> bool:
         return server_user.role == "owner"
