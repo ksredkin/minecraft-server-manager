@@ -3,8 +3,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import UUID, DateTime, ForeignKey
+from sqlalchemy import UUID, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from src.common.enums import ServerUserRole
 
 
 class Base(DeclarativeBase):
@@ -32,7 +34,10 @@ class ServerUser(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     server_id: Mapped[int] = mapped_column(ForeignKey("servers.id", ondelete="CASCADE"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    role: Mapped[str]
+    role: Mapped[ServerUserRole] = mapped_column(
+        Enum(ServerUserRole, name="server_user_role_enum"),
+        default=ServerUserRole.VIEWER,
+    )
     display_name: Mapped[str]
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

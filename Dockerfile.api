@@ -1,9 +1,7 @@
 FROM python:3.14
 
 COPY ./src/api /app/src/api
-COPY ./src/common/database /app/src/common/database
-COPY ./src/common/repositories /app/src/common/repositories
-COPY ./src/common/core /app/src/common/core
+COPY ./src/common /app/src/common
 COPY ./poetry.lock ./pyproject.toml /app 
 
 WORKDIR /app

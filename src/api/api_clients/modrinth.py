@@ -9,8 +9,6 @@ from httpx import (
     ProtocolError,
     TimeoutException,
 )
-
-from src.api.api_clients.interfaces import ApiClientInterface
 from src.daemon.exceptions.api_client import (
     ApiClientConnectionError,
     ApiClientHttpError,
@@ -18,6 +16,8 @@ from src.daemon.exceptions.api_client import (
     ApiClientProtocolError,
     ApiClientTimeoutError,
 )
+
+from src.api.api_clients.interfaces import ApiClientInterface
 
 
 class ModrinthApiClient(ApiClientInterface):

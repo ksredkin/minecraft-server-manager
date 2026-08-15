@@ -1,11 +1,11 @@
 from pathlib import Path
 
+from src.daemon.core.config import SERVER_PATH
 from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
 from src.daemon.exceptions.settings import SettingsFileNotFoundError
-from src.daemon.core.config import SERVER_PATH
 
 
 class PropertiesService:

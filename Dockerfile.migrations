@@ -1,6 +1,7 @@
 FROM python:3.14
 
 COPY ./alembic /app/alembic
+COPY ./src/common/enums.py /app/src/common/enums.py
 COPY ./src/common/database /app/src/common/database
 COPY ./src/common/core /app/src/common/core
 COPY ./poetry.lock ./pyproject.toml ./alembic.ini /app 

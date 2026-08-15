@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     db_port: int
     db_name: str
 
+    redis_host: str = "redis"
+    redis_port: int = 6379
+
     api_host: str = "0.0.0.0"
     api_port: int = 8080
 

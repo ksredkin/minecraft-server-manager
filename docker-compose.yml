@@ -13,6 +13,15 @@ services:
     networks:
       - msm-net
 
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--port ${REDIS_PORT}
+    networks:
+      - msm-net
+
   api:
     container_name: api
     build:
@@ -28,6 +37,10 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       API_HOST: ${API_HOST}
       API_PORT: ${API_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+    volumes:
+      - ./src/api:/app/src/api
     ports:
       - ${API_PORT}:${API_PORT}
     networks:
@@ -43,6 +56,8 @@ services:
       DB_HOST: postgres
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
+    volumes:
+      - ./alembic:/app/alembic
     depends_on:
       - postgres
     networks:

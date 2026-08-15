@@ -2,6 +2,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.daemon.core.config import BACKUPS_PATH, SERVER_PATH
 from src.daemon.exceptions.backups import (
     BackupNotFoundError,
     BackupPermisionError,
@@ -13,7 +14,6 @@ from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
-from src.daemon.core.config import BACKUPS_PATH, SERVER_PATH
 
 
 class BackupService:

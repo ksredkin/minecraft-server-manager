@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from src.daemon.core.config import SERVER_PATH
 from src.daemon.exceptions.eula import (
     EulaFileNotFoundError,
     EulaStatusNotFoundError,
@@ -8,7 +9,6 @@ from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
-from src.daemon.core.config import SERVER_PATH
 
 
 class EulaService:

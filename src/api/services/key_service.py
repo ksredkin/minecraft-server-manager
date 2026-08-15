@@ -1,6 +1,7 @@
 import secrets
 from hashlib import sha256
 
+
 class KeyService:
     def create(self) -> str:
         return secrets.token_urlsafe(32)
