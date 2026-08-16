@@ -114,4 +114,6 @@ async def start_server(
 
     if result.get("type") == "action_completed":
         return JSONResponse(content={"success": True})
-    return JSONResponse(content={"success": False, "error": result.get("error")}, status_code=409)
+    return JSONResponse(
+        content={"success": False, "error": result.get("error")}, status_code=409
+    )

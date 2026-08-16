@@ -1,9 +1,13 @@
 import asyncio
 from pathlib import Path
 
+from src.common.utils.logger import Logger
 from src.daemon.api_client import APIClient
 from src.daemon.config_reader import ConfigReader
+from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.server import Server
+
+logger = Logger(__name__)
 
 
 async def main() -> None:
@@ -11,7 +15,7 @@ async def main() -> None:
 
     servers_config = config.get("servers")
     if not isinstance(servers_config, list):
-        raise ValueError("Не добавлен ни 1 сервер.")
+        raise InvalidConfigError("No servers configured.")
 
     servers: list[Server] = []
     for server_settings in servers_config:
@@ -20,20 +24,27 @@ async def main() -> None:
         servers.append(Server(server_settings))
 
     if not servers:
-        raise ValueError("Не добавлен ни 1 сервер.")
+        raise InvalidConfigError("No servers configured.")
 
     daemon_settings = config.get("daemon")
     if not isinstance(daemon_settings, dict):
-        raise ValueError("Не найдены настройки daemon.")
+        raise InvalidConfigError(
+            "Invalid or missing [daemon] section in configuration."
+        )
 
     api_host = daemon_settings.get("api_host")
     api_port = daemon_settings.get("api_port")
     if not isinstance(api_host, str) or not isinstance(api_port, int):
-        raise ValueError("Не найдены настройки daemon.")
+        raise InvalidConfigError(
+            'Invalid "api_host" or "api_port" type in daemon settings.'
+        )
 
     api_client = APIClient(api_host, api_port, servers)
     await api_client.connect()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Daemon stopped by user.")

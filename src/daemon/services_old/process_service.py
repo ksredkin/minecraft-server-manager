@@ -16,6 +16,7 @@ from src.daemon.core_old.config import (
     SERVER_SOFTWARE,
     SERVER_STOP_TIMEOUT,
 )
+
 from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerAlreadyRunningError,
@@ -24,7 +25,6 @@ from src.daemon.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
-
 from src.daemon.services_old.connection_manager import (
     ConnectionManager,
     get_connection_manager,

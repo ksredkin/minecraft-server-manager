@@ -4,7 +4,11 @@ from pathlib import Path
 from queue import Queue
 from subprocess import PIPE, Popen
 from threading import Event, Thread
+
+from src.common.utils.logger import Logger
 from src.daemon.exceptions.server import ServerIsAlreadyRunningError
+
+logger = Logger(__name__)
 
 
 class Server:
@@ -58,6 +62,7 @@ class Server:
 
     def start(self) -> None:
         if not self.process or self.process.poll() is not None:
+            logger.info(f'Server with daemon key "{self.key}" is starting.')
             start_command = [
                 self.java,
                 *self.java_args,
@@ -79,7 +84,10 @@ class Server:
             self.status = "starting"
             self.start_time = datetime.now()
         else:
-            raise ServerIsAlreadyRunningError("Сервер уже запущен.")
+            logger.error(
+                f'Cannot start server: server with daemon key "{self.key}" is already running.'
+            )
+            raise ServerIsAlreadyRunningError("Server is already running.")
 
     def _reader(self) -> None:
         if self.process is None:

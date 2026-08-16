@@ -1,5 +1,6 @@
 from fastapi import Depends, WebSocket
 from fastapi.routing import APIRouter
+
 from src.api.services.connection_manager import (
     ConnectionManager,
     get_connection_manager,

@@ -1,16 +1,17 @@
-from fastapi import WebSocket
-from uuid import UUID, uuid4
-from asyncio import Future
 import asyncio
-from src.api.services.key_service import KeyService
+from asyncio import Future
+from uuid import UUID, uuid4
+
+from fastapi import WebSocket
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from src.api.services.key_service import KeyService, get_key_service
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
+from src.common.database.connection import session
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
-from src.api.services.key_service import get_key_service, KeyService
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from src.common.database.connection import session
 
 
 class ConnectionManager:
@@ -22,7 +23,7 @@ class ConnectionManager:
     ) -> None:
         self.connections: dict[int, WebSocket] = {}
         self.server_routes: dict[int, dict[str, str | int]] = {}
-        self.pending_requests: dict[UUID, Future[dict[str, str|bool]]] = {}
+        self.pending_requests: dict[UUID, Future[dict[str, str | bool]]] = {}
         self.key_service = key_service
         self.sessionmaker = sessionmaker
         self.cache_service = cache_service
@@ -90,7 +91,8 @@ class ConnectionManager:
                                     "type": "registration_failed",
                                     "servers": [
                                         {**server, "error": "invalid_key"}
-                                        for server in servers if server.get("key") not in registered
+                                        for server in servers
+                                        if server.get("key") not in registered
                                     ],
                                 }
                             )
@@ -120,15 +122,14 @@ class ConnectionManager:
 
                     future.set_result(message)
 
-    async def connect_and_recieve(self, websocket: WebSocket):
+    async def connect_and_recieve(self, websocket: WebSocket) -> None:
         connection_id: int | None = None
         try:
             connection_id = await self._connect(websocket)
             await self._recieve(connection_id)
-        except Exception as e:
+        finally:
             if connection_id:
                 await connection_manager.disconnect(connection_id)
-            raise e
 
     def register_server_route(
         self, server_id: int, connection_id: int, key: str
@@ -143,7 +144,7 @@ class ConnectionManager:
         self,
         server_id: int,
         message_type: str,
-        request_id: UUID|None = None,
+        request_id: UUID | None = None,
         **payload: str,
     ) -> bool:
         if not (server_route := self.server_routes.get(server_id)):
@@ -168,7 +169,9 @@ class ConnectionManager:
         except Exception:
             return False
 
-    async def send_action_to_server(self, server_id: int, action: str) -> dict[str, str|bool]|None:
+    async def send_action_to_server(
+        self, server_id: int, action: str
+    ) -> dict[str, str | bool] | None:
         request_id = uuid4()
 
         future = asyncio.get_running_loop().create_future()

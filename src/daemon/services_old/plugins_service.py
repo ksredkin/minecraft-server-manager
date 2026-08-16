@@ -8,13 +8,13 @@ from src.daemon.exceptions.plugins import (
     PluginsFolderDoesNotExistError,
     PluginVersionNotFoundError,
 )
+
+from src.api.api_clients.interfaces import ApiClientInterface
+from src.api.api_clients.modrinth import ModrinthApiClient
 from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
 )
-
-from src.api.api_clients.interfaces import ApiClientInterface
-from src.api.api_clients.modrinth import ModrinthApiClient
 
 
 class PluginsService:

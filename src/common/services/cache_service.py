@@ -24,7 +24,7 @@ class CacheService:
         self.r = redis
 
     async def _get(self, prefix: str, key: str, postfix: str = "") -> str | None:
-        result = await self.r.get(f"{prefix}:{key}:{postfix}")  # type: ignore
+        result = await self.r.get(f"{prefix}:{key}:{postfix}")
         logger.debug(
             f"Из кэша по ключу {f'{prefix}:{key}:{postfix}'} получено значение: {result}"  # type: ignore
         )
