@@ -67,8 +67,8 @@ class ServerService:
 
         return await self.server_repository.get_by_id(server_id)
 
-    async def resolve_server_id(self, daemon_key: str) -> int | None:
-        key_hash = self.key_service.hash(daemon_key)
+    async def resolve_server_id(self, daemon_key: UUID) -> int | None:
+        key_hash = self.key_service.hash(str(daemon_key))
         server = await self.server_repository.get_by_daemon_key_hash(key_hash)
 
         if not server:

@@ -12,6 +12,7 @@ from src.common.database.connection import session
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
+from src.common.enums import CacheResultStatus
 
 
 class ConnectionManager:
@@ -67,15 +68,26 @@ class ConnectionManager:
                                 if not isinstance(server, dict):
                                     continue
 
-                                key = server.get("key")
-                                if not isinstance(key, str):
+                                try:
+                                    key = UUID(server.get("key"))
+                                except ValueError:
                                     continue
 
-                                server_id = await daemon_key_service.resolve_server_id(
-                                    key
-                                )
-                                if not server_id:
+                                cache_result = await self.cache_service.get_server_id_by_daemon_key(key)
+
+                                if cache_result.status == CacheResultStatus.NOT_FOUND:
                                     continue
+
+                                if cache_result.status == CacheResultStatus.FOUND:
+                                    server_id = cache_result.value
+                                else:
+                                    server_id = await daemon_key_service.resolve_server_id(
+                                        key
+                                    )
+                                    if not server_id:
+                                        await self.cache_service.set_server_id_by_daemon_key_not_found(key)
+                                        continue
+                                    await self.cache_service.set_server_id_by_daemon_key(server_id)
 
                                 connection_manager.register_server_route(
                                     server_id, connection_id, key

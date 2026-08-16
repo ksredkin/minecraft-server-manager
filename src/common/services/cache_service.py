@@ -85,6 +85,23 @@ class CacheService:
             "server_user", f"{user_id}:{server_id}", self.NOT_FOUND, "role", expire
         )
 
+    async def set_server_id_by_daemon_key(self, server_id: int, daemon_key: UUID, expire: int = 3600) -> None:
+        await self._set("daemon_key", str(daemon_key), server_id, expire=expire)
+
+    async def set_server_id_by_daemon_key_not_found(self, daemon_key: UUID, expire: int = 3600) -> None:
+            await self._set("daemon_key", str(daemon_key), self.NOT_FOUND, expire=expire)
+
+    async def get_server_id_by_daemon_key(self, daemon_key: UUID) -> CacheResult:
+        value = await self._get("daemon_key", str(daemon_key))
+
+        if value == self.NOT_FOUND:
+            return CacheResult(CacheResultStatus.NOT_FOUND)
+        
+        if not value:
+            return CacheResult(CacheResultStatus.MISS)
+        
+        return CacheResult(CacheResultStatus.FOUND, ServerUserRole(value))
+
 
 cache_service = CacheService()
 
