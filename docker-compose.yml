@@ -41,6 +41,7 @@ services:
       REDIS_PORT: ${REDIS_PORT}
     volumes:
       - ./src/api:/app/src/api
+      - ./src/common/services:/app/src/common/services
     ports:
       - ${API_PORT}:${API_PORT}
     networks:

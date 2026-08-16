@@ -11,3 +11,10 @@ class KeyService:
 
     def verify(self, key: str, hash: str) -> bool:
         return self.hash(key) == hash
+
+
+key_service = KeyService()
+
+
+def get_key_service() -> KeyService:
+    return key_service

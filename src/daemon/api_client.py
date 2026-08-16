@@ -4,6 +4,7 @@ import json
 from websockets import ClientConnection, connect
 
 from src.daemon.server import Server
+from src.daemon.exceptions.server import ServerIsAlreadyRunningError
 
 
 class APIClient:
@@ -42,10 +43,29 @@ class APIClient:
                     if not isinstance(action, str):
                         break
 
+                    action_id = message.get("id")
+                    if not isinstance(action_id, str):
+                        break
+
                     match action:
                         case "start":
-                            print(f"Сервер {key} запущен!!!")
-                            server.start()
+                            try:
+                                server.start()
+                                await websocket.send(
+                                    json.dumps(
+                                        {"id": action_id, "type": "action_completed"}
+                                    )
+                                )
+                            except ServerIsAlreadyRunningError as e:
+                                await websocket.send(
+                                    json.dumps(
+                                        {
+                                            "id": action_id,
+                                            "type": "action_failed",
+                                            "error": str(e),
+                                        }
+                                    )
+                                )
                 case _:
                     continue
 

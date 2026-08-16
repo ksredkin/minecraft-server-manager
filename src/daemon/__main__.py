@@ -10,11 +10,11 @@ async def main() -> None:
     config = ConfigReader(Path(__file__).resolve().parent / "config.toml").read()
 
     servers_config = config.get("servers")
-    if not isinstance(servers_config, dict):
+    if not isinstance(servers_config, list):
         raise ValueError("Не добавлен ни 1 сервер.")
 
     servers: list[Server] = []
-    for server_settings in servers_config.values():
+    for server_settings in servers_config:
         if not isinstance(server_settings, dict):
             continue
         servers.append(Server(server_settings))

@@ -4,6 +4,7 @@ from pathlib import Path
 from queue import Queue
 from subprocess import PIPE, Popen
 from threading import Event, Thread
+from src.daemon.exceptions.server import ServerIsAlreadyRunningError
 
 
 class Server:
@@ -55,7 +56,7 @@ class Server:
         self.start_time: datetime | None = None
         self.max_players: int | None = None
 
-    def start(self) -> bool:
+    def start(self) -> None:
         if not self.process or self.process.poll() is not None:
             start_command = [
                 self.java,
@@ -77,9 +78,8 @@ class Server:
 
             self.status = "starting"
             self.start_time = datetime.now()
-
-            return True
-        return False
+        else:
+            raise ServerIsAlreadyRunningError("Сервер уже запущен.")
 
     def _reader(self) -> None:
         if self.process is None:

@@ -102,8 +102,8 @@ async def start_server(
             status_code=404,
         )
 
-    sent = await connection_manager.send_action_to_server(server_id, "start")
-    if not sent:
+    result = await connection_manager.send_action_to_server(server_id, "start")
+    if not result:
         return JSONResponse(
             content={
                 "success": False,
@@ -112,4 +112,6 @@ async def start_server(
             status_code=503,
         )
 
-    return JSONResponse(content={"success": True})
+    if result.get("type") == "action_completed":
+        return JSONResponse(content={"success": True})
+    return JSONResponse(content={"success": False, "error": result.get("error")}, status_code=409)

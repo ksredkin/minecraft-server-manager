@@ -24,7 +24,7 @@ class CacheService:
         self.r = redis
 
     async def _get(self, prefix: str, key: str, postfix: str = "") -> str | None:
-        result = await self.r.get(await self.r.get(f"{prefix}:{key}:{postfix}"))  # type: ignore
+        result = await self.r.get(f"{prefix}:{key}:{postfix}")  # type: ignore
         logger.debug(
             f"Из кэша по ключу {f'{prefix}:{key}:{postfix}'} получено значение: {result}"  # type: ignore
         )
@@ -64,7 +64,7 @@ class CacheService:
         self, user_id: int, server_id: int, role: ServerUserRole, expire: int = 3600
     ) -> None:
         await self._set(
-            "server_user", f"{user_id}:{server_id}", str(role), "role", expire
+            "server_user", f"{user_id}:{server_id}", str(role.value), "role", expire
         )
 
     async def get_server_user_role(self, user_id: int, server_id: int) -> CacheResult:
