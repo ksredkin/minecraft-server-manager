@@ -137,3 +137,32 @@ class ServerService:
             user_id, server_id, server_user.role
         )
         return True
+
+    async def is_admin_or_above(self, user_id: int, server_id: int) -> bool:
+        role_cache_result = await self.cache_service.get_server_user_role(
+            user_id, server_id
+        )
+
+        if role_cache_result.status == CacheResultStatus.FOUND:
+            return (
+                role_cache_result.value == ServerUserRole.OWNER
+                or role_cache_result.value == ServerUserRole.ADMIN
+            )
+
+        if role_cache_result.status == CacheResultStatus.NOT_FOUND:
+            return False
+
+        server_user = await self.server_user_service.get_by_user_and_server(
+            user_id, server_id
+        )
+        if not server_user:
+            await self.cache_service.set_server_user_role_not_found(user_id, server_id)
+            return False
+
+        await self.cache_service.set_server_user_role(
+            user_id, server_id, server_user.role
+        )
+        return (
+            server_user.role == ServerUserRole.OWNER
+            or server_user.role == ServerUserRole.ADMIN
+        )

@@ -135,7 +135,7 @@ class Server:
 
     def execute_command(self, command: str) -> None:
         if not self._process or self._process.poll() is not None:
-            raise ServerIsNotRunningError("Сервер не запущен.")
+            raise ServerIsNotRunningError("Server is not running.")
 
         self._process.stdin.write(command + "\n")  # type: ignore
         self._process.stdin.flush()  # type: ignore
@@ -152,6 +152,7 @@ class Server:
 
     def stop(self) -> None:
         self.execute_command("stop")
+        logger.info(f'Server with daemon key "{self.key}" is stopping.')
 
     def get_uptime(self) -> str:
         if not self._start_time:

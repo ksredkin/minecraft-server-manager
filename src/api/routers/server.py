@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
-from fastapi import Depends, WebSocket, WebSocketException
+from fastapi import Depends, WebSocket, WebSocketDisconnect, WebSocketException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
@@ -85,26 +85,26 @@ async def server_websocket(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
     server_service: ServerService = Depends(get_server_service),
 ) -> None:
-    server_id = await server_service.get_server_id(uuid)
-    if not server_id or not await server_service.is_viewer_or_above(
-        current_user_id, server_id
-    ):
-        raise WebSocketException(code=1008)
-
     try:
+        server_id = await server_service.get_server_id(uuid)
+        if not server_id or not await server_service.is_viewer_or_above(
+            current_user_id, server_id
+        ):
+            raise WebSocketException(code=1008)
+
         await connection_manager.connect_and_subscribe_to_server_channel(
             websocket, server_id
         )
         while True:
             await asyncio.sleep(1)
-    except Exception as e:
-        raise e
+    except WebSocketDisconnect:
+        pass
 
 
 @server_router.post("/{uuid}/start", status_code=200, description="Запустить сервер.")
 async def start_server(
     uuid: UUID,
-    current_user_id: int = Depends(get_current_user_id_ws),
+    current_user_id: int = Depends(get_current_user_id),
     server_service: ServerService = Depends(get_server_service),
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
@@ -118,7 +118,7 @@ async def start_server(
             status_code=404,
         )
 
-    if not await server_service.is_owner(current_user_id, server_id):
+    if not await server_service.is_admin_or_above(current_user_id, server_id):
         return JSONResponse(
             content={
                 "success": False,
@@ -128,6 +128,49 @@ async def start_server(
         )
 
     result = await connection_manager.send_action_to_server(server_id, "start")
+    if not result:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Daemon is disconnected or an internal error occurred",
+            },
+            status_code=503,
+        )
+
+    if result.get("type") == "action_completed":
+        return JSONResponse(content={"success": True})
+    return JSONResponse(
+        content={"success": False, "error": result.get("error")}, status_code=409
+    )
+
+
+@server_router.post("/{uuid}/stop", status_code=200, description="Остановить сервер.")
+async def stop_server(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Server not found or you don't have permission to stop it",
+            },
+            status_code=404,
+        )
+
+    if not await server_service.is_admin_or_above(current_user_id, server_id):
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Server not found or you don't have permission to stop it",
+            },
+            status_code=404,
+        )
+
+    result = await connection_manager.send_action_to_server(server_id, "stop")
     if not result:
         return JSONResponse(
             content={

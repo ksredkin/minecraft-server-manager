@@ -6,8 +6,12 @@ from websockets import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidMessage
 
 from src.common.utils.logger import Logger
+from src.daemon.exceptions.api_client import NoValidDaemonKeysError
 from src.daemon.exceptions.config import InvalidConfigError
-from src.daemon.exceptions.server import ServerIsAlreadyRunningError
+from src.daemon.exceptions.server import (
+    ServerIsAlreadyRunningError,
+    ServerIsNotRunningError,
+)
 from src.daemon.server import Server
 
 logger = Logger(__name__)
@@ -33,8 +37,7 @@ class APIClient:
         await websocket.send(json.dumps(data), text=True)
 
     async def _recieve_commands(self, websocket: ClientConnection) -> None:
-        need_to_disconnect = False
-        while not need_to_disconnect:
+        while True:
             message: dict[str, str | list[dict[str, str]]] = json.loads(
                 await websocket.recv()
             )
@@ -79,6 +82,22 @@ class APIClient:
                                         "error": str(e),
                                     },
                                 )
+                        case "stop":
+                            try:
+                                server.stop()
+                                await self._send_json(
+                                    websocket,
+                                    {"id": action_id, "type": "action_completed"},
+                                )
+                            except ServerIsNotRunningError as e:
+                                await self._send_json(
+                                    websocket,
+                                    {
+                                        "id": action_id,
+                                        "type": "action_failed",
+                                        "error": str(e),
+                                    },
+                                )
                 case "registered":
                     logger.info("All servers are registered.")
                 case "registration_failed":
@@ -90,7 +109,7 @@ class APIClient:
                         logger.critical(
                             "Registration failed. All daemon keys are invalid."
                         )
-                        need_to_disconnect = True
+                        raise NoValidDaemonKeysError("All daemon keys are invalid.")
                     else:
                         logger.warning(
                             f"Registration failed. Invalid daemon keys: {', '.join([f'"{server.get("key")}"' for server in invalid_servers])}."
@@ -122,8 +141,8 @@ class APIClient:
 
     async def connect(self) -> None:
         for _ in range(5):
-            async with connect(self._api_uri) as websocket:
-                try:
+            try:
+                async with connect(self._api_uri) as websocket:
                     logger.info("Connection to API opened.")
                     register_message = {
                         "type": "register",
@@ -138,7 +157,9 @@ class APIClient:
                     )
                     while True:
                         await asyncio.sleep(1)
-                except ConnectionClosed:
-                    logger.info("Connection to API closed.")
-                except InvalidMessage:
-                    logger.error("Received invalid message from API")
+            except ConnectionClosed:
+                logger.info("Connection to API closed.")
+            except InvalidMessage:
+                logger.error("Received invalid message from API")
+            except NoValidDaemonKeysError:
+                break
