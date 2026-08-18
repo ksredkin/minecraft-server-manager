@@ -12,3 +12,19 @@ class ServerIsAlreadyRunningError(ServerError):
 
 class ServerIsNotRunningError(ServerError):
     pass
+
+
+class ServerStopTimeoutError(ServerError):
+    pass
+
+
+class ServerFolderDoesNotExistError(ServerError):
+    pass
+
+
+class ServerJarDoesNotExistError(ServerError):
+    pass
+
+
+class ServerResponseTimeoutError(ServerError):
+    pass

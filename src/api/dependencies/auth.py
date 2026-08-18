@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, WebSocket, WebSocketException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.api.dependencies.database import get_user_repository
@@ -43,3 +43,23 @@ def get_current_user_id(
     jwt_service: JwtService = Depends(get_jwt_service),
 ) -> int:
     return jwt_service.decode(credentials.credentials)
+
+
+def get_current_user_id_ws(
+    websocket: WebSocket,
+    jwt_service: JwtService = Depends(get_jwt_service),
+) -> int:
+    authorization = websocket.headers.get("authorization")
+
+    if not authorization:
+        raise WebSocketException(code=1008)
+
+    scheme, _, token = authorization.partition(" ")
+
+    if scheme.lower() != "bearer" or not token:
+        raise WebSocketException(code=1008)
+
+    try:
+        return jwt_service.decode(token)
+    except Exception:
+        raise WebSocketException(code=1008)

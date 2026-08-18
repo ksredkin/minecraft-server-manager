@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from redis.asyncio import Redis
+from redis.asyncio.client import PubSub
 
 from src.common.enums import CacheResultStatus, ServerUserRole
 from src.common.redis.connection import r
@@ -42,6 +43,20 @@ class CacheService:
             f"По ключу {f'{prefix}:{key}:{postfix}'} в кэше установлено новое значение: {value} (expire {f'через {expire} секунд' if expire else 'не установлен'})"
         )
         await self.r.set(f"{prefix}:{key}:{postfix}", value, ex=expire)
+
+    def _create_pubsub(self) -> PubSub:
+        return self.r.pubsub()
+
+    async def _publish_to_channel(self, channel: str, message: str) -> None:
+        await self.r.publish(channel, message)
+
+    async def create_server_pubsub(self, server_id: int) -> PubSub:
+        pubsub = self._create_pubsub()
+        await pubsub.subscribe(f"logs:server:{str(server_id)}")
+        return pubsub
+
+    async def publish_to_server_channel(self, server_id: int, message: str) -> None:
+        await self._publish_to_channel(f"logs:server:{str(server_id)}", message)
 
     async def set_server_id(self, server_id: int, server_uuid: UUID) -> None:
         await self._set("server", str(server_uuid), str(server_id))
@@ -85,22 +100,26 @@ class CacheService:
             "server_user", f"{user_id}:{server_id}", self.NOT_FOUND, "role", expire
         )
 
-    async def set_server_id_by_daemon_key(self, server_id: int, daemon_key: UUID, expire: int = 3600) -> None:
-        await self._set("daemon_key", str(daemon_key), server_id, expire=expire)
+    async def set_server_id_by_daemon_key(
+        self, server_id: int, daemon_key: str, expire: int = 3600
+    ) -> None:
+        await self._set("daemon_key", daemon_key, str(server_id), expire=expire)
 
-    async def set_server_id_by_daemon_key_not_found(self, daemon_key: UUID, expire: int = 3600) -> None:
-            await self._set("daemon_key", str(daemon_key), self.NOT_FOUND, expire=expire)
+    async def set_server_id_by_daemon_key_not_found(
+        self, daemon_key: str, expire: int = 3600
+    ) -> None:
+        await self._set("daemon_key", daemon_key, self.NOT_FOUND, expire=expire)
 
-    async def get_server_id_by_daemon_key(self, daemon_key: UUID) -> CacheResult:
-        value = await self._get("daemon_key", str(daemon_key))
+    async def get_server_id_by_daemon_key(self, daemon_key: str) -> CacheResult:
+        value = await self._get("daemon_key", daemon_key)
 
         if value == self.NOT_FOUND:
             return CacheResult(CacheResultStatus.NOT_FOUND)
-        
+
         if not value:
             return CacheResult(CacheResultStatus.MISS)
-        
-        return CacheResult(CacheResultStatus.FOUND, ServerUserRole(value))
+
+        return CacheResult(CacheResultStatus.FOUND, int(value))
 
 
 cache_service = CacheService()

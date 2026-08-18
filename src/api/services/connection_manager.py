@@ -1,4 +1,5 @@
 import asyncio
+import json
 from asyncio import Future
 from uuid import UUID, uuid4
 
@@ -9,10 +10,10 @@ from src.api.services.key_service import KeyService, get_key_service
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
 from src.common.database.connection import session
+from src.common.enums import CacheResultStatus
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
-from src.common.enums import CacheResultStatus
 
 
 class ConnectionManager:
@@ -41,11 +42,7 @@ class ConnectionManager:
             return
 
         need_to_disconnect = False
-        while True:
-            if need_to_disconnect:
-                await connection.close()
-                break
-
+        while not need_to_disconnect:
             message = dict(await connection.receive_json())
             if not isinstance(message, dict):
                 return
@@ -68,12 +65,13 @@ class ConnectionManager:
                                 if not isinstance(server, dict):
                                     continue
 
-                                try:
-                                    key = UUID(server.get("key"))
-                                except ValueError:
+                                key = server.get("key")
+                                if not isinstance(key, str):
                                     continue
 
-                                cache_result = await self.cache_service.get_server_id_by_daemon_key(key)
+                                cache_result = await self.cache_service.get_server_id_by_daemon_key(
+                                    key
+                                )
 
                                 if cache_result.status == CacheResultStatus.NOT_FOUND:
                                     continue
@@ -81,13 +79,22 @@ class ConnectionManager:
                                 if cache_result.status == CacheResultStatus.FOUND:
                                     server_id = cache_result.value
                                 else:
-                                    server_id = await daemon_key_service.resolve_server_id(
-                                        key
+                                    server_id = (
+                                        await daemon_key_service.resolve_server_id(key)
                                     )
                                     if not server_id:
-                                        await self.cache_service.set_server_id_by_daemon_key_not_found(key)
+                                        await self.cache_service.set_server_id_by_daemon_key_not_found(
+                                            key
+                                        )
                                         continue
-                                    await self.cache_service.set_server_id_by_daemon_key(server_id)
+                                    await (
+                                        self.cache_service.set_server_id_by_daemon_key(
+                                            server_id, key
+                                        )
+                                    )
+
+                                if not isinstance(server_id, int):
+                                    continue
 
                                 connection_manager.register_server_route(
                                     server_id, connection_id, key
@@ -118,6 +125,7 @@ class ConnectionManager:
                                     ],
                                 }
                             )
+                            need_to_disconnect = True
                 case "action_completed" | "action_failed":
                     request_id = message.get("id")
                     if not isinstance(request_id, str):
@@ -133,6 +141,79 @@ class ConnectionManager:
                         continue
 
                     future.set_result(message)
+                case "status":
+                    servers = message.get("servers")
+                    if isinstance(servers, list):
+                        async with self.sessionmaker() as session:
+                            daemon_key_service = ServerService(
+                                ServerRepository(session),
+                                self.key_service,
+                                ServerUserService(
+                                    ServerUserRepository(session), self.cache_service
+                                ),
+                                self.cache_service,
+                            )
+                            for server in servers:
+                                if not isinstance(server, dict):
+                                    continue
+
+                                key = server.get("key")
+                                if not isinstance(key, str):
+                                    continue
+
+                                cache_result = await self.cache_service.get_server_id_by_daemon_key(
+                                    key
+                                )
+
+                                if cache_result.status == CacheResultStatus.NOT_FOUND:
+                                    continue
+
+                                if cache_result.status == CacheResultStatus.FOUND:
+                                    server_id = cache_result.value
+                                else:
+                                    server_id = (
+                                        await daemon_key_service.resolve_server_id(key)
+                                    )
+                                    if not server_id:
+                                        await self.cache_service.set_server_id_by_daemon_key_not_found(
+                                            key
+                                        )
+                                        continue
+                                    await (
+                                        self.cache_service.set_server_id_by_daemon_key(
+                                            server_id, key
+                                        )
+                                    )
+
+                                if not isinstance(server_id, int):
+                                    continue
+
+                                status = server.get("status")
+                                if not isinstance(status, dict):
+                                    continue
+
+                                logs = server.get("logs")
+                                if not isinstance(logs, list):
+                                    continue
+
+                                await self.cache_service.publish_to_server_channel(
+                                    server_id,
+                                    json.dumps({"status": status, "logs": logs}),
+                                )
+        await connection.close()
+
+    async def connect_and_subscribe_to_server_channel(
+        self, websocket: WebSocket, server_id: int
+    ) -> None:
+        await websocket.accept()
+        pubsub = await self.cache_service.create_server_pubsub(server_id)
+
+        try:
+            async for message in pubsub.listen():
+                if message["type"] == "message":
+                    await websocket.send_text(message["data"])
+        except asyncio.CancelledError:
+            pass
 
     async def connect_and_recieve(self, websocket: WebSocket) -> None:
         connection_id: int | None = None
@@ -191,7 +272,7 @@ class ConnectionManager:
 
         try:
             sent = await self.send_message_to_server(
-                server_id, "action", action=action, request_id=request_id
+                server_id, "action", request_id=request_id, action=action
             )
 
             if not sent:

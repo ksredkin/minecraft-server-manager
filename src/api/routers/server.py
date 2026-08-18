@@ -1,12 +1,13 @@
+import asyncio
 from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, WebSocket, WebSocketException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
-from src.api.dependencies.auth import get_current_user_id
+from src.api.dependencies.auth import get_current_user_id, get_current_user_id_ws
 from src.api.dependencies.server import get_server_service
 from src.api.schemas.server import ServerDeletedResponse, ServerInfoResponse
 from src.api.services.connection_manager import (
@@ -76,10 +77,34 @@ async def delete_server(
     return deleted
 
 
+@server_router.websocket("/{uuid}/ws")
+async def server_websocket(
+    uuid: UUID,
+    websocket: WebSocket,
+    current_user_id: int = Depends(get_current_user_id_ws),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+    server_service: ServerService = Depends(get_server_service),
+) -> None:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_viewer_or_above(
+        current_user_id, server_id
+    ):
+        raise WebSocketException(code=1008)
+
+    try:
+        await connection_manager.connect_and_subscribe_to_server_channel(
+            websocket, server_id
+        )
+        while True:
+            await asyncio.sleep(1)
+    except Exception as e:
+        raise e
+
+
 @server_router.post("/{uuid}/start", status_code=200, description="Запустить сервер.")
 async def start_server(
     uuid: UUID,
-    current_user_id: int = Depends(get_current_user_id),
+    current_user_id: int = Depends(get_current_user_id_ws),
     server_service: ServerService = Depends(get_server_service),
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
