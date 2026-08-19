@@ -14,12 +14,13 @@ from src.daemon.exceptions.server import (
     ServerStopTimeoutError,
 )
 from src.daemon.server import Server
+from src.daemon.services.metrics_service import MetricsService
 
 logger = Logger(__name__)
 
 
 class APIClient:
-    def __init__(self, api_host: str, api_port: int, servers: list[Server]):
+    def __init__(self, api_host: str, api_port: int, servers: list[Server], metrics_service: MetricsService):
         if not api_host:
             raise InvalidConfigError('Missing "api_host" in daemon settings.')
 
@@ -33,6 +34,8 @@ class APIClient:
             if not isinstance(server.key, str):
                 raise InvalidConfigError('Daemon setting "key" must be a string')
             self._servers_by_key[server.key] = server
+
+        self.metrics_service = metrics_service
 
     async def _send_json(self, websocket: ClientConnection, data: Any) -> None:
         await websocket.send(json.dumps(data), text=True)
@@ -187,6 +190,7 @@ class APIClient:
                     {
                         "key": server.key,
                         "status": server.get_server_info(),
+                        "metrics": self.metrics_service.get_metrics(server),
                         "logs": server.get_pending_logs(),
                     }
                 )

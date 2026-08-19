@@ -6,6 +6,7 @@ from src.daemon.api_client import APIClient
 from src.daemon.config_reader import ConfigReader
 from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.server import Server
+from src.daemon.services.metrics_service import MetricsService
 
 logger = Logger(__name__)
 
@@ -39,7 +40,9 @@ async def main() -> None:
             'Invalid "api_host" or "api_port" type in daemon settings.'
         )
 
-    api_client = APIClient(api_host, api_port, servers)
+    metrics_service = MetricsService()
+
+    api_client = APIClient(api_host, api_port, servers, metrics_service)
     await api_client.connect()
 
 

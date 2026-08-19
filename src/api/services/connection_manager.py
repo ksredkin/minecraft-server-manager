@@ -206,9 +206,13 @@ class ConnectionManager:
                                 if not isinstance(logs, list):
                                     continue
 
+                                metrics = server.get("metrics")
+                                if not isinstance(metrics, dict):
+                                    continue
+
                                 await self.cache_service.publish_to_server_channel(
                                     server_id,
-                                    json.dumps({"status": status, "logs": logs}),
+                                    json.dumps({"status": status, "metrics": metrics, "logs": logs}),
                                 )
         await connection.close()
 

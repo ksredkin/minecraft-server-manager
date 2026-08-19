@@ -16,6 +16,8 @@ from src.daemon.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
+import re
+import psutil
 
 logger = Logger(__name__)
 
@@ -53,6 +55,12 @@ class Server:
         self._server_software = server_settings["server_software"]
 
         self._java_args: list[str] = server_settings.get("java_args", [])  # type: ignore
+
+        for arg in self._java_args:
+            if arg.upper().startswith("-XMX"):
+                self.ram_limit = self.parse_memory(arg[4:])
+                break
+
         self._jar_args: list[str] = server_settings.get("jar_args", ["nogui"])  # type: ignore
 
         server_stop_timeout = server_settings.get("server_stop_timeout")
@@ -60,7 +68,9 @@ class Server:
             server_stop_timeout if isinstance(server_stop_timeout, int) else 60
         )
 
-        self._process: Popen[str] | None = None
+        self.process: Popen[str] | None = None
+        self.pcu_percent: float = 0.0
+        self.psutil_process: psutil.Process|None = None
         self._status: str | None = None
         self._logs: deque[str] = deque(maxlen=1000)
         self._players: list[str] = []
@@ -71,8 +81,26 @@ class Server:
         self._max_players: int | None = None
         self._uptime: str | None = None
 
+    
+    def parse_memory(self, value: str) -> float | None:
+        match = re.fullmatch(r"(\d+(?:\.\d+)?)([KMG])B?", value.upper())
+        if not match:
+            return None
+
+        number, unit = match.groups()
+        number = float(number)
+
+        if unit == "G":
+            return round(number, 1)
+        elif unit == "M":
+            return round(number / 1024, 1)
+        elif unit == "K":
+            return round(number / 1024**2, 1)
+
+        return None
+
     def start(self) -> None:
-        if not self._process or self._process.poll() is not None:
+        if not self.process or self.process.poll() is not None:
             logger.info(f'Server with daemon key "{self.key}" is starting.')
             start_command = [
                 self._java,
@@ -81,7 +109,7 @@ class Server:
                 str(self._jar_path.name),
                 *self._jar_args,
             ]
-            self._process = Popen(
+            self.process = Popen(
                 start_command,
                 cwd=str(self._server_dir),
                 stdin=PIPE,
@@ -89,6 +117,8 @@ class Server:
                 stderr=PIPE,
                 text=True,
             )
+
+            self.psutil_process = psutil.Process(self.process.pid)
 
             Thread(target=self._reader, daemon=True).start()
             Thread(target=self._updater, daemon=True).start()
@@ -102,21 +132,21 @@ class Server:
             raise ServerIsAlreadyRunningError("Server is already running.")
 
     def _reader(self) -> None:
-        if self._process is None:
+        if self.process is None:
             return
 
         while True:
-            line: str | None = self._process.stdout.readline()  # type: ignore
+            line: str | None = self.process.stdout.readline()  # type: ignore
 
             if not line:
                 try:
-                    if self._process:
-                        self._process.wait(timeout=5)
+                    if self.process:
+                        self.process.wait(timeout=5)
                 except Exception:
                     pass
                 self._status = "stopped"
                 self._start_time = None
-                self._process = None
+                self.process = None
                 self._stop_event.set()
                 break
 
@@ -134,22 +164,24 @@ class Server:
                     self._start_time = None
 
     def execute_command(self, command: str) -> None:
-        if not self._process or self._process.poll() is not None:
+        if not self.process or self.process.poll() is not None:
             logger.error(f'Cannot execute command: server with daemon key "{self.key}" is not running.')
             raise ServerIsNotRunningError("Server is not running.")
 
-        self._process.stdin.write(command + "\n")  # type: ignore
-        self._process.stdin.flush()  # type: ignore
-        logger.info(f'Server with daemon key "{self.key}" has executed the command: {command}.')
+        self.process.stdin.write(command + "\n")  # type: ignore
+        self.process.stdin.flush()  # type: ignore
+        if command.strip() != "list":
+            logger.info(f'Server with daemon key "{self.key}" has executed the command: {command}.')
 
     def _updater(self) -> None:
-        while self._process is not None:
+        while self.process is not None:
             self._uptime = self.get_uptime()
             try:
                 self._players = self.get_players() or []
             except ServerResponseTimeoutError, ServerIsNotRunningError:
                 self._players = []
             self._status = self.status()
+            self.pcu_percent = self.psutil_process.cpu_percent()
             time.sleep(1)
 
     def stop(self) -> None:
@@ -195,13 +227,13 @@ class Server:
         logger.info(f'Server with daemon key "{self.key}" has restarted.')
 
     def status(self) -> str | None:
-        if self._process is None or self._process.poll() is not None:
+        if self.process is None or self.process.poll() is not None:
             self._status = "stopped"
 
         return self._status
 
     def get_players(self) -> list[str] | None:
-        if not self._process or self._process.poll() is not None:
+        if not self.process or self.process.poll() is not None:
             raise ServerIsNotRunningError("Server is not running.")
 
         self._players_event.clear()
