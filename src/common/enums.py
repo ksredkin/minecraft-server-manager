@@ -11,3 +11,8 @@ class ServerUserRole(Enum):
     OWNER = "owner"
     ADMIN = "admin"
     VIEWER = "viewer"
+
+
+class ActionStatus(Enum):
+    SUCCESS = "action_completed"
+    FAILED = "action_failed"

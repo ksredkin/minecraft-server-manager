@@ -151,7 +151,11 @@ class Server:
             time.sleep(1)
 
     def stop(self) -> None:
-        self.execute_command("stop")
+        try:
+            self.execute_command("stop")
+        except ServerIsNotRunningError as e:
+            logger.error(f'Cannot stop server: server with daemon key "{self.key}" is not running.')
+            raise e
         logger.info(f'Server with daemon key "{self.key}" is stopping.')
 
     def get_uptime(self) -> str:
@@ -170,7 +174,11 @@ class Server:
 
     def restart(self) -> None:
         self._stop_event.clear()
-        self.stop()
+        try:
+            self.stop()
+        except ServerIsNotRunningError as e:
+            logger.error(f'Cannot restart server: server with daemon key "{self.key}" is not running.')
+            raise e
 
         if not self._stop_event.wait(timeout=self._server_stop_timeout):
             raise ServerStopTimeoutError(
@@ -178,6 +186,7 @@ class Server:
             )
 
         self.start()
+        logger.info(f'Server with daemon key "{self.key}" has restarted.')
 
     def status(self) -> str | None:
         if self._process is None or self._process.poll() is not None:

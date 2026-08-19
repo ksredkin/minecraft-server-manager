@@ -1,0 +1,2 @@
+class MSMAPIError(Exception):
+    pass

@@ -11,6 +11,7 @@ from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
     ServerIsNotRunningError,
+    ServerStopTimeoutError,
 )
 from src.daemon.server import Server
 
@@ -90,6 +91,26 @@ class APIClient:
                                     {"id": action_id, "type": "action_completed"},
                                 )
                             except ServerIsNotRunningError as e:
+                                await self._send_json(
+                                    websocket,
+                                    {
+                                        "id": action_id,
+                                        "type": "action_failed",
+                                        "error": str(e),
+                                    },
+                                )
+                        case "restart":
+                            try:
+                                server.restart()
+                                await self._send_json(
+                                    websocket,
+                                    {"id": action_id, "type": "action_completed"},
+                                )
+                            except (
+                                ServerIsNotRunningError,
+                                ServerStopTimeoutError,
+                                ServerIsAlreadyRunningError,
+                            ) as e:
                                 await self._send_json(
                                     websocket,
                                     {

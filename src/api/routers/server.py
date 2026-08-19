@@ -16,6 +16,7 @@ from src.api.services.connection_manager import (
 )
 from src.api.services.server_service import ServerService
 from src.common.database.models import Server
+from src.api.exceptions.server import ServerNotFoundError
 
 server_router = APIRouter(prefix="/servers")
 
@@ -106,42 +107,18 @@ async def start_server(
     uuid: UUID,
     current_user_id: int = Depends(get_current_user_id),
     server_service: ServerService = Depends(get_server_service),
-    connection_manager: ConnectionManager = Depends(get_connection_manager),
+    connection_manager: ConnectionManager = Depends(get_connection_manager)
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not server_id:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Server not found or you don't have permission to start it",
-            },
-            status_code=404,
-        )
-
     if not await server_service.is_admin_or_above(current_user_id, server_id):
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Server not found or you don't have permission to start it",
-            },
-            status_code=404,
-        )
+        raise ServerNotFoundError("Server not found or access denied")
 
-    result = await connection_manager.send_action_to_server(server_id, "start")
-    if not result:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Daemon is disconnected or an internal error occurred",
-            },
-            status_code=503,
-        )
-
-    if result.get("type") == "action_completed":
-        return JSONResponse(content={"success": True})
-    return JSONResponse(
-        content={"success": False, "error": result.get("error")}, status_code=409
-    )
+    result = await connection_manager.execute_server_action(server_id, "start")
+    message = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    
+    return JSONResponse(content=message, status_code=result.status_code)
 
 
 @server_router.post("/{uuid}/stop", status_code=200, description="Остановить сервер.")
@@ -149,39 +126,36 @@ async def stop_server(
     uuid: UUID,
     current_user_id: int = Depends(get_current_user_id),
     server_service: ServerService = Depends(get_server_service),
-    connection_manager: ConnectionManager = Depends(get_connection_manager),
+    connection_manager: ConnectionManager = Depends(get_connection_manager)
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not server_id:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Server not found or you don't have permission to stop it",
-            },
-            status_code=404,
-        )
-
     if not await server_service.is_admin_or_above(current_user_id, server_id):
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Server not found or you don't have permission to stop it",
-            },
-            status_code=404,
-        )
+        raise ServerNotFoundError("Server not found or access denied")
 
-    result = await connection_manager.send_action_to_server(server_id, "stop")
-    if not result:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Daemon is disconnected or an internal error occurred",
-            },
-            status_code=503,
-        )
+    result = await connection_manager.execute_server_action(server_id, "stop")
+    message = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
 
-    if result.get("type") == "action_completed":
-        return JSONResponse(content={"success": True})
-    return JSONResponse(
-        content={"success": False, "error": result.get("error")}, status_code=409
-    )
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.post(
+    "/{uuid}/restart", status_code=200, description="Перезапустить сервер."
+)
+async def stop_server(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager)
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not await server_service.is_admin_or_above(current_user_id, server_id):
+        raise ServerNotFoundError("Server not found or access denied")
+    
+    result = await connection_manager.execute_server_action(server_id, "restart")
+    message = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+        
+    return JSONResponse(content=message, status_code=result.status_code)

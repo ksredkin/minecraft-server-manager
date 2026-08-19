@@ -8,6 +8,7 @@ from src.api.routers.auth import auth_router
 from src.api.routers.daemon import daemon_router
 from src.api.routers.server import server_router
 from src.common.core.config import settings
+from src.api.exception_handlers import register_exception_handlers
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,6 +29,8 @@ def main() -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    register_exception_handlers(app)
 
     app.include_router(auth_router)
     app.include_router(daemon_router)
