@@ -16,3 +16,9 @@ class ServerUserRole(Enum):
 class ActionStatus(Enum):
     SUCCESS = "action_completed"
     FAILED = "action_failed"
+
+
+class CommandStatus(Enum):
+    SUCCESS = "command_completed"
+    FAILED = "command_failed"
+

@@ -119,6 +119,40 @@ class APIClient:
                                         "error": str(e),
                                     },
                                 )
+                case "command":
+                                command = message.get("command")
+                                if not isinstance(command, str):
+                                    break
+            
+                                key = message.get("key")
+                                if not isinstance(key, str):
+                                    continue
+            
+                                server = self._servers_by_key.get(key)
+                                if not isinstance(server, Server):
+                                    continue
+            
+                                logger.info(f"Command recieved.")
+            
+                                command_id = message.get("id")
+                                if not isinstance(command_id, str):
+                                    break
+            
+                                try:
+                                    server.execute_command(command)
+                                    await self._send_json(
+                                        websocket,
+                                        {"id": command_id, "type": "command_completed"},
+                                    )
+                                except ServerIsNotRunningError as e:
+                                    await self._send_json(
+                                        websocket,
+                                        {
+                                            "id": command_id,
+                                            "type": "command_failed",
+                                            "error": str(e),
+                                        },
+                                    )
                 case "registered":
                     logger.info("All servers are registered.")
                 case "registration_failed":

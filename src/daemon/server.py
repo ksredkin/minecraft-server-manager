@@ -135,10 +135,12 @@ class Server:
 
     def execute_command(self, command: str) -> None:
         if not self._process or self._process.poll() is not None:
+            logger.error(f'Cannot execute command: server with daemon key "{self.key}" is not running.')
             raise ServerIsNotRunningError("Server is not running.")
 
         self._process.stdin.write(command + "\n")  # type: ignore
         self._process.stdin.flush()  # type: ignore
+        logger.info(f'Server with daemon key "{self.key}" has executed the command: {command}.')
 
     def _updater(self) -> None:
         while self._process is not None:
@@ -154,7 +156,9 @@ class Server:
         try:
             self.execute_command("stop")
         except ServerIsNotRunningError as e:
-            logger.error(f'Cannot stop server: server with daemon key "{self.key}" is not running.')
+            logger.error(
+                f'Cannot stop server: server with daemon key "{self.key}" is not running.'
+            )
             raise e
         logger.info(f'Server with daemon key "{self.key}" is stopping.')
 
@@ -177,7 +181,9 @@ class Server:
         try:
             self.stop()
         except ServerIsNotRunningError as e:
-            logger.error(f'Cannot restart server: server with daemon key "{self.key}" is not running.')
+            logger.error(
+                f'Cannot restart server: server with daemon key "{self.key}" is not running.'
+            )
             raise e
 
         if not self._stop_event.wait(timeout=self._server_stop_timeout):
