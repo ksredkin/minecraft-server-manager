@@ -13,12 +13,6 @@ class ServerUserRole(Enum):
     VIEWER = "viewer"
 
 
-class ActionStatus(Enum):
-    SUCCESS = "action_completed"
-    FAILED = "action_failed"
-
-
-class CommandStatus(Enum):
-    SUCCESS = "command_completed"
-    FAILED = "command_failed"
-
+class DaemonRequestStatus(Enum):
+    SUCCESS = "request_completed"
+    FAILED = "request_failed"

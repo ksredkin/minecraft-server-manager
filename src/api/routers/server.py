@@ -9,7 +9,12 @@ from fastapi.routing import APIRouter
 
 from src.api.dependencies.auth import get_current_user_id, get_current_user_id_ws
 from src.api.dependencies.server import get_server_service
-from src.api.schemas.server import ServerDeletedResponse, ServerInfoResponse
+from src.api.schemas.server import (
+    ServerDeletedResponse,
+    ServerInfoResponse,
+    FileCreateRequest,
+    FileUpdateRequest,
+)
 from src.api.services.connection_manager import (
     ConnectionManager,
     get_connection_manager,
@@ -110,11 +115,13 @@ async def start_server(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not await server_service.is_admin_or_above(current_user_id, server_id):
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.execute_server_action(server_id, "start")
-    message = {"success": result.success}
+    message: dict[str, str | bool] = {"success": result.success}
     if result.error:
         message["error"] = result.error
 
@@ -129,11 +136,13 @@ async def stop_server(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not await server_service.is_admin_or_above(current_user_id, server_id):
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.execute_server_action(server_id, "stop")
-    message = {"success": result.success}
+    message: dict[str, str | bool] = {"success": result.success}
     if result.error:
         message["error"] = result.error
 
@@ -150,11 +159,13 @@ async def restart_server(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not await server_service.is_admin_or_above(current_user_id, server_id):
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.execute_server_action(server_id, "restart")
-    message = {"success": result.success}
+    message: dict[str, str | bool] = {"success": result.success}
     if result.error:
         message["error"] = result.error
 
@@ -172,11 +183,119 @@ async def execute_command(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not await server_service.is_admin_or_above(current_user_id, server_id):
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.execute_server_command(server_id, command)
-    message = {"success": result.success}
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.get(
+    "/{uuid}/files",
+    status_code=200,
+    description="Получить файлы в папке сервера по пути.",
+)
+async def get_server_files(
+    uuid: UUID,
+    path: str | None = None,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.get_server_item(server_id, path)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    if result.data:
+        message["item"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.post(
+    "/{uuid}/files",
+    status_code=201,
+    description="Создать файл/папку в папке сервера по пути.",
+)
+async def create_file(
+    uuid: UUID,
+    file: FileCreateRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.create_server_item(server_id, file)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.put(
+    "/{uuid}/files",
+    status_code=200,
+    description="Обновить файл/папку в папке сервера по пути.",
+)
+async def update_file(
+    uuid: UUID,
+    file: FileUpdateRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.update_server_item(server_id, file)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.delete(
+    "/{uuid}/files",
+    status_code=200,
+    description="Удалить файл/папку в папке сервера по пути.",
+)
+async def delete_file(
+    uuid: UUID,
+    path: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.delete_server_file(server_id, path)
+    message: dict[str, str | bool] = {"success": result.success}
     if result.error:
         message["error"] = result.error
 

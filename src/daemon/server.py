@@ -39,12 +39,12 @@ class Server:
                 f"Server configuration is missing values for: {', '.join(needed)}."
             )
 
-        self._server_dir = Path(str(server_settings["path"]))
+        self.server_dir = Path(str(server_settings["path"]))
 
-        if not self._server_dir.exists():
+        if not self.server_dir.exists():
             raise ServerFolderDoesNotExistError("Server folder doesn't exist.")
 
-        self._jar_path = self._server_dir / str(server_settings["jar_name"])
+        self._jar_path = self.server_dir / str(server_settings["jar_name"])
 
         if not self._jar_path.exists():
             raise ServerJarDoesNotExistError("Server jar file does not exist.")
@@ -70,7 +70,7 @@ class Server:
 
         self.process: Popen[str] | None = None
         self.pcu_percent: float = 0.0
-        self.psutil_process: psutil.Process|None = None
+        self.psutil_process: psutil.Process | None = None
         self._status: str | None = None
         self._logs: deque[str] = deque(maxlen=1000)
         self._players: list[str] = []
@@ -81,7 +81,6 @@ class Server:
         self._max_players: int | None = None
         self._uptime: str | None = None
 
-    
     def parse_memory(self, value: str) -> float | None:
         match = re.fullmatch(r"(\d+(?:\.\d+)?)([KMG])B?", value.upper())
         if not match:
@@ -111,7 +110,7 @@ class Server:
             ]
             self.process = Popen(
                 start_command,
-                cwd=str(self._server_dir),
+                cwd=str(self.server_dir),
                 stdin=PIPE,
                 stdout=PIPE,
                 stderr=PIPE,
@@ -165,13 +164,17 @@ class Server:
 
     def execute_command(self, command: str) -> None:
         if not self.process or self.process.poll() is not None:
-            logger.error(f'Cannot execute command: server with daemon key "{self.key}" is not running.')
+            logger.error(
+                f'Cannot execute command: server with daemon key "{self.key}" is not running.'
+            )
             raise ServerIsNotRunningError("Server is not running.")
 
         self.process.stdin.write(command + "\n")  # type: ignore
         self.process.stdin.flush()  # type: ignore
         if command.strip() != "list":
-            logger.info(f'Server with daemon key "{self.key}" has executed the command: {command}.')
+            logger.info(
+                f'Server with daemon key "{self.key}" has executed the command: {command}.'
+            )
 
     def _updater(self) -> None:
         while self.process is not None:
@@ -181,7 +184,8 @@ class Server:
             except ServerResponseTimeoutError, ServerIsNotRunningError:
                 self._players = []
             self._status = self.status()
-            self.pcu_percent = self.psutil_process.cpu_percent()
+            if self.psutil_process:
+                self.pcu_percent = self.psutil_process.cpu_percent()
             time.sleep(1)
 
     def stop(self) -> None:

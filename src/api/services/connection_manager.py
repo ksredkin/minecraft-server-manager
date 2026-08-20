@@ -10,7 +10,10 @@ from src.api.services.key_service import KeyService, get_key_service
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
 from src.common.database.connection import session
-from src.common.enums import CacheResultStatus, ActionStatus, CommandStatus
+from src.common.enums import (
+    CacheResultStatus,
+    DaemonRequestStatus,
+)
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
@@ -18,11 +21,23 @@ from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
     InvalidDaemonResponseError,
 )
+from typing import Any
+from src.api.schemas.server import (
+    FileCreate,
+    FolderCreate,
+    FileCreateRequest,
+    FileUpdateRequest,
+    FileUpdate,
+    FolderUpdate,
+)
 
 
-class ServerActionResult:
+class DaemonRequestResult:
     def __init__(
-        self, status: ActionStatus, status_code: int = 200, error: str | None = None
+        self,
+        status: DaemonRequestStatus,
+        status_code: int = 200,
+        error: str | None = None,
     ):
         self.status = status
         self.error = error
@@ -30,20 +45,21 @@ class ServerActionResult:
 
     @property
     def success(self) -> bool:
-        return self.status == ActionStatus.SUCCESS
+        return self.status == DaemonRequestStatus.SUCCESS
 
 
-class ServerCommandResult:
+class DaemonDataRequestResult(DaemonRequestResult):
     def __init__(
-        self, status: CommandStatus, status_code: int = 200, error: str | None = None
+        self,
+        status: DaemonRequestStatus,
+        status_code: int = 200,
+        data: Any = None,
+        error: str | None = None,
     ):
         self.status = status
         self.error = error
+        self.data = data
         self.status_code = status_code
-
-    @property
-    def success(self) -> bool:
-        return self.status == CommandStatus.SUCCESS
 
 
 class ConnectionManager:
@@ -74,7 +90,10 @@ class ConnectionManager:
             return None
 
         if cache_result.status == CacheResultStatus.FOUND:
-            server_id = cache_result.value
+            if isinstance(cache_result.value, int):
+                server_id = cache_result.value
+            else:
+                server_id = None
         else:
             server_id = await server_service.resolve_server_id(daemon_key)
             if not server_id:
@@ -126,7 +145,7 @@ class ConnectionManager:
                                 if not isinstance(server_id, int):
                                     continue
 
-                                connection_manager.register_server_route(
+                                self.register_server_route(
                                     server_id, connection_id, key
                                 )
                                 registered.append(key)
@@ -156,7 +175,7 @@ class ConnectionManager:
                                 }
                             )
                             need_to_disconnect = True
-                case "action_completed" | "action_failed" | "command_completed" | "command_failed":
+                case "request_completed" | "request_failed":
                     request_id = message.get("id")
                     if not isinstance(request_id, str):
                         continue
@@ -212,7 +231,13 @@ class ConnectionManager:
 
                                 await self.cache_service.publish_to_server_channel(
                                     server_id,
-                                    json.dumps({"status": status, "metrics": metrics, "logs": logs}),
+                                    json.dumps(
+                                        {
+                                            "status": status,
+                                            "metrics": metrics,
+                                            "logs": logs,
+                                        }
+                                    ),
                                 )
         await connection.close()
 
@@ -238,7 +263,7 @@ class ConnectionManager:
             pass
         finally:
             if connection_id:
-                await connection_manager.disconnect(connection_id)
+                await self.disconnect(connection_id)
 
     def register_server_route(
         self, server_id: int, connection_id: int, key: str
@@ -253,8 +278,7 @@ class ConnectionManager:
         self,
         server_id: int,
         message_type: str,
-        request_id: UUID | None = None,
-        **payload: str,
+        **payload: str | None,
     ) -> bool:
         if not (server_route := self.server_routes.get(server_id)):
             return False
@@ -270,16 +294,13 @@ class ConnectionManager:
 
         try:
             message = {"type": message_type, "key": key, **payload}
-            if request_id is not None:
-                message["id"] = str(request_id)
-
             await connection.send_json(message)
             return True
         except Exception:
             return False
 
-    async def send_action_to_server(
-        self, server_id: int, action: str
+    async def _send_request_and_wait(
+        self, server_id: int, message_type: str, **payload: str | None
     ) -> dict[str, str | bool]:
         request_id = uuid4()
 
@@ -288,7 +309,7 @@ class ConnectionManager:
 
         try:
             sent = await self.send_message_to_server(
-                server_id, "action", request_id=request_id, action=action
+                server_id, message_type, id=str(request_id), **payload
             )
 
             if not sent:
@@ -300,73 +321,114 @@ class ConnectionManager:
         finally:
             self.pending_requests.pop(request_id, None)
 
-    async def send_command_to_server(self, server_id: int, command: str) -> dict[str, str | bool]:
-        request_id = uuid4()
-        
-        future = asyncio.get_running_loop().create_future()
-        self.pending_requests[request_id] = future
-        
+    def _validate_response(self, result: dict[str, str | bool]) -> DaemonRequestStatus:
+        if not result:
+            raise InvalidDaemonResponseError("Internal server error")
+
         try:
-            sent = await self.send_message_to_server(
-                server_id, "command", request_id=request_id, command=command
+            return DaemonRequestStatus(result.get("type"))
+        except ValueError:
+            raise InvalidDaemonResponseError("Internal server error")
+
+    async def _execute_request(
+        self, server_id: int, message_type: str, error: int = 409, **payload: str | None
+    ) -> DaemonRequestResult:
+        result = await self._send_request_and_wait(server_id, message_type, **payload)
+        status = self._validate_response(result)
+
+        if status == DaemonRequestStatus.SUCCESS:
+            return DaemonRequestResult(
+                status=DaemonRequestStatus.SUCCESS,
             )
-        
-            if not sent:
-                raise DaemonDisconnectedError(
-                    "Daemon is disconnected or an internal error occurred"
-                )
-        
-            return await asyncio.wait_for(future, timeout=10)
-        finally:
-            self.pending_requests.pop(request_id, None)
+
+        return DaemonRequestResult(
+            status=DaemonRequestStatus.FAILED,
+            status_code=error,
+            error=str(result.get("error")),
+        )
+
+    async def _execute_data_request(
+        self, server_id: int, message_type: str, error: int = 404, **payload: str | None
+    ) -> DaemonDataRequestResult:
+        result = await self._send_request_and_wait(server_id, message_type, **payload)
+        status = self._validate_response(result)
+
+        if status == DaemonRequestStatus.SUCCESS:
+            return DaemonDataRequestResult(
+                status=DaemonRequestStatus.SUCCESS, data=result.get("item")
+            )
+
+        return DaemonDataRequestResult(
+            status=DaemonRequestStatus.FAILED,
+            status_code=error,
+            error=str(result.get("error")),
+        )
 
     async def execute_server_action(
         self, server_id: int, action: str
-    ) -> ServerActionResult:
-        result = await self.send_action_to_server(server_id, action)
-
-        if not result:
-            raise InvalidDaemonResponseError("Internal server error")
-
-        try:
-            status = ActionStatus(result.get("type"))
-        except ValueError:
-            raise InvalidDaemonResponseError("Internal server error")
-
-        if status == ActionStatus.SUCCESS:
-            return ServerActionResult(
-                status=ActionStatus.SUCCESS,
-            )
-
-        return ServerActionResult(
-            status=ActionStatus.FAILED,
-            status_code=409,
-            error=result.get("error"),
-        )
+    ) -> DaemonRequestResult:
+        return await self._execute_request(server_id, "action", action=action)
 
     async def execute_server_command(
         self, server_id: int, command: str
-    ) -> ServerActionResult:
-        result = await self.send_command_to_server(server_id, command)
+    ) -> DaemonRequestResult:
+        return await self._execute_request(server_id, "command", command=command)
 
-        if not result:
-            raise InvalidDaemonResponseError("Internal server error")
+    async def get_server_item(
+        self, server_id: int, path: str | None = None
+    ) -> DaemonDataRequestResult:
+        return await self._execute_data_request(server_id, "files.get_item", path=path)
 
-        try:
-            status = CommandStatus(result.get("type"))
-        except ValueError:
-            raise InvalidDaemonResponseError("Internal server error")
-
-        if status == CommandStatus.SUCCESS:
-            return ServerCommandResult(
-                status=CommandStatus.SUCCESS,
-            )
-
-        return ServerCommandResult(
-            status=CommandStatus.FAILED,
-            status_code=409,
-            error=result.get("error"),
+    async def create_server_file(
+        self, server_id: int, file: FileCreate
+    ) -> DaemonRequestResult:
+        return await self._execute_request(
+            server_id, "files.create_file", path=file.path, content=file.content
         )
+
+    async def create_server_folder(
+        self, server_id: int, folder: FolderCreate
+    ) -> DaemonRequestResult:
+        return await self._execute_request(
+            server_id, "files.create_folder", path=folder.path
+        )
+
+    async def create_server_item(
+        self, server_id: int, item: FileCreateRequest
+    ) -> DaemonRequestResult:
+        if isinstance(item, FileCreate):
+            return await self.create_server_file(server_id, item)
+        return await self.create_server_folder(server_id, item)
+
+    async def update_server_file(
+        self, server_id: int, file: FileUpdate
+    ) -> DaemonRequestResult:
+        return await self._execute_request(
+            server_id,
+            "files.update_file",
+            path=file.path,
+            new_path=file.new_path,
+            new_content=file.new_content,
+        )
+
+    async def update_server_folder(
+        self, server_id: int, folder: FolderUpdate
+    ) -> DaemonRequestResult:
+        return await self._execute_request(
+            server_id, "files.update_folder", path=folder.path, new_path=folder.new_path
+        )
+
+    async def update_server_item(
+        self, server_id: int, item: FileUpdateRequest
+    ) -> DaemonRequestResult:
+        if isinstance(item, FileUpdate):
+            return await self.update_server_file(server_id, item)
+        return await self.update_server_folder(server_id, item)
+
+    async def delete_server_file(
+        self, server_id: int, path: str
+    ) -> DaemonRequestResult:
+        return await self._execute_request(server_id, "files.delete_file", path=path)
 
 
 connection_manager = ConnectionManager(get_key_service(), session, get_cache_service())

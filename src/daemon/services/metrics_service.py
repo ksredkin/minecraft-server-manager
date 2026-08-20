@@ -3,7 +3,7 @@ from src.daemon.server import Server
 
 
 class MetricsService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.cpu_cores: int = psutil.cpu_count(logical=True) or 1
 
     def get_metrics(self, server: Server) -> dict[str, int | float | None]:

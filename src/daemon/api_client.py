@@ -15,12 +15,20 @@ from src.daemon.exceptions.server import (
 )
 from src.daemon.server import Server
 from src.daemon.services.metrics_service import MetricsService
+from src.daemon.services.file_service import FileService, FileItem, FolderItem
 
 logger = Logger(__name__)
 
 
 class APIClient:
-    def __init__(self, api_host: str, api_port: int, servers: list[Server], metrics_service: MetricsService):
+    def __init__(
+        self,
+        api_host: str,
+        api_port: int,
+        servers: list[Server],
+        metrics_service: MetricsService,
+        file_service: FileService,
+    ):
         if not api_host:
             raise InvalidConfigError('Missing "api_host" in daemon settings.')
 
@@ -36,6 +44,7 @@ class APIClient:
             self._servers_by_key[server.key] = server
 
         self.metrics_service = metrics_service
+        self.file_service = file_service
 
     async def _send_json(self, websocket: ClientConnection, data: Any) -> None:
         await websocket.send(json.dumps(data), text=True)
@@ -53,7 +62,7 @@ class APIClient:
                 case "action":
                     action = message.get("action")
                     if not isinstance(action, str):
-                        break
+                        continue
 
                     key = message.get("key")
                     if not isinstance(key, str):
@@ -67,7 +76,7 @@ class APIClient:
 
                     action_id = message.get("id")
                     if not isinstance(action_id, str):
-                        break
+                        continue
 
                     match action:
                         case "start":
@@ -75,14 +84,14 @@ class APIClient:
                                 server.start()
                                 await self._send_json(
                                     websocket,
-                                    {"id": action_id, "type": "action_completed"},
+                                    {"id": action_id, "type": "request_completed"},
                                 )
                             except ServerIsAlreadyRunningError as e:
                                 await self._send_json(
                                     websocket,
                                     {
                                         "id": action_id,
-                                        "type": "action_failed",
+                                        "type": "request_failed",
                                         "error": str(e),
                                     },
                                 )
@@ -91,14 +100,14 @@ class APIClient:
                                 server.stop()
                                 await self._send_json(
                                     websocket,
-                                    {"id": action_id, "type": "action_completed"},
+                                    {"id": action_id, "type": "request_completed"},
                                 )
                             except ServerIsNotRunningError as e:
                                 await self._send_json(
                                     websocket,
                                     {
                                         "id": action_id,
-                                        "type": "action_failed",
+                                        "type": "request_failed",
                                         "error": str(e),
                                     },
                                 )
@@ -107,7 +116,7 @@ class APIClient:
                                 server.restart()
                                 await self._send_json(
                                     websocket,
-                                    {"id": action_id, "type": "action_completed"},
+                                    {"id": action_id, "type": "request_completed"},
                                 )
                             except (
                                 ServerIsNotRunningError,
@@ -118,44 +127,44 @@ class APIClient:
                                     websocket,
                                     {
                                         "id": action_id,
-                                        "type": "action_failed",
+                                        "type": "request_failed",
                                         "error": str(e),
                                     },
                                 )
                 case "command":
-                                command = message.get("command")
-                                if not isinstance(command, str):
-                                    break
-            
-                                key = message.get("key")
-                                if not isinstance(key, str):
-                                    continue
-            
-                                server = self._servers_by_key.get(key)
-                                if not isinstance(server, Server):
-                                    continue
-            
-                                logger.info(f"Command recieved.")
-            
-                                command_id = message.get("id")
-                                if not isinstance(command_id, str):
-                                    break
-            
-                                try:
-                                    server.execute_command(command)
-                                    await self._send_json(
-                                        websocket,
-                                        {"id": command_id, "type": "command_completed"},
-                                    )
-                                except ServerIsNotRunningError as e:
-                                    await self._send_json(
-                                        websocket,
-                                        {
-                                            "id": command_id,
-                                            "type": "command_failed",
-                                            "error": str(e),
-                                        },
-                                    )
+                    command = message.get("command")
+                    if not isinstance(command, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    logger.info(f"Command recieved.")
+
+                    command_id = message.get("id")
+                    if not isinstance(command_id, str):
+                        continue
+
+                    try:
+                        server.execute_command(command)
+                        await self._send_json(
+                            websocket,
+                            {"id": command_id, "type": "request_completed"},
+                        )
+                    except ServerIsNotRunningError as e:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": command_id,
+                                "type": "request_failed",
+                                "error": str(e),
+                            },
+                        )
                 case "registered":
                     logger.info("All servers are registered.")
                 case "registration_failed":
@@ -178,6 +187,261 @@ class APIClient:
                             key = invalid_server.get("key")
                             if isinstance(key, str):
                                 self._servers_by_key.pop(key, None)
+                case "files.get_item":
+                    path = message.get("path")
+                    if not isinstance(path, str) and path is not None:
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    item = self.file_service.get_item(server, path)
+                    if isinstance(item, FolderItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                                "item": {
+                                    "type": "folder",
+                                    "name": item.name,
+                                    "items": [
+                                        {
+                                            "type": "folder"
+                                            if isinstance(item, FolderItem)
+                                            else "file",
+                                            "name": item.name,
+                                        }
+                                        for item in item.items
+                                    ],
+                                },
+                            },
+                        )
+                    elif isinstance(item, FileItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                                "item": {
+                                    "type": "file",
+                                    "name": item.name,
+                                    "content": item.content,
+                                },
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "Item not found or access denied",
+                            },
+                        )
+                case "files.create_file":
+                    path = message.get("path")
+                    if not isinstance(path, str):
+                        continue
+
+                    content = message.get("content")
+                    if content is not None and not isinstance(content, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    file = self.file_service.write_file(server, path, content)
+                    if isinstance(file, FileItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "File exists or access denied",
+                            },
+                        )
+                case "files.create_folder":
+                    path = message.get("path")
+                    if not isinstance(path, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    folder = self.file_service.create_folder(server, path)
+                    if isinstance(folder, FolderItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "Folder exists or access denied",
+                            },
+                        )
+                case "files.update_file":
+                    path = message.get("path")
+                    if not isinstance(path, str):
+                        continue
+
+                    new_path = message.get("new_path")
+                    if new_path is not None and not isinstance(new_path, str):
+                        continue
+
+                    new_content = message.get("new_content")
+                    if new_content is not None and not isinstance(new_content, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    file = self.file_service.update_file(
+                        server, path, new_path, new_content
+                    )
+                    if isinstance(file, FileItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "File not found or access denied",
+                            },
+                        )
+
+                case "files.update_folder":
+                    path = message.get("path")
+                    if not isinstance(path, str):
+                        continue
+
+                    new_path = message.get("new_path")
+                    if new_path is not None and not isinstance(new_path, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    folder = self.file_service.update_folder(server, path, new_path)
+                    if isinstance(folder, FolderItem):
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "Folder not found or access denied",
+                            },
+                        )
+                case "files.delete":
+                    path = message.get("path")
+                    if not isinstance(path, str):
+                        continue
+
+                    key = message.get("key")
+                    if not isinstance(key, str):
+                        continue
+
+                    server = self._servers_by_key.get(key)
+                    if not isinstance(server, Server):
+                        continue
+
+                    request_id = message.get("id")
+                    if not isinstance(request_id, str):
+                        continue
+
+                    deleted = self.file_service.delete_item(server, path)
+                    if deleted:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_completed",
+                            },
+                        )
+                    else:
+                        await self._send_json(
+                            websocket,
+                            {
+                                "id": request_id,
+                                "type": "request_failed",
+                                "error": "File not found or access denied",
+                            },
+                        )
                 case _:
                     continue
 
