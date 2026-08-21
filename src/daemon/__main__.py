@@ -6,8 +6,9 @@ from src.daemon.api_client import APIClient
 from src.daemon.config_reader import ConfigReader
 from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.server import Server
-from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.file_service import FileService
+from src.daemon.services.metrics_service import MetricsService
+from src.daemon.services.properties_service import PropertiesService
 
 logger = Logger(__name__)
 
@@ -43,8 +44,11 @@ async def main() -> None:
 
     metrics_service = MetricsService()
     file_service = FileService()
+    properties_service = PropertiesService(file_service)
 
-    api_client = APIClient(api_host, api_port, servers, metrics_service, file_service)
+    api_client = APIClient(
+        api_host, api_port, servers, metrics_service, file_service, properties_service
+    )
     await api_client.connect()
 
 

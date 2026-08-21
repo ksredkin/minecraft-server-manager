@@ -3,7 +3,7 @@ import asyncio
 import websockets
 
 server_uuid = "c697c5fb-3937-413b-9627-871c8971db27"
-token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZXhwIjoxNzg3MjExNjEyfQ.5bzF5ed93JxPhf3FnX6FLRFLTC-d9UsmCLtVheuef2M"
+token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZXhwIjoxNzg3MzgxNDA4fQ.esadYRBVKivtycEg7xNOJ4naGuYwBy6HNKYXnStPqoU"
 
 
 async def main() -> None:

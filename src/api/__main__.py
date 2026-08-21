@@ -4,11 +4,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.exception_handlers import register_exception_handlers
 from src.api.routers.auth import auth_router
 from src.api.routers.daemon import daemon_router
 from src.api.routers.server import server_router
 from src.common.core.config import settings
-from src.api.exception_handlers import register_exception_handlers
 
 logging.basicConfig(level=logging.DEBUG)
 

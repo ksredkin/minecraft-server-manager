@@ -1,3 +1,4 @@
+import re
 import time
 from collections import deque
 from datetime import datetime
@@ -5,6 +6,8 @@ from pathlib import Path
 from queue import Empty, Queue
 from subprocess import PIPE, Popen
 from threading import Event, Thread
+
+import psutil
 
 from src.common.utils.logger import Logger
 from src.daemon.exceptions.config import InvalidConfigError
@@ -16,8 +19,6 @@ from src.daemon.exceptions.server import (
     ServerResponseTimeoutError,
     ServerStopTimeoutError,
 )
-import re
-import psutil
 
 logger = Logger(__name__)
 
@@ -71,7 +72,7 @@ class Server:
         self.process: Popen[str] | None = None
         self.pcu_percent: float = 0.0
         self.psutil_process: psutil.Process | None = None
-        self._status: str | None = None
+        self._status: str = "stopped"
         self._logs: deque[str] = deque(maxlen=1000)
         self._players: list[str] = []
         self._players_event: Event = Event()
@@ -230,7 +231,7 @@ class Server:
         self.start()
         logger.info(f'Server with daemon key "{self.key}" has restarted.')
 
-    def status(self) -> str | None:
+    def status(self) -> str:
         if self.process is None or self.process.poll() is not None:
             self._status = "stopped"
 

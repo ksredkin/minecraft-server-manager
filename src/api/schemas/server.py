@@ -1,10 +1,10 @@
 from datetime import datetime
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.common.enums import ServerUserRole
-from typing import Literal, Annotated
 
 
 class ServerInfoResponse(BaseModel):

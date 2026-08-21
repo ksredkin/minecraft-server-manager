@@ -1,11 +1,24 @@
 import asyncio
 import json
 from asyncio import Future
+from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from src.api.exceptions.daemon import (
+    DaemonDisconnectedError,
+    InvalidDaemonResponseError,
+)
+from src.api.schemas.server import (
+    FileCreate,
+    FileCreateRequest,
+    FileUpdate,
+    FileUpdateRequest,
+    FolderCreate,
+    FolderUpdate,
+)
 from src.api.services.key_service import KeyService, get_key_service
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
@@ -17,19 +30,6 @@ from src.common.enums import (
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
-from src.api.exceptions.daemon import (
-    DaemonDisconnectedError,
-    InvalidDaemonResponseError,
-)
-from typing import Any
-from src.api.schemas.server import (
-    FileCreate,
-    FolderCreate,
-    FileCreateRequest,
-    FileUpdateRequest,
-    FileUpdate,
-    FolderUpdate,
-)
 
 
 class DaemonRequestResult:
@@ -355,7 +355,7 @@ class ConnectionManager:
 
         if status == DaemonRequestStatus.SUCCESS:
             return DaemonDataRequestResult(
-                status=DaemonRequestStatus.SUCCESS, data=result.get("item")
+                status=DaemonRequestStatus.SUCCESS, data=result.get("data")
             )
 
         return DaemonDataRequestResult(
@@ -429,6 +429,16 @@ class ConnectionManager:
         self, server_id: int, path: str
     ) -> DaemonRequestResult:
         return await self._execute_request(server_id, "files.delete_file", path=path)
+
+    async def get_server_settings(self, server_id: int) -> DaemonDataRequestResult:
+        return await self._execute_data_request(server_id, "properties.get")
+
+    async def set_server_setting(
+        self, server_id: int, property: str, new_value: str
+    ) -> DaemonRequestResult:
+        return await self._execute_request(
+            server_id, "properties.set", property=property, new_value=new_value
+        )
 
 
 connection_manager = ConnectionManager(get_key_service(), session, get_cache_service())

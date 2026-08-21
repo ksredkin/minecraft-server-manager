@@ -1,9 +1,11 @@
-from pathlib import Path
-from src.daemon.server import Server
 from dataclasses import dataclass
+from pathlib import Path
+
 from src.common.utils.logger import Logger
+from src.daemon.server import Server
 
 logger = Logger(__name__)
+
 
 @dataclass
 class FileSystemItem:
@@ -44,6 +46,9 @@ class FileService:
 
         return target_file
 
+    def _get_relative_path(self, server: Server, path: Path) -> Path:
+        return Path(server.server_dir.name) / path.relative_to(server.server_dir)
+
     def get_folder_item(
         self, server: Server, folder_path: str | None = None
     ) -> FolderItem | None:
@@ -63,6 +68,7 @@ class FileService:
             return FolderItem(folder.name, folder, items)
         except Exception as e:
             logger.error(f"Failed to get a folder item: {e}", exc_info=True)
+            return None
 
     def get_file_item(self, server: Server, file_path: str) -> FileItem | None:
         file = self._get_safe_path(server, file_path)
@@ -73,9 +79,7 @@ class FileService:
             size = file.stat().st_size
             content = file.read_text(encoding="utf-8")
 
-            return FileItem(
-                file.name, file, size, content
-            )
+            return FileItem(file.name, file, size, content)
         except Exception as e:
             logger.error(f"Failed to get a file item: {e}", exc_info=True)
             return None
@@ -90,8 +94,9 @@ class FileService:
         try:
             file.write_text(content if content is not None else "", encoding="utf-8")
             size = file.stat().st_size
-            relative_path = file.relative_to(server.server_dir)
-            logger.info(f"Created file at: {str(relative_path)}")
+            logger.info(
+                f"Created file at: {str(self._get_relative_path(server, file))}"
+            )
             return FileItem(file.name, file, size, content)
         except Exception as e:
             logger.error(f"Failed to create a new file: {e}", exc_info=True)
@@ -119,16 +124,19 @@ class FileService:
             if new_content is not None:
                 file.write_text(new_content, encoding="utf-8")
 
-            if new_path:
+            if new_file:
                 file.rename(new_file)
 
-            name = file.name if new_path is None else new_file.name
-            path = file if new_path is None else new_file
-            size = file.stat().st_size if new_path is None else new_file.stat().st_size
-            content = file.read_text(encoding="utf-8") if not new_content else new_content
+            name = file.name if new_file is None else new_file.name
+            path = file if new_file is None else new_file
+            size = file.stat().st_size if new_file is None else new_file.stat().st_size
+            content = (
+                file.read_text(encoding="utf-8") if not new_content else new_content
+            )
 
-            relative_path = file.relative_to(server.server_dir) if new_path is None else new_file.relative_to(server.server_dir)
-            logger.info(f"Updated file at: {str(relative_path)}")
+            logger.info(
+                f"Updated file at: {str(self._get_relative_path(server, path))}"
+            )
 
             return FileItem(
                 name,
@@ -174,8 +182,9 @@ class FileService:
                         size = item.stat().st_size
                         items.append(FileItem(item.name, item, size))
 
-            relative_path = folder.relative_to(server.server_dir)
-            logger.info(f"Updated folder at: {str(relative_path)}")
+            logger.info(
+                f"Updated folder at: {str(self._get_relative_path(server, folder if new_path is None else new_folder))}"
+            )
 
             return FolderItem(
                 folder.name if new_path is None else new_folder.name,
@@ -197,7 +206,8 @@ class FileService:
             return self.get_folder_item(server, item_path)
 
         if item.is_file():
-            return self.get_file_item(server, item_path)
+            if item_path:
+                return self.get_file_item(server, item_path)
 
         return None
 
@@ -210,8 +220,9 @@ class FileService:
 
         try:
             folder.mkdir()
-            relative_path = folder.relative_to(server.server_dir)
-            logger.info(f"Created folder at: {str(relative_path)}")
+            logger.info(
+                f"Created folder at: {str(self._get_relative_path(server, folder))}"
+            )
             return FolderItem(folder.name, folder, [])
         except Exception as e:
             logger.error(f"Failed to create a folder: {e}", exc_info=True)
@@ -223,13 +234,16 @@ class FileService:
             return False
 
         try:
-            relative_path = safe_path.relative_to(server.server_dir)
             if safe_path.is_dir():
                 safe_path.rmdir()
-                logger.info(f"Deleted folder at: {str(relative_path)}")
+                logger.info(
+                    f"Deleted folder at: {str(self._get_relative_path(server, safe_path))}"
+                )
             else:
                 safe_path.unlink()
-                logger.info(f"Deleted file at: {str(relative_path)}")
+                logger.info(
+                    f"Deleted file at: {str(self._get_relative_path(server, safe_path))}"
+                )
         except Exception as e:
             logger.error(f"Failed to delete a file: {e}", exc_info=True)
             return False

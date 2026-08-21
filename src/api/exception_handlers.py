@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+
 from src.api.exceptions.api import MSMAPIError
-from src.api.exceptions.server import ServerNotFoundError
 from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
     InvalidDaemonResponseError,
 )
+from src.api.exceptions.server import ServerNotFoundError
 
 ERRORS = {
     ServerNotFoundError: 404,

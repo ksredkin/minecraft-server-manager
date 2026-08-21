@@ -9,11 +9,12 @@ from fastapi.routing import APIRouter
 
 from src.api.dependencies.auth import get_current_user_id, get_current_user_id_ws
 from src.api.dependencies.server import get_server_service
+from src.api.exceptions.server import ServerNotFoundError
 from src.api.schemas.server import (
-    ServerDeletedResponse,
-    ServerInfoResponse,
     FileCreateRequest,
     FileUpdateRequest,
+    ServerDeletedResponse,
+    ServerInfoResponse,
 )
 from src.api.services.connection_manager import (
     ConnectionManager,
@@ -21,7 +22,6 @@ from src.api.services.connection_manager import (
 )
 from src.api.services.server_service import ServerService
 from src.common.database.models import Server
-from src.api.exceptions.server import ServerNotFoundError
 
 server_router = APIRouter(prefix="/servers")
 
@@ -295,6 +295,60 @@ async def delete_file(
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.delete_server_file(server_id, path)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.get(
+    "/{uuid}/properties",
+    status_code=200,
+    description="Получить настройки сервера.",
+)
+async def get_settings(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.get_server_settings(server_id)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    if result.data:
+        message["properties"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.put(
+    "/{uuid}/properties",
+    status_code=200,
+    description="Обновить значение настройки сервера.",
+)
+async def set_property(
+    uuid: UUID,
+    property: str,
+    new_value: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.set_server_setting(server_id, property, new_value)
     message: dict[str, str | bool] = {"success": result.success}
     if result.error:
         message["error"] = result.error
