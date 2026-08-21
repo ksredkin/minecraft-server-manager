@@ -15,6 +15,7 @@ from src.daemon.exceptions.server import (
     ServerStopTimeoutError,
 )
 from src.daemon.server import Server
+from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
 from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.properties_service import PropertiesService
@@ -31,6 +32,7 @@ class APIClient:
         metrics_service: MetricsService,
         file_service: FileService,
         properties_service: PropertiesService,
+        eula_service: EulaService,
     ):
         if not api_host:
             raise InvalidConfigError('Missing "api_host" in daemon settings.')
@@ -49,6 +51,7 @@ class APIClient:
         self.metrics_service = metrics_service
         self.file_service = file_service
         self.properties_service = properties_service
+        self.eula_service = eula_service
 
     async def _send_json(self, websocket: ClientConnection, data: Any) -> None:
         await websocket.send(json.dumps(data), text=True)
@@ -56,7 +59,7 @@ class APIClient:
     async def _request_failed(
         self, websocket: ClientConnection, request_id: UUID, error: str | None = None
     ) -> None:
-        message = {"id": request_id, "type": "request_failed"}
+        message = {"id": str(request_id), "type": "request_failed"}
         if error is not None:
             message["error"] = error
         await self._send_json(websocket, message)
@@ -64,7 +67,7 @@ class APIClient:
     async def _request_completed(
         self, websocket: ClientConnection, request_id: UUID, data: Any | None = None
     ) -> None:
-        message = {"id": request_id, "type": "request_completed"}
+        message = {"id": str(request_id), "type": "request_completed"}
         if data is not None:
             message["data"] = data
         await self._send_json(websocket, message)
@@ -90,6 +93,8 @@ class APIClient:
                     | "files.delete"
                     | "properties.get"
                     | "properties.set"
+                    | "eula.get"
+                    | "eula.set"
                 ):
                     key = message.get("key")
                     if not isinstance(key, str):
@@ -317,6 +322,28 @@ class APIClient:
                             setted = self.properties_service.set_property(
                                 server, property, new_value
                             )
+                            if setted:
+                                await self._request_completed(websocket, request_id)
+                            else:
+                                await self._request_failed(
+                                    websocket, request_id, "File or property not found"
+                                )
+                        case "eula.get":
+                            eula = self.eula_service.get(server)
+                            if eula is not None:
+                                await self._request_completed(
+                                    websocket, request_id, eula
+                                )
+                            else:
+                                await self._request_failed(
+                                    websocket, request_id, "File or property not found"
+                                )
+                        case "eula.set":
+                            accept = message.get("accept")
+                            if not isinstance(accept, bool):
+                                continue
+
+                            setted = self.eula_service.set(server, accept)
                             if setted:
                                 await self._request_completed(websocket, request_id)
                             else:

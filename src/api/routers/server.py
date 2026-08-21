@@ -354,3 +354,56 @@ async def set_property(
         message["error"] = result.error
 
     return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.get(
+    "/{uuid}/eula",
+    status_code=200,
+    description="Получить статус EULA на сервере.",
+)
+async def get_eula(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.get_server_eula(server_id)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    if result.data:
+        message["eula"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.put(
+    "/{uuid}/eula",
+    status_code=200,
+    description="Установить статус EULA на сервере.",
+)
+async def set_eula(
+    uuid: UUID,
+    accept: bool = True,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.set_server_eula(server_id, accept)
+    message: dict[str, str | bool] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)

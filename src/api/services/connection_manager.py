@@ -278,7 +278,7 @@ class ConnectionManager:
         self,
         server_id: int,
         message_type: str,
-        **payload: str | None,
+        **payload: str | bool | None,
     ) -> bool:
         if not (server_route := self.server_routes.get(server_id)):
             return False
@@ -300,7 +300,7 @@ class ConnectionManager:
             return False
 
     async def _send_request_and_wait(
-        self, server_id: int, message_type: str, **payload: str | None
+        self, server_id: int, message_type: str, **payload: str | bool | None
     ) -> dict[str, str | bool]:
         request_id = uuid4()
 
@@ -331,7 +331,11 @@ class ConnectionManager:
             raise InvalidDaemonResponseError("Internal server error")
 
     async def _execute_request(
-        self, server_id: int, message_type: str, error: int = 409, **payload: str | None
+        self,
+        server_id: int,
+        message_type: str,
+        error: int = 409,
+        **payload: str | bool | None,
     ) -> DaemonRequestResult:
         result = await self._send_request_and_wait(server_id, message_type, **payload)
         status = self._validate_response(result)
@@ -439,6 +443,14 @@ class ConnectionManager:
         return await self._execute_request(
             server_id, "properties.set", property=property, new_value=new_value
         )
+
+    async def get_server_eula(self, server_id: int) -> DaemonDataRequestResult:
+        return await self._execute_data_request(server_id, "eula.get")
+
+    async def set_server_eula(
+        self, server_id: int, accept: bool
+    ) -> DaemonRequestResult:
+        return await self._execute_request(server_id, "eula.set", accept=accept)
 
 
 connection_manager = ConnectionManager(get_key_service(), session, get_cache_service())
