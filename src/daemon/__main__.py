@@ -10,6 +10,7 @@ from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileService
 from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.properties_service import PropertiesService
+from src.daemon.services.backup_service import BackupService
 
 logger = Logger(__name__)
 
@@ -43,10 +44,22 @@ async def main() -> None:
             'Invalid "api_host" or "api_port" type in daemon settings.'
         )
 
+    backups_path_str = daemon_settings.get("backups_path")
+    if not isinstance(backups_path_str, str):
+        raise InvalidConfigError(
+            'Invalid or missing "backups_path" in daemon settings.'
+        )
+
+    try:
+        backups_path = Path(backups_path_str)
+    except ValueError:
+        raise InvalidConfigError('Invalid "backups_path" in daemon settings.')
+
     metrics_service = MetricsService()
     file_service = FileService()
     properties_service = PropertiesService(file_service)
     eula_service = EulaService(file_service)
+    backup_service = BackupService(backups_path)
 
     api_client = APIClient(
         api_host,
@@ -56,6 +69,7 @@ async def main() -> None:
         file_service,
         properties_service,
         eula_service,
+        backup_service,
     )
     await api_client.connect()
 

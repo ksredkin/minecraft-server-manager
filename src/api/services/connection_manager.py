@@ -30,6 +30,7 @@ from src.common.enums import (
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
+from src.api.services.task_manager import TaskManager, get_task_manager
 
 
 class DaemonRequestResult:
@@ -46,6 +47,10 @@ class DaemonRequestResult:
     @property
     def success(self) -> bool:
         return self.status == DaemonRequestStatus.SUCCESS
+
+    @property
+    def accepted(self) -> bool:
+        return self.status == DaemonRequestStatus.ACCEPTED
 
 
 class DaemonDataRequestResult(DaemonRequestResult):
@@ -68,13 +73,14 @@ class ConnectionManager:
         key_service: KeyService,
         sessionmaker: async_sessionmaker[AsyncSession],
         cache_service: CacheService,
+        task_manager: TaskManager,
     ) -> None:
         self.connections: dict[int, WebSocket] = {}
         self.server_routes: dict[int, dict[str, str | int]] = {}
-        self.pending_requests: dict[UUID, Future[dict[str, str | bool]]] = {}
         self.key_service = key_service
         self.sessionmaker = sessionmaker
         self.cache_service = cache_service
+        self.task_manager = task_manager
 
     async def _connect(self, connection: WebSocket) -> int:
         await connection.accept()
@@ -175,21 +181,39 @@ class ConnectionManager:
                                 }
                             )
                             need_to_disconnect = True
-                case "request_completed" | "request_failed":
-                    request_id = message.get("id")
-                    if not isinstance(request_id, str):
+                case "request_accepted":
+                    task_id_str = message.get("id")
+                    if not isinstance(task_id_str, str):
                         continue
 
                     try:
-                        request_uuid = UUID(request_id)
+                        task_id = UUID(task_id_str)
                     except ValueError:
                         continue
 
-                    future = self.pending_requests.get(request_uuid)
-                    if not future:
+                    self.task_manager.set_accepted(server_id, task_id)
+                case "request_completed":
+                    task_id_str = message.get("id")
+                    if not isinstance(task_id_str, str):
                         continue
 
-                    future.set_result(message)
+                    try:
+                        task_id = UUID(task_id_str)
+                    except ValueError:
+                        continue
+
+                    self.task_manager.set_completed(server_id, task_id, message)
+                case "request_failed":
+                    task_id_str = message.get("id")
+                    if not isinstance(task_id_str, str):
+                        continue
+                
+                    try:
+                        task_id = UUID(task_id_str)
+                    except ValueError:
+                        continue
+                
+                    self.task_manager.set_failed(server_id, task_id, message)
                 case "status":
                     servers = message.get("servers")
                     if isinstance(servers, list):
@@ -299,27 +323,31 @@ class ConnectionManager:
         except Exception:
             return False
 
+    async def _send_request(
+        self, server_id: int, message_type: str, **payload: str | bool | None
+    ) -> UUID:
+        task_id = self.task_manager.add(server_id)
+        sent = await self.send_message_to_server(
+            server_id, message_type, id=str(task_id), **payload
+        )
+
+        if not sent:
+            raise DaemonDisconnectedError(
+                "Daemon is disconnected or an internal error occurred"
+            )
+
+        return task_id
+
     async def _send_request_and_wait(
         self, server_id: int, message_type: str, **payload: str | bool | None
     ) -> dict[str, str | bool]:
-        request_id = uuid4()
-
-        future = asyncio.get_running_loop().create_future()
-        self.pending_requests[request_id] = future
-
+        task_id: UUID|None = None
         try:
-            sent = await self.send_message_to_server(
-                server_id, message_type, id=str(request_id), **payload
-            )
-
-            if not sent:
-                raise DaemonDisconnectedError(
-                    "Daemon is disconnected or an internal error occurred"
-                )
-
-            return await asyncio.wait_for(future, timeout=10)
+            task_id = await self._send_request(server_id, message_type, **payload)
+            self.task_manager.set_accepted(server_id, task_id)
+            return await self.task_manager.wait_result(server_id, task_id)
         finally:
-            self.pending_requests.pop(request_id, None)
+            await self.task_manager.remove(server_id, task_id)
 
     def _validate_response(self, result: dict[str, str | bool]) -> DaemonRequestStatus:
         if not result:
@@ -334,7 +362,7 @@ class ConnectionManager:
         self,
         server_id: int,
         message_type: str,
-        error: int = 409,
+        status_code: int = 409,
         **payload: str | bool | None,
     ) -> DaemonRequestResult:
         result = await self._send_request_and_wait(server_id, message_type, **payload)
@@ -347,12 +375,12 @@ class ConnectionManager:
 
         return DaemonRequestResult(
             status=DaemonRequestStatus.FAILED,
-            status_code=error,
+            status_code=status_code,
             error=str(result.get("error")),
         )
 
     async def _execute_data_request(
-        self, server_id: int, message_type: str, error: int = 404, **payload: str | None
+        self, server_id: int, message_type: str, status_code: int = 404, **payload: str | None
     ) -> DaemonDataRequestResult:
         result = await self._send_request_and_wait(server_id, message_type, **payload)
         status = self._validate_response(result)
@@ -364,8 +392,28 @@ class ConnectionManager:
 
         return DaemonDataRequestResult(
             status=DaemonRequestStatus.FAILED,
-            status_code=error,
+            status_code=status_code,
             error=str(result.get("error")),
+        )
+
+    async def _execute_task_request(
+        self, server_id: int, message_type: str, status_code: int = 404, **payload: str | None
+    ) -> DaemonDataRequestResult:
+        task_id = await self._send_request(server_id, message_type, **payload)
+        accepted = await self.task_manager.wait_accepted(server_id, task_id)
+
+        if accepted:
+            return DaemonDataRequestResult(
+                status=DaemonRequestStatus.ACCEPTED,
+                status_code=202,
+                data=task_id
+            )
+
+        await self.task_manager.remove(server_id, task_id)
+        return DaemonDataRequestResult(
+            status=DaemonRequestStatus.FAILED,
+            status_code=status_code,
+            error="Daemon is not connected or internal error occured",
         )
 
     async def execute_server_action(
@@ -452,8 +500,22 @@ class ConnectionManager:
     ) -> DaemonRequestResult:
         return await self._execute_request(server_id, "eula.set", accept=accept)
 
+    async def create_server_backup(self, server_id: int) -> DaemonDataRequestResult:
+        return await self._execute_task_request(server_id, "backups.create", 503)
 
-connection_manager = ConnectionManager(get_key_service(), session, get_cache_service())
+    async def delete_server_backup(self, server_id: int, backup: str) -> DaemonRequestResult:
+        return await self._execute_request(server_id, "backups.delete", 503, backup=backup)
+
+    async def get_server_backups(self, server_id: int) -> DaemonDataRequestResult:
+        return await self._execute_data_request(server_id, "backups.get", 503)
+
+    async def restore_server_backup(self, server_id: int, backup: str) -> DaemonDataRequestResult:
+        return await self._execute_task_request(server_id, "backups.restore", 503, backup=backup)
+
+
+connection_manager = ConnectionManager(
+    get_key_service(), session, get_cache_service(), get_task_manager()
+)
 
 
 def get_connection_manager() -> ConnectionManager:

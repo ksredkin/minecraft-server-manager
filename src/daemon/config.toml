@@ -1,7 +1,7 @@
 [daemon]
 api_host = '127.0.0.1'
 api_port = 8080
-local_backups_path = 'D:/backups'
+backups_path = 'D:/backups'
 
 [[servers]]
 key = 'RuM-DsKOEEWUjJGm2gadhpBOeZhx04Lny4PKf30NbTI'

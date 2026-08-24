@@ -14,5 +14,13 @@ class ServerUserRole(Enum):
 
 
 class DaemonRequestStatus(Enum):
+    ACCEPTED = "request_accepted"
     SUCCESS = "request_completed"
     FAILED = "request_failed"
+
+
+class TaskStatus(Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    ACCEPTED = "accepted"
+    FAILED = "failed"
