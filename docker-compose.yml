@@ -1,13 +1,15 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18
     container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_PORT: ${DB_PORT}
+    secrets:
+      - db_password
     volumes:
       - postgres-data:/var/lib/postgresql
     networks:
@@ -29,19 +31,26 @@ services:
       dockerfile: Dockerfile.api
     environment:
       DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: postgres
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       API_HOST: ${API_HOST}
       API_PORT: ${API_PORT}
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT}
+      BACKUP_STORAGE_PATH: ${BACKUP_STORAGE_PATH}
+      YOOCASSA_SHOP_ID: ${YOOCASSA_SHOP_ID}
+      PAYMENT_RETURN_URL: ${PAYMENT_RETURN_URL}
+    secrets:
+      - db_password
+      - jwt_secret_key
+      - backup_encryption_key
+      - yoocassa_secret_key
     volumes:
       - ./src/api:/app/src/api
       - ./src/common/services:/app/src/common/services
+      - backup_storage_data:${BACKUP_STORAGE_PATH}
     ports:
       - ${API_PORT}:${API_PORT}
     networks:
@@ -53,10 +62,11 @@ services:
       dockerfile: Dockerfile.migrations
     environment:
       DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: postgres
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
+    secrets:
+      - db_password
     volumes:
       - ./alembic:/app/alembic
     depends_on:
@@ -68,6 +78,22 @@ volumes:
   postgres-data:
     name: postgres-data
 
+  backup_storage_data:
+    name: backup_storage_data
+
 networks:
   msm-net:
     driver: bridge
+
+secrets:
+  backup_encryption_key:
+    file: ./secrets/backup_encryption_key.txt
+
+  jwt_secret_key:
+    file: ./secrets/jwt_secret_key.txt
+
+  db_password:
+    file: ./secrets/db_password.txt
+
+  yoocassa_secret_key:
+    file: ./secrets/yoocassa_secret_key.txt

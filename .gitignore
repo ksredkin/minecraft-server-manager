@@ -246,3 +246,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets
+secrets/

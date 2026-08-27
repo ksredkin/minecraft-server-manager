@@ -6,8 +6,16 @@ from src.api.services.auth_service import AuthService
 from src.api.services.jwt_service import JwtService
 from src.api.services.password_service import PasswordService
 from src.api.services.user_service import UserService
-from src.common.core.config import settings
+from src.common.core.config import settings, secrets
 from src.common.repositories.user_repository import UserRespository
+from src.common.repositories.subscription_repository import SubscriptionRepository
+from src.common.repositories.payment_repository import PaymentRepository
+from src.api.services.subscription_service import SubscriptionService
+from src.api.services.payment_service import PaymentService
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.common.database.connection import get_db_session
+from src.api.api_clients.payments.interface import PaymentProvider
+from src.api.dependencies.billing import get_yoocassa_provider
 
 
 def get_password_service() -> PasswordService:
@@ -15,17 +23,18 @@ def get_password_service() -> PasswordService:
 
 
 def get_user_service(
-    user_repository: UserRespository = Depends(get_user_repository),
+    session: AsyncSession = Depends(get_db_session), 
     password_service: PasswordService = Depends(get_password_service),
+    payment_provider: PaymentProvider = Depends(get_yoocassa_provider),
 ) -> UserService:
-    return UserService(user_repository, password_service)
+    return UserService(UserRespository(session), password_service, SubscriptionService(SubscriptionRepository(session), PaymentService(PaymentRepository(session), payment_provider)))
 
 
 def get_jwt_service() -> JwtService:
-    if settings.jwt_secret_key is None:
+    if secrets.get("jwt_secret_key") is None:
         raise RuntimeError("JWT_SECRET_KEY is not configured")
 
-    return JwtService(settings.jwt_secret_key, settings.jwt_algorithm)
+    return JwtService(secrets.get("jwt_secret_key"), settings.jwt_algorithm)
 
 
 def get_auth_service(

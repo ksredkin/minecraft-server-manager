@@ -23,6 +23,8 @@ from src.api.services.connection_manager import (
 from src.api.services.server_service import ServerService
 from src.api.services.task_manager import TaskManager, get_task_manager, TaskStatus
 from src.common.database.models import Server
+from src.api.services.backup_manager import BackupManager
+from src.api.dependencies.backup import get_backup_manager
 
 server_router = APIRouter(prefix="/servers")
 
@@ -514,8 +516,61 @@ async def restore_server_backup(
         message["error"] = result.error
     if result.data:
         message["task_id"] = str(result.data)
-    
+
     return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.get(
+    "/{uuid}/backups/cloud",
+    status_code=200,
+    description="Получить облачные бэкапы сервера.",
+)
+async def get_server_cloud_backups(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    backup_manager: BackupManager = Depends(get_backup_manager),
+    # connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    backups = backup_manager.get_server_backups(uuid)
+    message: dict[str, int | dict[str, str | bool]] = {
+        "success": True,
+        "backups": [{"name": backup.name, "size": backup.size} for backup in backups],
+    }
+    return JSONResponse(content=message)
+
+
+@server_router.post(
+    "/{uuid}/backups/{backup}/cloud",
+    status_code=200,
+    description="Отправить бэкап сервера в облако.",
+)
+async def upload_server_backup_to_cloud(
+    uuid: UUID,
+    backup: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    backup_manager: BackupManager = Depends(get_backup_manager),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    backups = backup_manager.get_server_backups(uuid)
+    message: dict[str, int | dict[str, str | bool]] = {
+        "success": True,
+        "backups": [{"name": backup.name, "size": backup.size} for backup in backups],
+    }
+    return JSONResponse(content=message)
 
 
 @server_router.get(
@@ -537,8 +592,11 @@ async def get_server_backup_task(
         raise ServerNotFoundError("Server not found or access denied")
 
     status = task_manager.get_task_status(server_id, task_id)
-    if status is None:  
-        return JSONResponse(content={"success": False, "error": "Task not found or access denied"}, status_code=404)
+    if status is None:
+        return JSONResponse(
+            content={"success": False, "error": "Task not found or access denied"},
+            status_code=404,
+        )
 
     task = {}
     if status == TaskStatus.FAILED or status == TaskStatus.COMPLETED:

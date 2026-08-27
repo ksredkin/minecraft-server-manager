@@ -97,9 +97,7 @@ class APIClient:
     ) -> None:
         try:
             await asyncio.to_thread(self.backup_service.restore_backup, server, backup)
-            await self._request_completed(
-                websocket, request_id
-            )
+            await self._request_completed(websocket, request_id)
         except Exception as e:
             await self._request_failed(websocket, request_id, str(e))
 
@@ -126,7 +124,10 @@ class APIClient:
                     | "properties.set"
                     | "eula.get"
                     | "eula.set"
-                    | "backups.create" | "backups.delete" | "backups.get" | "backups.restore"
+                    | "backups.create"
+                    | "backups.delete"
+                    | "backups.get"
+                    | "backups.restore"
                 ):
                     key = message.get("key")
                     if not isinstance(key, str):
@@ -383,7 +384,9 @@ class APIClient:
                                     websocket, request_id, "File or property not found"
                                 )
                         case "backups.create":
-                            asyncio.create_task(self._create_backup(websocket, request_id, server))
+                            asyncio.create_task(
+                                self._create_backup(websocket, request_id, server)
+                            )
                             await self._request_accepted(websocket, request_id)
                         case "backups.delete":
                             backup = message.get("backup")
@@ -401,13 +404,24 @@ class APIClient:
                             backup = message.get("backup")
                             if not isinstance(backup, str):
                                 continue
-                        
-                            asyncio.create_task(self._restore_backup(websocket, request_id, server, backup))
+
+                            asyncio.create_task(
+                                self._restore_backup(
+                                    websocket, request_id, server, backup
+                                )
+                            )
                             await self._request_accepted(websocket, request_id)
-                        case "backups.get":                        
+                        case "backups.get":
                             try:
                                 backups = self.backup_service.get_backups(server)
-                                await self._request_completed(websocket, request_id, [{"name": backup.name, "size": backup.size} for backup in backups])
+                                await self._request_completed(
+                                    websocket,
+                                    request_id,
+                                    [
+                                        {"name": backup.name, "size": backup.size}
+                                        for backup in backups
+                                    ],
+                                )
                             except Exception as e:
                                 await self._request_failed(
                                     websocket, request_id, str(e)

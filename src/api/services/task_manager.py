@@ -7,9 +7,9 @@ from asyncio import CancelledError, InvalidStateError
 
 class TaskManager:
     def __init__(self) -> None:
-        self.tasks: dict[UUID, dict[
-            UUID, dict[str, TaskStatus | Future[dict[str, str | bool]]]
-        ]] = {}
+        self.tasks: dict[
+            UUID, dict[UUID, dict[str, TaskStatus | Future[dict[str, str | bool]]]]
+        ] = {}
 
     def add(self, server_id: UUID) -> UUID:
         task_id = uuid4()
@@ -38,10 +38,12 @@ class TaskManager:
 
         return True
 
-    def set_completed(self, server_id: UUID, task_id: UUID, data: dict[str, str | bool]) -> bool:
+    def set_completed(
+        self, server_id: UUID, task_id: UUID, data: dict[str, str | bool]
+    ) -> bool:
         if not server_id in self.tasks.keys():
             return False
-        
+
         if not task_id in self.tasks[server_id].keys():
             return False
 
@@ -55,7 +57,7 @@ class TaskManager:
     def set_failed(self, server_id: UUID, task_id: UUID, error: str) -> bool:
         if not server_id in self.tasks.keys():
             return False
-                
+
         if not task_id in self.tasks[server_id].keys():
             return False
 
@@ -66,10 +68,12 @@ class TaskManager:
         self.tasks[server_id][task_id]["future"].set_result(error)
         return True
 
-    async def get_result(self, server_id: UUID, task_id: UUID) -> None | dict[str, str | bool]:
+    async def get_result(
+        self, server_id: UUID, task_id: UUID
+    ) -> None | dict[str, str | bool]:
         if not server_id in self.tasks.keys():
             return False
-                        
+
         if not task_id in self.tasks[server_id].keys():
             return False
 
@@ -79,7 +83,7 @@ class TaskManager:
         if task_status == TaskStatus.FAILED or task_status == TaskStatus.COMPLETED:
             try:
                 return task_future.result()
-            except (CancelledError, InvalidStateError):
+            except CancelledError, InvalidStateError:
                 return None
 
         return None
@@ -89,7 +93,7 @@ class TaskManager:
     ) -> None | dict[str, str | bool]:
         if not server_id in self.tasks.keys():
             return False
-                                
+
         if not task_id in self.tasks[server_id].keys():
             return False
 
@@ -100,26 +104,27 @@ class TaskManager:
         try:
             task_future = self.tasks[server_id][task_id]["future"]
             return await asyncio.wait_for(task_future, timeout=timeout)
-        except (TimeoutError, CancelledError):
+        except TimeoutError, CancelledError:
             return None
 
-    async def wait_accepted(self, server_id: UUID, task_id: UUID, timeout: int = 10) -> bool:
+    async def wait_accepted(
+        self, server_id: UUID, task_id: UUID, timeout: int = 10
+    ) -> bool:
         if not server_id in self.tasks.keys():
             return False
-                                        
+
         if not task_id in self.tasks[server_id].keys():
             return False
-            
+
         if self.tasks[server_id][task_id]["status"] != TaskStatus.PENDING:
             return True
-            
+
         try:
             await asyncio.wait_for(
-                self.tasks[server_id][task_id]["accepted_future"], 
-                timeout=timeout
+                self.tasks[server_id][task_id]["accepted_future"], timeout=timeout
             )
             return True
-        except (TimeoutError, CancelledError):
+        except TimeoutError, CancelledError:
             return False
 
     async def remove(self, server_id: UUID, task_id: UUID) -> bool:
@@ -132,10 +137,10 @@ class TaskManager:
 
         return True
 
-    def get_task_status(self, server_id: UUID, task_id: UUID) -> TaskStatus|None:
+    def get_task_status(self, server_id: UUID, task_id: UUID) -> TaskStatus | None:
         if not server_id in self.tasks.keys():
             return False
-                                                
+
         if not task_id in self.tasks[server_id].keys():
             return False
 

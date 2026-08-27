@@ -24,3 +24,26 @@ class TaskStatus(Enum):
     COMPLETED = "completed"
     ACCEPTED = "accepted"
     FAILED = "failed"
+
+
+class SubscriptionLevel(Enum):
+    FREE = "free"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
+
+
+class Feature(Enum):
+    pass
+
+
+class SubscriptionStatus(Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+class PaymentStatus(Enum):
+    PENDING = "pending"
+    SUCCEEDED = "succeeded"
+    CANCELLED = "cancelled"

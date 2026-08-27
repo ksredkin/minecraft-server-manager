@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from src.common.core.config import settings
+from src.common.core.config import settings, secrets
 from src.common.database.models import Base
 
 config = context.config
@@ -11,7 +11,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-url = f"postgresql+psycopg2://{settings.db_user}:{settings.db_password}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+url = f"postgresql+psycopg2://{settings.db_user}:{secrets.get('db_password')}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 
 target_metadata = Base.metadata
 config.set_main_option("sqlalchemy.url", url)

@@ -6,12 +6,16 @@ from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
     InvalidDaemonResponseError,
 )
+from src.api.exceptions.billing import NewPlanIsLowerThanCurrent, PlanAlreadyActive, ActiveSubscriptionNotFound
 from src.api.exceptions.server import ServerNotFoundError
 
 ERRORS = {
     ServerNotFoundError: 404,
     DaemonDisconnectedError: 503,
     InvalidDaemonResponseError: 500,
+    NewPlanIsLowerThanCurrent: 400,
+    PlanAlreadyActive: 400,
+    ActiveSubscriptionNotFound: 500
 }
 
 

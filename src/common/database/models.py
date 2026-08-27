@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import UUID, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.common.enums import ServerUserRole
+from src.common.enums import ServerUserRole, SubscriptionLevel, PaymentStatus, SubscriptionStatus
 
 
 class Base(DeclarativeBase):
@@ -67,10 +67,13 @@ class Subscription(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    level: Mapped[str]
-    status: Mapped[str]
-    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    level: Mapped[SubscriptionLevel] = mapped_column(
+        Enum(SubscriptionLevel, name="subscription_level_enum"),
+        default=SubscriptionLevel.FREE,
+    )
+    status: Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus, name="subscription_status_enum"), default=SubscriptionStatus.PENDING)
+    start_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -90,10 +93,10 @@ class Payment(Base):
     external_payment_id: Mapped[str]
     amount: Mapped[int]
     currency: Mapped[str]
-    status: Mapped[str]
+    status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus, name="payment_status_enum"), default=PaymentStatus.PENDING)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     subscription: Mapped["Subscription"] = relationship(back_populates="payments")
