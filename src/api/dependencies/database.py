@@ -2,10 +2,10 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.common.database.connection import get_db_session, session
+from src.common.repositories.payment_repository import PaymentRepository
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.repositories.user_repository import UserRespository
-from src.common.repositories.payment_repository import PaymentRepository
 
 
 def get_async_sessionmaker() -> async_sessionmaker[AsyncSession]:

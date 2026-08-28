@@ -16,15 +16,15 @@ from src.api.schemas.server import (
     ServerDeletedResponse,
     ServerInfoResponse,
 )
+from src.api.services.backup_manager import BackupManager, get_backup_manager
 from src.api.services.connection_manager import (
     ConnectionManager,
     get_connection_manager,
 )
 from src.api.services.server_service import ServerService
-from src.api.services.task_manager import TaskManager, get_task_manager, TaskStatus
+from src.api.services.task_manager import TaskManager, get_task_manager
 from src.common.database.models import Server
-from src.api.services.backup_manager import BackupManager
-from src.api.dependencies.backup import get_backup_manager
+from src.common.enums import TaskStatus
 
 server_router = APIRouter(prefix="/servers")
 
@@ -218,7 +218,7 @@ async def get_server_files(
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.get_server_item(server_id, path)
-    message: dict[str, str | bool] = {"success": result.success}
+    message: dict[str, str | bool | dict[str, str | bool]] = {"success": result.success}
     if result.error:
         message["error"] = result.error
     if result.data:
@@ -323,7 +323,7 @@ async def get_settings(
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.get_server_settings(server_id)
-    message: dict[str, str | bool] = {"success": result.success}
+    message: dict[str, str | bool | dict[str, str | bool]] = {"success": result.success}
     if result.error:
         message["error"] = result.error
     if result.data:
@@ -377,7 +377,7 @@ async def get_eula(
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.get_server_eula(server_id)
-    message: dict[str, str | bool] = {"success": result.success}
+    message: dict[str, str | bool | dict[str, str | bool]] = {"success": result.success}
     if result.error:
         message["error"] = result.error
     if result.data:
@@ -430,7 +430,7 @@ async def get_server_backups(
         raise ServerNotFoundError("Server not found or access denied")
 
     result = await connection_manager.get_server_backups(server_id)
-    message: dict[str, str | bool] = {"success": result.success}
+    message: dict[str, str | bool | dict[str, str | bool]] = {"success": result.success}
     if result.error:
         message["error"] = result.error
     if result.data:
@@ -461,7 +461,7 @@ async def create_server_backup(
     if result.error:
         message["error"] = result.error
     if result.data:
-        message["task_id"] = str(result.data)
+        message["task_id"] = str(result.data.get("task_id"))
 
     return JSONResponse(content=message, status_code=result.status_code)
 
@@ -515,7 +515,7 @@ async def restore_server_backup(
     if result.error:
         message["error"] = result.error
     if result.data:
-        message["task_id"] = str(result.data)
+        message["task_id"] = str(result.data.get("task_id"))
 
     return JSONResponse(content=message, status_code=result.status_code)
 
@@ -539,7 +539,7 @@ async def get_server_cloud_backups(
         raise ServerNotFoundError("Server not found or access denied")
 
     backups = backup_manager.get_server_backups(uuid)
-    message: dict[str, int | dict[str, str | bool]] = {
+    message: dict[str, bool | list[dict[str, str | int]]] = {
         "success": True,
         "backups": [{"name": backup.name, "size": backup.size} for backup in backups],
     }
@@ -548,7 +548,6 @@ async def get_server_cloud_backups(
 
 @server_router.post(
     "/{uuid}/backups/{backup}/cloud",
-    status_code=200,
     description="Отправить бэкап сервера в облако.",
 )
 async def upload_server_backup_to_cloud(
@@ -556,7 +555,6 @@ async def upload_server_backup_to_cloud(
     backup: str,
     current_user_id: int = Depends(get_current_user_id),
     server_service: ServerService = Depends(get_server_service),
-    backup_manager: BackupManager = Depends(get_backup_manager),
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
@@ -565,12 +563,14 @@ async def upload_server_backup_to_cloud(
     ):
         raise ServerNotFoundError("Server not found or access denied")
 
-    backups = backup_manager.get_server_backups(uuid)
-    message: dict[str, int | dict[str, str | bool]] = {
-        "success": True,
-        "backups": [{"name": backup.name, "size": backup.size} for backup in backups],
-    }
-    return JSONResponse(content=message)
+    result = await connection_manager.upload_server_backup_to_cloud(server_id, backup)
+    message: dict[str, str | bool] = {"success": result.accepted}
+    if result.error:
+        message["error"] = result.error
+    if result.data:
+        message["task_id"] = str(result.data.get("task_id"))
+
+    return JSONResponse(content=message, status_code=result.status_code)
 
 
 @server_router.get(
@@ -591,7 +591,7 @@ async def get_server_backup_task(
     ):
         raise ServerNotFoundError("Server not found or access denied")
 
-    status = task_manager.get_task_status(server_id, task_id)
+    status = task_manager.get_task_status(uuid, task_id)
     if status is None:
         return JSONResponse(
             content={"success": False, "error": "Task not found or access denied"},
@@ -600,14 +600,19 @@ async def get_server_backup_task(
 
     task = {}
     if status == TaskStatus.FAILED or status == TaskStatus.COMPLETED:
-        task_result = await task_manager.get_result(server_id, task_id)
+        task_result = await task_manager.get_result(uuid, task_id)
+        if not task_result:
+            return JSONResponse(
+                content={"success": False, "error": "Task not found or access denied"},
+                status_code=404,
+            )
 
-        if success := task_result.get("success"):
-            task["success"] = success
-        if error := task_result.get("error"):
-            task["error"] = error
+        if task_result.get("success") is not None:
+            task["success"] = task_result.get("success")
+        if task_result.get("error") is not None:
+            task["error"] = task_result.get("error")
 
-        await task_manager.remove(server_id, task_id)
+        await task_manager.remove(uuid, task_id)
 
     task["status"] = str(status.value)
 

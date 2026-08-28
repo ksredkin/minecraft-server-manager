@@ -6,11 +6,11 @@ from src.daemon.api_client import APIClient
 from src.daemon.config_reader import ConfigReader
 from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.server import Server
+from src.daemon.services.backup_service import BackupService
 from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileService
 from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.properties_service import PropertiesService
-from src.daemon.services.backup_service import BackupService
 
 logger = Logger(__name__)
 
@@ -79,3 +79,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Daemon stopped by user.")
+    except Exception as e:
+        raise e

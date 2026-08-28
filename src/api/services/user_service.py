@@ -1,14 +1,19 @@
+from datetime import datetime, timezone
+from uuid import UUID
+
 from src.api.services.password_service import PasswordService
 from src.api.services.subscription_service import SubscriptionService
 from src.common.database.models import User
-from src.common.repositories.user_repository import UserRespository
 from src.common.enums import SubscriptionLevel, SubscriptionStatus
-from datetime import datetime, timezone
+from src.common.repositories.user_repository import UserRespository
 
 
 class UserService:
     def __init__(
-        self, user_repository: UserRespository, password_service: PasswordService, subscription_service: SubscriptionService
+        self,
+        user_repository: UserRespository,
+        password_service: PasswordService,
+        subscription_service: SubscriptionService,
     ):
         self.user_repository = user_repository
         self.password_service = password_service
@@ -30,7 +35,12 @@ class UserService:
         user = await self.user_repository.create_user(
             login, password_hash, email, email_confirmed
         )
-        await self.subscription_service.create(user.id, SubscriptionLevel.FREE, SubscriptionStatus.ACTIVE, datetime.now(timezone.utc))
+        await self.subscription_service.create(
+            user.id,
+            SubscriptionLevel.FREE,
+            SubscriptionStatus.ACTIVE,
+            datetime.now(timezone.utc),
+        )
         return user
 
     async def authenticate_user(self, login: str, password: str) -> User | None:
@@ -43,3 +53,6 @@ class UserService:
             return None
 
         return user
+
+    async def get_server_owner(self, server_id: UUID) -> User | None:
+        return await self.user_repository.get_server_owner(server_id)

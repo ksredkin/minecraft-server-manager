@@ -3,11 +3,13 @@ import json
 from typing import Any
 from uuid import UUID
 
+import aiofiles
 from websockets import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidMessage
 
 from src.common.utils.logger import Logger
 from src.daemon.exceptions.api_client import NoValidDaemonKeysError
+from src.daemon.exceptions.backup import BackupNotFoundError
 from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
@@ -15,11 +17,11 @@ from src.daemon.exceptions.server import (
     ServerStopTimeoutError,
 )
 from src.daemon.server import Server
+from src.daemon.services.backup_service import Backup, BackupService
 from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
 from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.properties_service import PropertiesService
-from src.daemon.services.backup_service import BackupService
 
 logger = Logger(__name__)
 
@@ -59,6 +61,9 @@ class APIClient:
     async def _send_json(self, websocket: ClientConnection, data: Any) -> None:
         await websocket.send(json.dumps(data), text=True)
 
+    async def _send_bytes(self, websocket: ClientConnection, data: bytes) -> None:
+        await websocket.send(data)
+
     async def _request_failed(
         self, websocket: ClientConnection, request_id: UUID, error: str | None = None
     ) -> None:
@@ -76,9 +81,11 @@ class APIClient:
         await self._send_json(websocket, message)
 
     async def _request_accepted(
-        self, websocket: ClientConnection, request_id: UUID
+        self, websocket: ClientConnection, request_id: UUID, data: Any | None = None
     ) -> None:
         message = {"id": str(request_id), "type": "request_accepted"}
+        if data is not None:
+            message["data"] = data
         await self._send_json(websocket, message)
 
     async def _create_backup(
@@ -97,6 +104,24 @@ class APIClient:
     ) -> None:
         try:
             await asyncio.to_thread(self.backup_service.restore_backup, server, backup)
+            await self._request_completed(websocket, request_id)
+        except Exception as e:
+            await self._request_failed(websocket, request_id, str(e))
+
+    async def _upload_backup(
+        self, websocket: ClientConnection, request_id: UUID, backup: Backup
+    ) -> None:
+        try:
+            chunk_number = 1
+            async with aiofiles.open(backup.path, "rb") as f:
+                while True:
+                    chunk = await f.read(1024 * 1024)
+                    if not chunk:
+                        break
+
+                    await self._send_bytes(websocket, request_id.bytes + chunk)
+                    chunk_number += 1
+
             await self._request_completed(websocket, request_id)
         except Exception as e:
             await self._request_failed(websocket, request_id, str(e))
@@ -128,6 +153,8 @@ class APIClient:
                     | "backups.delete"
                     | "backups.get"
                     | "backups.restore"
+                    | "backups.upload"
+                    | "backups.get_all"
                 ):
                     key = message.get("key")
                     if not isinstance(key, str):
@@ -411,7 +438,7 @@ class APIClient:
                                 )
                             )
                             await self._request_accepted(websocket, request_id)
-                        case "backups.get":
+                        case "backups.get_all":
                             try:
                                 backups = self.backup_service.get_backups(server)
                                 await self._request_completed(
@@ -426,6 +453,37 @@ class APIClient:
                                 await self._request_failed(
                                     websocket, request_id, str(e)
                                 )
+                        case "backups.get":
+                            backup_name = message.get("backup")
+                            if not isinstance(backup_name, str):
+                                continue
+
+                            backup = self.backup_service.get_backup(server, backup_name)
+                            if backup:
+                                await self._request_completed(
+                                    websocket,
+                                    request_id,
+                                    {"name": backup.name, "size": backup.size},
+                                )
+                            else:
+                                await self._request_failed(
+                                    websocket, request_id, "Backup not found."
+                                )
+                        case "backups.upload":
+                            backup_name = message.get("backup")
+                            if not isinstance(backup_name, str):
+                                continue
+
+                            backup = self.backup_service.get_backup(server, backup_name)
+                            if not backup:
+                                raise BackupNotFoundError("Backup not found.")
+
+                            asyncio.create_task(
+                                self._upload_backup(websocket, request_id, backup)
+                            )
+                            await self._request_accepted(
+                                websocket, request_id, {"total": backup.size}
+                            )
                 case "registered":
                     logger.info("All servers are registered.")
                 case "registration_failed":

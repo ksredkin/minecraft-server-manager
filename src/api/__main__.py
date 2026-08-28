@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.exception_handlers import register_exception_handlers
 from src.api.routers.auth import auth_router
+from src.api.routers.billing import billing_router
 from src.api.routers.daemon import daemon_router
 from src.api.routers.server import server_router
-from src.api.routers.billing import billing_router
 from src.api.routers.webhook import webhook_router
 from src.common.core.config import settings
 

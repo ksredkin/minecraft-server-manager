@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from src.common.core.config import settings, secrets
+from src.common.core.config import secrets, settings
 
 url = f"postgresql+asyncpg://{settings.db_user}:{secrets.get('db_password')}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
 

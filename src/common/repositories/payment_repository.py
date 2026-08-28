@@ -1,12 +1,13 @@
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.database.models import Payment
 from src.common.enums import PaymentStatus
-from sqlalchemy import select
 
 NOT_SET = object()
+
 
 class PaymentRepository:
     def __init__(self, session: AsyncSession):
@@ -37,11 +38,20 @@ class PaymentRepository:
         await self.session.flush()
         return payment
 
-    async def get_by_external_payment_id(self, external_payment_id: str) -> Payment|None:
-        result = await self.session.execute(select(Payment).where(Payment.external_payment_id == external_payment_id))
+    async def get_by_external_payment_id(
+        self, external_payment_id: str
+    ) -> Payment | None:
+        result = await self.session.execute(
+            select(Payment).where(Payment.external_payment_id == external_payment_id)
+        )
         return result.scalar_one_or_none()
 
-    async def update_by_payment_id(self, payment_id: int, new_status: PaymentStatus|object = NOT_SET, new_completed_at: datetime|object = NOT_SET):
+    async def update_by_payment_id(
+        self,
+        payment_id: int,
+        new_status: PaymentStatus | object = NOT_SET,
+        new_completed_at: datetime | object = NOT_SET,
+    ):
         payment = await self.session.get(Payment, payment_id)
         if not payment:
             return None

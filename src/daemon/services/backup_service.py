@@ -1,19 +1,20 @@
-from src.common.utils.logger import Logger
-from src.daemon.server import Server
+import shutil
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+
+from src.common.utils.logger import Logger
 from src.daemon.exceptions.backup import (
-    BackupsFolderInServerFolderError,
-    BackupsFolderDoesNotExistError,
-    BackupRestoreError,
-    BackupPermissionError,
     BackupNotFoundError,
-    InvalidBackupError,
+    BackupPermissionError,
+    BackupRestoreError,
+    BackupsFolderDoesNotExistError,
+    BackupsFolderInServerFolderError,
     CleanupError,
+    InvalidBackupError,
 )
 from src.daemon.exceptions.server import ServerFolderDoesNotExistError
-from dataclasses import dataclass
-import shutil
-from datetime import datetime, timezone
+from src.daemon.server import Server
 
 logger = Logger(__name__)
 
@@ -31,6 +32,17 @@ class BackupService:
 
     def _get_relative_path(self, server: Server, path: Path) -> Path:
         return Path(server.server_dir.name) / path.relative_to(server.server_dir)
+
+    def get_backup(self, server: Server, backup: str) -> Backup | None:
+        if not self.backups_dir.exists():
+            raise BackupsFolderDoesNotExistError("Backups folder does not exist.")
+
+        backup_found = None
+        for item in self.backups_dir.glob("*.zip"):
+            if backup == item.name and server.server_dir.name in item.name:
+                backup_found = Backup(item.name, item, item.stat().st_size)
+
+        return backup_found
 
     def get_backups(self, server: Server) -> list[Backup]:
         if not self.backups_dir.exists():

@@ -20,17 +20,27 @@ from src.api.schemas.server import (
     FolderUpdate,
 )
 from src.api.services.key_service import KeyService, get_key_service
+from src.common.repositories.payment_repository import PaymentRepository
+from src.api.services.subscription_service import SubscriptionService
+from src.common.repositories.subscription_repository import SubscriptionRepository
+from src.api.dependencies.auth import get_password_service
+from src.api.dependencies.billing import get_yookassa_provider
 from src.api.services.server_service import ServerService
+from src.api.services.payment_service import PaymentService
 from src.api.services.server_user_service import ServerUserService
 from src.common.database.connection import session
 from src.common.enums import (
     CacheResultStatus,
     DaemonRequestStatus,
 )
+from src.api.exceptions.backup import NoFreeSpaceError
 from src.common.repositories.server_repository import ServerRepository
 from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
+from src.api.services.user_service import UserService
+from src.common.repositories.user_repository import UserRespository
 from src.api.services.task_manager import TaskManager, get_task_manager
+from src.api.services.backup_manager import BackupManager, get_backup_manager
 
 
 class DaemonRequestResult:
@@ -58,7 +68,7 @@ class DaemonDataRequestResult(DaemonRequestResult):
         self,
         status: DaemonRequestStatus,
         status_code: int = 200,
-        data: Any = None,
+        data: dict[str, str | bool] | None = None,
         error: str | None = None,
     ):
         self.status = status
@@ -74,6 +84,7 @@ class ConnectionManager:
         sessionmaker: async_sessionmaker[AsyncSession],
         cache_service: CacheService,
         task_manager: TaskManager,
+        backup_manager: BackupManager,
     ) -> None:
         self.connections: dict[int, WebSocket] = {}
         self.server_routes: dict[int, dict[str, str | int]] = {}
@@ -81,6 +92,7 @@ class ConnectionManager:
         self.sessionmaker = sessionmaker
         self.cache_service = cache_service
         self.task_manager = task_manager
+        self.backup_manager = backup_manager
 
     async def _connect(self, connection: WebSocket) -> int:
         await connection.accept()
@@ -118,151 +130,164 @@ class ConnectionManager:
 
         need_to_disconnect = False
         while not need_to_disconnect:
-            message = dict(await connection.receive_json())
-            if not isinstance(message, dict):
-                return
+            message = dict(await connection.receive())
 
-            match message.get("type"):
-                case "register":
-                    servers = message.get("servers")
-                    if isinstance(servers, list):
-                        registered = []
-                        async with self.sessionmaker() as session:
-                            server_service = ServerService(
-                                ServerRepository(session),
-                                self.key_service,
-                                ServerUserService(
-                                    ServerUserRepository(session), self.cache_service
-                                ),
-                                self.cache_service,
-                            )
-                            for server in servers:
-                                if not isinstance(server, dict):
-                                    continue
+            if message.get("type") == "websocket.disconnect":
+                need_to_disconnect = True
+                continue
 
-                                key = server.get("key")
-                                if not isinstance(key, str):
-                                    continue
+            if message.get("bytes") is not None:
+                await self.backup_manager.handle_chunk(message.get("bytes"))
 
-                                server_id = await self._get_server_id_by_daemon_key(
-                                    key, server_service
-                                )
+            if message.get("text") is not None:
+                payload = json.loads(message.get("text"))
+                if not isinstance(payload, dict):
+                    continue
 
-                                if not isinstance(server_id, int):
-                                    continue
-
-                                self.register_server_route(
-                                    server_id, connection_id, key
-                                )
-                                registered.append(key)
-                        if len(registered) == len(servers):
-                            await connection.send_json(
-                                {"type": "registered", "servers": servers}
-                            )
-                        elif len(registered) > 0:
-                            await connection.send_json(
-                                {
-                                    "type": "registration_failed",
-                                    "servers": [
-                                        {**server, "error": "invalid_key"}
-                                        for server in servers
-                                        if server.get("key") not in registered
-                                    ],
-                                }
-                            )
-                        else:
-                            await connection.send_json(
-                                {
-                                    "type": "registration_failed",
-                                    "servers": [
-                                        {**server, "error": "invalid_key"}
-                                        for server in servers
-                                    ],
-                                }
-                            )
-                            need_to_disconnect = True
-                case "request_accepted":
-                    task_id_str = message.get("id")
-                    if not isinstance(task_id_str, str):
-                        continue
-
-                    try:
-                        task_id = UUID(task_id_str)
-                    except ValueError:
-                        continue
-
-                    self.task_manager.set_accepted(server_id, task_id)
-                case "request_completed":
-                    task_id_str = message.get("id")
-                    if not isinstance(task_id_str, str):
-                        continue
-
-                    try:
-                        task_id = UUID(task_id_str)
-                    except ValueError:
-                        continue
-
-                    self.task_manager.set_completed(server_id, task_id, message)
-                case "request_failed":
-                    task_id_str = message.get("id")
-                    if not isinstance(task_id_str, str):
-                        continue
-
-                    try:
-                        task_id = UUID(task_id_str)
-                    except ValueError:
-                        continue
-
-                    self.task_manager.set_failed(server_id, task_id, message)
-                case "status":
-                    servers = message.get("servers")
-                    if isinstance(servers, list):
-                        async with self.sessionmaker() as session:
-                            server_service = ServerService(
-                                ServerRepository(session),
-                                self.key_service,
-                                ServerUserService(
-                                    ServerUserRepository(session), self.cache_service
-                                ),
-                                self.cache_service,
-                            )
-                            for server in servers:
-                                if not isinstance(server, dict):
-                                    continue
-
-                                key = server.get("key")
-                                if not isinstance(key, str):
-                                    continue
-
-                                server_id = await self._get_server_id_by_daemon_key(
-                                    key, server_service
-                                )
-
-                                if not isinstance(server_id, int):
-                                    continue
-
-                                status = server.get("status")
-                                if not isinstance(status, dict):
-                                    continue
-
-                                logs = server.get("logs")
-                                if not isinstance(logs, list):
-                                    continue
-
-                                metrics = server.get("metrics")
-                                if not isinstance(metrics, dict):
-                                    continue
-
-                                await self.cache_service.publish_to_server_channel(
-                                    server_id,
-                                    json.dumps(
-                                        {
-                                            "status": status,
-                                            "metrics": metrics,
-                                            "logs": logs,
-                                        }
+                match payload.get("type"):
+                    case "register":
+                        servers = payload.get("servers")
+                        if isinstance(servers, list):
+                            registered = []
+                            async with self.sessionmaker() as session:
+                                server_service = ServerService(
+                                    ServerRepository(session),
+                                    self.key_service,
+                                    ServerUserService(
+                                        ServerUserRepository(session),
+                                        self.cache_service,
                                     ),
+                                    self.cache_service,
                                 )
+                                for server in servers:
+                                    if not isinstance(server, dict):
+                                        continue
+
+                                    key = server.get("key")
+                                    if not isinstance(key, str):
+                                        continue
+
+                                    server_id = await self._get_server_id_by_daemon_key(
+                                        key, server_service
+                                    )
+
+                                    if not isinstance(server_id, int):
+                                        continue
+
+                                    self.register_server_route(
+                                        server_id, connection_id, key
+                                    )
+                                    registered.append(key)
+                            if len(registered) == len(servers):
+                                await connection.send_json(
+                                    {"type": "registered", "servers": servers}
+                                )
+                            elif len(registered) > 0:
+                                await connection.send_json(
+                                    {
+                                        "type": "registration_failed",
+                                        "servers": [
+                                            {**server, "error": "invalid_key"}
+                                            for server in servers
+                                            if server.get("key") not in registered
+                                        ],
+                                    }
+                                )
+                            else:
+                                await connection.send_json(
+                                    {
+                                        "type": "registration_failed",
+                                        "servers": [
+                                            {**server, "error": "invalid_key"}
+                                            for server in servers
+                                        ],
+                                    }
+                                )
+                                need_to_disconnect = True
+                    case "request_accepted":
+                        task_id_str = payload.get("id")
+                        if not isinstance(task_id_str, str):
+                            continue
+
+                        try:
+                            task_id = UUID(task_id_str)
+                        except ValueError:
+                            continue
+
+                        data = payload.get("data", {"success": True})
+                        self.task_manager.set_accepted(server_id, task_id, data)
+                    case "request_completed":
+                        task_id_str = payload.get("id")
+                        if not isinstance(task_id_str, str):
+                            continue
+
+                        try:
+                            task_id = UUID(task_id_str)
+                        except ValueError:
+                            continue
+
+                        self.task_manager.set_completed(server_id, task_id, payload)
+                    case "request_failed":
+                        task_id_str = payload.get("id")
+                        if not isinstance(task_id_str, str):
+                            continue
+
+                        try:
+                            task_id = UUID(task_id_str)
+                        except ValueError:
+                            continue
+
+                        self.task_manager.set_failed(server_id, task_id, payload)
+                    case "status":
+                        servers = payload.get("servers")
+                        if isinstance(servers, list):
+                            async with self.sessionmaker() as session:
+                                server_service = ServerService(
+                                    ServerRepository(session),
+                                    self.key_service,
+                                    ServerUserService(
+                                        ServerUserRepository(session),
+                                        self.cache_service,
+                                    ),
+                                    self.cache_service,
+                                )
+                                for server in servers:
+                                    if not isinstance(server, dict):
+                                        continue
+
+                                    key = server.get("key")
+                                    if not isinstance(key, str):
+                                        continue
+
+                                    server_id = await self._get_server_id_by_daemon_key(
+                                        key, server_service
+                                    )
+
+                                    if not isinstance(server_id, int):
+                                        continue
+
+                                    status = server.get("status")
+                                    if not isinstance(status, dict):
+                                        continue
+
+                                    logs = server.get("logs")
+                                    if not isinstance(logs, list):
+                                        continue
+
+                                    metrics = server.get("metrics")
+                                    if not isinstance(metrics, dict):
+                                        continue
+
+                                    await self.cache_service.publish_to_server_channel(
+                                        server_id,
+                                        json.dumps(
+                                            {
+                                                "status": status,
+                                                "metrics": metrics,
+                                                "logs": logs,
+                                            }
+                                        ),
+                                    )
         await connection.close()
 
     async def connect_and_subscribe_to_server_channel(
@@ -324,9 +349,14 @@ class ConnectionManager:
             return False
 
     async def _send_request(
-        self, server_id: int, message_type: str, **payload: str | bool | None
+        self,
+        server_id: int,
+        message_type: str,
+        task_id: UUID | None = None,
+        **payload: str | bool | None,
     ) -> UUID:
-        task_id = self.task_manager.add(server_id)
+        if task_id is None:
+            task_id = self.task_manager.add(server_id)
         sent = await self.send_message_to_server(
             server_id, message_type, id=str(task_id), **payload
         )
@@ -405,14 +435,20 @@ class ConnectionManager:
         server_id: int,
         message_type: str,
         status_code: int = 404,
+        task_id: UUID | None = None,
         **payload: str | None,
     ) -> DaemonDataRequestResult:
-        task_id = await self._send_request(server_id, message_type, **payload)
-        accepted = await self.task_manager.wait_accepted(server_id, task_id)
+        if not task_id:
+            task_id = await self._send_request(server_id, message_type, **payload)
+        else:
+            await self._send_request(server_id, message_type, task_id, **payload)
+        result = await self.task_manager.wait_accepted(server_id, task_id)
 
-        if accepted:
+        if result:
             return DaemonDataRequestResult(
-                status=DaemonRequestStatus.ACCEPTED, status_code=202, data=task_id
+                status=DaemonRequestStatus.ACCEPTED,
+                status_code=202,
+                data={**result, "task_id": task_id},
             )
 
         await self.task_manager.remove(server_id, task_id)
@@ -517,7 +553,7 @@ class ConnectionManager:
         )
 
     async def get_server_backups(self, server_id: int) -> DaemonDataRequestResult:
-        return await self._execute_data_request(server_id, "backups.get", 503)
+        return await self._execute_data_request(server_id, "backups.get_all", 503)
 
     async def restore_server_backup(
         self, server_id: int, backup: str
@@ -526,9 +562,42 @@ class ConnectionManager:
             server_id, "backups.restore", 503, backup=backup
         )
 
+    async def upload_server_backup_to_cloud(
+        self, server_id: int, backup: str
+    ) -> DaemonDataRequestResult:
+        get_backup_result = await self._execute_data_request(
+            server_id, "backups.get", 503, backup=backup
+        )
+        if not get_backup_result.data:
+            return get_backup_result
+
+        task_id = self.task_manager.add(server_id)
+        reserved = await self.backup_manager.reserve(
+            server_id, task_id, get_backup_result.data.get("size"), backup
+        )
+        if not reserved:
+            await self.task_manager.remove(server_id, task_id)
+            raise NoFreeSpaceError("No free space in cloud.")
+
+        result = await self._execute_task_request(
+            server_id, "backups.upload", 503, task_id=task_id, backup=backup
+        )
+        if not result.data:
+            await self.task_manager.remove(server_id, task_id)
+            return result
+
+        self.task_manager.set_task_total(
+            server_id, result.data.get("task_id"), result.data.get("total")
+        )
+        return result
+
 
 connection_manager = ConnectionManager(
-    get_key_service(), session, get_cache_service(), get_task_manager()
+    get_key_service(),
+    session,
+    get_cache_service(),
+    get_task_manager(),
+    get_backup_manager(),
 )
 
 

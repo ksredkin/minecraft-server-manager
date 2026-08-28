@@ -1,19 +1,69 @@
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy.exc import IntegrityError
+
+from src.api.exceptions.billing import (
+    ActiveSubscriptionNotFound,
+    NewPlanIsLowerThanCurrent,
+    PlanAlreadyActive,
+)
 from src.api.services.payment_service import PaymentService
-from src.common.repositories.subscription_repository import SubscriptionRepository
-from src.common.enums import SubscriptionLevel, SubscriptionStatus
-from src.api.exceptions.billing import NewPlanIsLowerThanCurrent, PlanAlreadyActive, ActiveSubscriptionNotFound
+from src.common.billing.plans import PLANS
 from src.common.database.models import Subscription
-from src.common.enums import PaymentStatus
-from datetime import datetime, timezone, timedelta
+from src.common.enums import PaymentStatus, SubscriptionLevel, SubscriptionStatus
+from src.common.repositories.subscription_repository import SubscriptionRepository
 
 
 class SubscriptionService:
-    def __init__(self, subscription_repository: SubscriptionRepository, payment_service: PaymentService) -> None:
+    def __init__(
+        self,
+        subscription_repository: SubscriptionRepository,
+        payment_service: PaymentService,
+    ) -> None:
         self.subscription_repository = subscription_repository
         self.payment_service = payment_service
 
-    async def create(self, user_id: int, plan: SubscriptionLevel, status: SubscriptionStatus, start_at: datetime|None = None, end_at: datetime|None = None) -> Subscription:
-        return await self.subscription_repository.create(user_id, plan, status, start_at, end_at)
+    async def get_actual_subscription(self, user_id) -> Subscription | None:
+        now = datetime.now(timezone.utc)
+
+        subscription = await self.subscription_repository.get_active_by_user_id(user_id)
+        if not subscription:
+            return await self.subscription_repository.create(
+                user_id, SubscriptionLevel.FREE, SubscriptionStatus.ACTIVE, now
+            )
+
+        if subscription.end_at is not None and subscription.end_at < now:
+            await self.subscription_repository.update_by_id(
+                subscription.id, new_status=SubscriptionStatus.EXPIRED
+            )
+            try:
+                actual_subscription = await self.subscription_repository.create(
+                    user_id, SubscriptionLevel.FREE, SubscriptionStatus.ACTIVE, now
+                )
+            except IntegrityError:
+                actual_subscription = (
+                    await self.subscription_repository.get_active_by_user_id(user_id)
+                )
+        else:
+            actual_subscription = subscription
+
+        return actual_subscription
+
+    async def get_user_cloud_backups_limit(self, user_id: int) -> int:
+        subscription = await self.get_actual_subscription(user_id)
+        return PLANS[subscription.level].cloud_storage_gb
+
+    async def create(
+        self,
+        user_id: int,
+        plan: SubscriptionLevel,
+        status: SubscriptionStatus,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
+    ) -> Subscription:
+        return await self.subscription_repository.create(
+            user_id, plan, status, start_at, end_at
+        )
 
     async def get_active(self, user_id: int) -> Subscription:
         active = await self.subscription_repository.get_active_by_user_id(user_id)
@@ -25,13 +75,22 @@ class SubscriptionService:
         active_subscription = await self.get_active(user_id)
 
         if active_subscription:
-            if active_subscription.level == SubscriptionLevel.ENTERPRISE and checkout_plan == SubscriptionLevel.PRO or active_subscription.level == SubscriptionLevel.PRO and checkout_plan == SubscriptionLevel.FREE:
-                raise NewPlanIsLowerThanCurrent("New plan cannot be lower then current plan.")
+            if (
+                active_subscription.level == SubscriptionLevel.ENTERPRISE
+                and checkout_plan == SubscriptionLevel.PRO
+                or active_subscription.level == SubscriptionLevel.PRO
+                and checkout_plan == SubscriptionLevel.FREE
+            ):
+                raise NewPlanIsLowerThanCurrent(
+                    "New plan cannot be lower then current plan."
+                )
 
             if active_subscription.level == checkout_plan:
                 raise PlanAlreadyActive("Plan is already active.")
 
-        subscription = await self.create(user_id, checkout_plan, SubscriptionStatus.PENDING)
+        subscription = await self.create(
+            user_id, checkout_plan, SubscriptionStatus.PENDING
+        )
 
         payment_response = await self.payment_service.create(
             user_id, subscription.id, checkout_plan
@@ -39,7 +98,9 @@ class SubscriptionService:
 
         return payment_response.confirmation_url
 
-    async def handle_yookassa_webhook(self, data: dict[str, str|dict[str, str]]) -> bool:        
+    async def handle_yookassa_webhook(
+        self, data: dict[str, str | dict[str, str]]
+    ) -> bool:
         event = data.get("event")
         payment_data = data.get("object")
 
@@ -52,24 +113,43 @@ class SubscriptionService:
             return False
 
         if event == "payment.succeeded":
-            payment = await self.payment_service.get_from_database_by_external_payment_id(payment_id)
+            payment = (
+                await self.payment_service.get_from_database_by_external_payment_id(
+                    payment_id
+                )
+            )
             if not payment:
-                return False     
+                return False
 
             if payment.status == "succeeded":
                 return True
 
-            yoocassa_payment = self.payment_service.get_from_yoocassa_by_payment_id(payment.external_payment_id)
-            if yoocassa_payment.status == "succeeded":
+            yookassa_payment = self.payment_service.get_from_yookassa_by_payment_id(
+                payment.external_payment_id
+            )
+            if yookassa_payment.status == "succeeded":
                 now = datetime.now(timezone.utc)
 
-                await self.payment_service.update_by_payment_id(payment.id, new_status=PaymentStatus.SUCCEEDED, new_completed_at=now)
+                await self.payment_service.update_by_payment_id(
+                    payment.id, new_status=PaymentStatus.SUCCEEDED, new_completed_at=now
+                )
 
-                payment_subscription = await self.subscription_repository.get_by_payment_id(payment.id)
+                payment_subscription = (
+                    await self.subscription_repository.get_by_payment_id(payment.id)
+                )
                 actve_subscription = await self.get_active(payment_subscription.user_id)
-                await self.subscription_repository.update_by_id(actve_subscription.id, new_status=SubscriptionStatus.EXPIRED, new_end_at=now)
+                await self.subscription_repository.update_by_id(
+                    actve_subscription.id,
+                    new_status=SubscriptionStatus.EXPIRED,
+                    new_end_at=now,
+                )
 
-                await self.subscription_repository.update_by_id(payment.subscription_id, new_status=SubscriptionStatus.ACTIVE, new_start_at=now, new_end_at=now+timedelta(days=30))
+                await self.subscription_repository.update_by_id(
+                    payment.subscription_id,
+                    new_status=SubscriptionStatus.ACTIVE,
+                    new_start_at=now,
+                    new_end_at=now + timedelta(days=30),
+                )
                 return True
             return False
         return True

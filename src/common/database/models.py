@@ -3,10 +3,15 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import UUID, DateTime, Enum, ForeignKey
+from sqlalchemy import UUID, DateTime, Enum, ForeignKey, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.common.enums import ServerUserRole, SubscriptionLevel, PaymentStatus, SubscriptionStatus
+from src.common.enums import (
+    PaymentStatus,
+    ServerUserRole,
+    SubscriptionLevel,
+    SubscriptionStatus,
+)
 
 
 class Base(DeclarativeBase):
@@ -71,14 +76,30 @@ class Subscription(Base):
         Enum(SubscriptionLevel, name="subscription_level_enum"),
         default=SubscriptionLevel.FREE,
     )
-    status: Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus, name="subscription_status_enum"), default=SubscriptionStatus.PENDING)
-    start_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
-    end_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(SubscriptionStatus, name="subscription_status_enum"),
+        default=SubscriptionStatus.PENDING,
+    )
+    start_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    end_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     payments: Mapped[list["Payment"]] = relationship(back_populates="subscription")
+
+    __table_args__ = (
+        Index(
+            "uq_idx_active_subscription_per_user",
+            "user_id",
+            unique=True,
+            postgresql_where=(status == SubscriptionStatus.ACTIVE),
+        ),
+    )
 
 
 class Payment(Base):
@@ -93,10 +114,14 @@ class Payment(Base):
     external_payment_id: Mapped[str]
     amount: Mapped[int]
     currency: Mapped[str]
-    status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus, name="payment_status_enum"), default=PaymentStatus.PENDING)
+    status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus, name="payment_status_enum"), default=PaymentStatus.PENDING
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
-    completed_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     subscription: Mapped["Subscription"] = relationship(back_populates="payments")

@@ -1,7 +1,10 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.database.models import User
+from src.common.database.models import ServerUser, User
+from src.common.enums import ServerUserRole
 
 
 class UserRespository:
@@ -30,4 +33,15 @@ class UserRespository:
 
     async def get_user_by_login(self, login: str) -> User | None:
         result = await self.session.execute(select(User).where(User.login == login))
+        return result.scalar_one_or_none()
+
+    async def get_server_owner(self, server_id: UUID) -> User | None:
+        result = await self.session.execute(
+            select(User)
+            .join(ServerUser, ServerUser.user_id == User.id)
+            .where(
+                ServerUser.server_id == server_id,
+                ServerUser.role == ServerUserRole.OWNER,
+            )
+        )
         return result.scalar_one_or_none()

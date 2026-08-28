@@ -12,7 +12,9 @@ logger = Logger(__name__)
 
 class CacheResult:
     def __init__(
-        self, status: CacheResultStatus, value: int | ServerUserRole | None = None
+        self,
+        status: CacheResultStatus,
+        value: int | ServerUserRole | bool | None = None,
     ) -> None:
         self.status = status
         self.value = value
@@ -43,6 +45,10 @@ class CacheService:
             f"По ключу {f'{prefix}:{key}:{postfix}'} в кэше установлено новое значение: {value} (expire {f'через {expire} секунд' if expire else 'не установлен'})"
         )
         await self.r.set(f"{prefix}:{key}:{postfix}", value, ex=expire)
+
+    async def _delete(self, prefix: str, key: str, postfix: str = "") -> None:
+        logger.debug(f"По ключу {f'{prefix}:{key}:{postfix}'} в кэше удалено значение.")
+        await self.r.delete(f"{prefix}:{key}:{postfix}")
 
     def _create_pubsub(self) -> PubSub:
         return self.r.pubsub()
@@ -120,6 +126,24 @@ class CacheService:
             return CacheResult(CacheResultStatus.MISS)
 
         return CacheResult(CacheResultStatus.FOUND, int(value))
+
+    async def get_server_accepted_for_cloud_uploading(
+        self, server_id: UUID
+    ) -> CacheResult:
+        value = await self._get("backups", str(server_id))
+
+        if not value:
+            return CacheResult(CacheResultStatus.MISS)
+
+        return CacheResult(CacheResultStatus.FOUND, value == "True")
+
+    async def set_server_accepted_for_cloud_uploading(
+        self, server_id: UUID, accepted: bool, expire: int = 3600
+    ) -> None:
+        await self._set("backups", str(server_id), str(accepted), expire=expire)
+
+    async def delete_server_accepted_for_cloud_uploading(self, server_id: UUID) -> None:
+        await self._delete("backups", str(server_id))
 
 
 cache_service = CacheService()

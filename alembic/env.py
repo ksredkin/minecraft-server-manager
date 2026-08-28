@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from src.common.core.config import settings, secrets
+from src.common.core.config import secrets, settings
 from src.common.database.models import Base
 
 config = context.config

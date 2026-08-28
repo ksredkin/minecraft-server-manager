@@ -1,14 +1,15 @@
-from yookassa import Payment, Configuration, Payment
-from src.api.api_clients.payments.interface import PaymentProvider, PaymentResponse
-from uuid import uuid4
 from decimal import Decimal
+from uuid import uuid4
 
-from src.common.core.config import settings, secrets
+from yookassa import Configuration, Payment
 
-Configuration.configure(settings.yoocassa_shop_id, secrets.get("yoocassa_secret_key"))
+from src.api.api_clients.payments.interface import PaymentProvider, PaymentResponse
+from src.common.core.config import secrets, settings
+
+Configuration.configure(settings.yookassa_shop_id, secrets.get("yookassa_secret_key"))
 
 
-class YooCassaProvider(PaymentProvider):
+class YooKassaProvider(PaymentProvider):
     def create(
         self, amount: Decimal, return_url: str, description: str
     ) -> PaymentResponse:
@@ -40,7 +41,9 @@ class YooCassaProvider(PaymentProvider):
         return PaymentResponse(
             external_payment_id=str(payment.id),
             status=payment.status,
-            confirmation_url=str(payment.confirmation.confirmation_url) if payment.confirmation else None,
+            confirmation_url=str(payment.confirmation.confirmation_url)
+            if payment.confirmation
+            else None,
         )
 
     def __str__(self) -> str:

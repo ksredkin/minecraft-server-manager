@@ -40,13 +40,13 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT}
       BACKUP_STORAGE_PATH: ${BACKUP_STORAGE_PATH}
-      YOOCASSA_SHOP_ID: ${YOOCASSA_SHOP_ID}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       PAYMENT_RETURN_URL: ${PAYMENT_RETURN_URL}
     secrets:
       - db_password
       - jwt_secret_key
       - backup_encryption_key
-      - yoocassa_secret_key
+      - yookassa_secret_key
     volumes:
       - ./src/api:/app/src/api
       - ./src/common/services:/app/src/common/services
@@ -95,5 +95,5 @@ secrets:
   db_password:
     file: ./secrets/db_password.txt
 
-  yoocassa_secret_key:
-    file: ./secrets/yoocassa_secret_key.txt
+  yookassa_secret_key:
+    file: ./secrets/yookassa_secret_key.txt

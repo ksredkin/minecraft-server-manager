@@ -1,6 +1,7 @@
-from src.common.enums import SubscriptionLevel, Feature
 from dataclasses import dataclass
 from decimal import Decimal
+
+from src.common.enums import Feature, SubscriptionLevel
 
 
 @dataclass

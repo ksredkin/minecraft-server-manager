@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
 
     backup_storage_path: str | None = None
 
-    yoocassa_shop_id: str | None = None
+    yookassa_shop_id: str | None = None
     payment_return_url: str | None = None
 
 
