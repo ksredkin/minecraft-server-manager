@@ -51,14 +51,14 @@ class PaymentRepository:
         payment_id: int,
         new_status: PaymentStatus | object = NOT_SET,
         new_completed_at: datetime | object = NOT_SET,
-    ):
+    ) -> Payment | None:
         payment = await self.session.get(Payment, payment_id)
         if not payment:
             return None
 
-        if new_status is not NOT_SET:
+        if isinstance(new_status, PaymentStatus):
             payment.status = new_status
-        if new_completed_at is not NOT_SET:
+        if isinstance(new_completed_at, datetime) or new_completed_at is None:
             payment.completed_at = new_completed_at
 
         await self.session.flush()

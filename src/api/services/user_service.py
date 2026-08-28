@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from uuid import UUID
 
 from src.api.services.password_service import PasswordService
 from src.api.services.subscription_service import SubscriptionService
@@ -54,5 +53,5 @@ class UserService:
 
         return user
 
-    async def get_server_owner(self, server_id: UUID) -> User | None:
+    async def get_server_owner(self, server_id: int) -> User | None:
         return await self.user_repository.get_server_owner(server_id)

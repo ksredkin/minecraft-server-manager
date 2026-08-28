@@ -454,35 +454,44 @@ class APIClient:
                                     websocket, request_id, str(e)
                                 )
                         case "backups.get":
-                            backup_name = message.get("backup")
-                            if not isinstance(backup_name, str):
+                            backup = message.get("backup")
+                            if not isinstance(backup, str):
                                 continue
 
-                            backup = self.backup_service.get_backup(server, backup_name)
-                            if backup:
+                            getted_backup = self.backup_service.get_backup(
+                                server, backup
+                            )
+                            if getted_backup is not None:
                                 await self._request_completed(
                                     websocket,
                                     request_id,
-                                    {"name": backup.name, "size": backup.size},
+                                    {
+                                        "name": getted_backup.name,
+                                        "size": getted_backup.size,
+                                    },
                                 )
                             else:
                                 await self._request_failed(
                                     websocket, request_id, "Backup not found."
                                 )
                         case "backups.upload":
-                            backup_name = message.get("backup")
-                            if not isinstance(backup_name, str):
+                            backup = message.get("backup")
+                            if not isinstance(backup, str):
                                 continue
 
-                            backup = self.backup_service.get_backup(server, backup_name)
-                            if not backup:
+                            getted_backup = self.backup_service.get_backup(
+                                server, backup
+                            )
+                            if not getted_backup:
                                 raise BackupNotFoundError("Backup not found.")
 
                             asyncio.create_task(
-                                self._upload_backup(websocket, request_id, backup)
+                                self._upload_backup(
+                                    websocket, request_id, getted_backup
+                                )
                             )
                             await self._request_accepted(
-                                websocket, request_id, {"total": backup.size}
+                                websocket, request_id, {"total": getted_backup.size}
                             )
                 case "registered":
                     logger.info("All servers are registered.")

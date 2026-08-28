@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.api.dependencies.auth import get_password_service
 from src.api.dependencies.billing import get_yookassa_provider
+from src.api.exceptions.api import ConfigurationError
 from src.api.services.payment_service import PaymentService
 from src.api.services.subscription_service import SubscriptionService
 from src.api.services.task_manager import TaskManager, get_task_manager
@@ -40,7 +41,7 @@ class BackupManager:
         self.task_manager = task_manager
         self.sessionmaker = sessionmaker
         self.cache_service = cache_service
-        self._upload_reservations: dict[UUID, dict[UUID, int]] = {}
+        self._upload_reservations: dict[int | UUID, dict[UUID, int]] = {}
         self._accepted_tasks: dict[UUID, str] = {}
 
         if not self.storage_path.exists():
@@ -54,7 +55,7 @@ class BackupManager:
         return usage
 
     async def reserve(
-        self, server_id: UUID, task_id: UUID, size: int, backup_name: str
+        self, server_id: int, task_id: UUID, size: int, backup_name: str
     ) -> bool:
         async with self.sessionmaker() as session:
             subscription_service = SubscriptionService(
@@ -78,7 +79,10 @@ class BackupManager:
             cloud_limit_bytes = cloud_limit * 1024 * 1024 * 1024
 
             reserved = sum(
-                [size for size in self._upload_reservations.get(server_id, {}).keys()]
+                [
+                    size
+                    for size in self._upload_reservations.get(server_id, {}).values()
+                ],
             )
             if reserved == cloud_limit_bytes:
                 return False
@@ -155,6 +159,11 @@ class BackupManager:
                 if task_id in self._upload_reservations:
                     self._upload_reservations.pop(task_id, None)
 
+
+if not settings.backup_storage_path or not isinstance(
+    settings.backup_storage_path, str
+):
+    raise ConfigurationError("BACKUP_STORAGE_PATH must be a string!")
 
 backup_manager = BackupManager(
     secrets.get("backup_encryption_key"),

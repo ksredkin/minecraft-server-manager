@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
+from src.api.api_clients.payments.interface import PaymentResponse
 from src.api.exceptions.billing import (
     ActiveSubscriptionNotFound,
     NewPlanIsLowerThanCurrent,
+    PaymentInitializationError,
     PlanAlreadyActive,
 )
 from src.api.services.payment_service import PaymentService
@@ -23,7 +26,7 @@ class SubscriptionService:
         self.subscription_repository = subscription_repository
         self.payment_service = payment_service
 
-    async def get_actual_subscription(self, user_id) -> Subscription | None:
+    async def get_actual_subscription(self, user_id: int) -> Subscription | None:
         now = datetime.now(timezone.utc)
 
         subscription = await self.subscription_repository.get_active_by_user_id(user_id)
@@ -32,6 +35,7 @@ class SubscriptionService:
                 user_id, SubscriptionLevel.FREE, SubscriptionStatus.ACTIVE, now
             )
 
+        actual_subscription: Subscription | None
         if subscription.end_at is not None and subscription.end_at < now:
             await self.subscription_repository.update_by_id(
                 subscription.id, new_status=SubscriptionStatus.EXPIRED
@@ -51,6 +55,8 @@ class SubscriptionService:
 
     async def get_user_cloud_backups_limit(self, user_id: int) -> int:
         subscription = await self.get_actual_subscription(user_id)
+        if not subscription:
+            return 0
         return PLANS[subscription.level].cloud_storage_gb
 
     async def create(
@@ -71,7 +77,9 @@ class SubscriptionService:
             raise ActiveSubscriptionNotFound("Active subscription not found.")
         return active
 
-    async def checkout(self, user_id: int, checkout_plan: SubscriptionLevel) -> str:
+    async def checkout(
+        self, user_id: int, checkout_plan: SubscriptionLevel
+    ) -> str | None:
         active_subscription = await self.get_active(user_id)
 
         if active_subscription:
@@ -96,15 +104,18 @@ class SubscriptionService:
             user_id, subscription.id, checkout_plan
         )
 
+        if not payment_response:
+            raise PaymentInitializationError(
+                "Failed to create payment session with the provider."
+            )
+
         return payment_response.confirmation_url
 
-    async def handle_yookassa_webhook(
-        self, data: dict[str, str | dict[str, str]]
-    ) -> bool:
+    async def handle_yookassa_webhook(self, data: dict[str, Any]) -> bool:
         event = data.get("event")
         payment_data = data.get("object")
 
-        if not payment_data:
+        if not payment_data or not isinstance(payment_data, dict):
             return False
 
         payment_id = payment_data.get("id")
@@ -118,7 +129,7 @@ class SubscriptionService:
                     payment_id
                 )
             )
-            if not payment:
+            if not payment or not isinstance(payment, PaymentResponse):
                 return False
 
             if payment.status == "succeeded":

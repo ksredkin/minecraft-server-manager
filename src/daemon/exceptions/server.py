@@ -6,6 +6,10 @@ class ServerError(MSMDaemonError):
     pass
 
 
+class InvalidServerConfigurationError(ServerError):
+    pass
+
+
 class ServerIsAlreadyRunningError(ServerError):
     pass
 

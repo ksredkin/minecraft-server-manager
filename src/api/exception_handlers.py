@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.api.exceptions.api import MSMAPIError
+from src.api.exceptions.api import ConfigurationError, MSMAPIError
 from src.api.exceptions.billing import (
     ActiveSubscriptionNotFound,
     NewPlanIsLowerThanCurrent,
+    PaymentInitializationError,
     PlanAlreadyActive,
 )
 from src.api.exceptions.daemon import (
@@ -20,6 +21,8 @@ ERRORS = {
     NewPlanIsLowerThanCurrent: 400,
     PlanAlreadyActive: 400,
     ActiveSubscriptionNotFound: 500,
+    PaymentInitializationError: 500,
+    ConfigurationError: 500,
 }
 
 

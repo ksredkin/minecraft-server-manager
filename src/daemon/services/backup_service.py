@@ -69,7 +69,7 @@ class BackupService:
 
     def _rollback(self, server_old_dir: Path, server_dir: Path) -> None:
         if server_old_dir.exists():
-            self._delete_server_dir()
+            self._delete_server_dir(server_dir)
             server_old_dir.rename(server_dir)
 
     def _delete_old_server_dir(self, server_old_dir: Path) -> None:
@@ -205,7 +205,7 @@ class BackupService:
                 shutil.unpack_archive(str(backup_path), str(server.server_dir.parent))
                 logger.info(f'Backup "{backup.name}" successfully restored.')
             except Exception:
-                self._rollback()
+                self._rollback(server_old_dir, server.server_dir)
                 raise
         except FileNotFoundError:
             logger.error(f'Cannot restore backup "{backup.name}": not found.')

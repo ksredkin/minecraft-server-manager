@@ -1,13 +1,21 @@
 from src.api.exceptions.api import MSMAPIError
 
 
-class NewPlanIsLowerThanCurrent(MSMAPIError):
+class BillingError(MSMAPIError):
     pass
 
 
-class PlanAlreadyActive(MSMAPIError):
+class NewPlanIsLowerThanCurrent(BillingError):
     pass
 
 
-class ActiveSubscriptionNotFound(MSMAPIError):
+class PlanAlreadyActive(BillingError):
+    pass
+
+
+class ActiveSubscriptionNotFound(BillingError):
+    pass
+
+
+class PaymentInitializationError(BillingError):
     pass

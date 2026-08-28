@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +33,7 @@ class UserRespository:
         result = await self.session.execute(select(User).where(User.login == login))
         return result.scalar_one_or_none()
 
-    async def get_server_owner(self, server_id: UUID) -> User | None:
+    async def get_server_owner(self, server_id: int) -> User | None:
         result = await self.session.execute(
             select(User)
             .join(ServerUser, ServerUser.user_id == User.id)

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from src.api.api_clients.payments.interface import PaymentProvider, PaymentResponse
+from src.api.exceptions.api import ConfigurationError
 from src.common.billing.plans import PLANS
 from src.common.core.config import settings
 from src.common.database.models import Payment
@@ -17,8 +18,13 @@ class PaymentService:
 
     async def create(
         self, user_id: int, subscription_id: int, plan: SubscriptionLevel
-    ) -> PaymentResponse:
+    ) -> PaymentResponse | None:
         price = PLANS[plan].price
+
+        if not isinstance(settings.payment_return_url, str):
+            raise ConfigurationError(
+                "settings.payment_return_url is not configured properly."
+            )
 
         payment_response = self.payment_provider.create(
             price, settings.payment_return_url, f"MSM {str(plan)}"
@@ -31,7 +37,7 @@ class PaymentService:
             subscription_id,
             str(self.payment_provider),
             payment_response.external_payment_id,
-            price * 100,
+            int(price) * 100,
             "kopeck",
             PaymentStatus.PENDING,
         )
@@ -46,7 +52,7 @@ class PaymentService:
 
     async def update_by_payment_id(
         self,
-        payment_id: str,
+        payment_id: int,
         new_status: PaymentStatus | object = NOT_SET,
         new_completed_at: datetime | object = NOT_SET,
     ) -> Payment | None:
@@ -54,5 +60,5 @@ class PaymentService:
             payment_id, new_status=new_status, new_completed_at=new_completed_at
         )
 
-    def get_from_yookassa_by_payment_id(self, payment_id: str) -> Payment | None:
+    def get_from_yookassa_by_payment_id(self, payment_id: str) -> PaymentResponse:
         return self.payment_provider.get(payment_id)

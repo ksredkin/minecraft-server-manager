@@ -61,16 +61,20 @@ class SubscriptionRepository:
         if not subscription:
             return None
 
-        if new_level is not NOT_SET:
+        if new_level is not NOT_SET and isinstance(new_level, SubscriptionLevel):
             subscription.level = new_level
 
-        if new_status is not NOT_SET:
+        if new_status is not NOT_SET and isinstance(new_status, SubscriptionStatus):
             subscription.status = new_status
 
-        if new_start_at is not NOT_SET:
+        if new_start_at is not NOT_SET and (
+            isinstance(new_start_at, datetime) or new_start_at is None
+        ):
             subscription.start_at = new_start_at
 
-        if new_end_at is not NOT_SET:
+        if new_end_at is not NOT_SET and (
+            isinstance(new_end_at, datetime) or new_end_at is None
+        ):
             subscription.end_at = new_end_at
 
         await self.session.flush()
