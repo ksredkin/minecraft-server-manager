@@ -50,6 +50,7 @@ class BackupManager:
         self.backup_cipher = backup_cipher
         self._upload_reservations: dict[int | UUID, dict[UUID, int]] = {}
         self._accepted_tasks: dict[UUID, str] = {}
+        self._reservation_locks: dict[int, asyncio.Lock] = {}
 
         if not self.storage_path.exists():
             self.storage_path.mkdir(parents=True, exist_ok=True)
@@ -58,6 +59,8 @@ class BackupManager:
         usage = 0
         for item in folder.rglob("*"):
             if item.is_file():
+                if item.name in self._accepted_tasks.values():
+                    continue
                 usage += item.stat().st_size
         return usage
 
@@ -104,24 +107,29 @@ class BackupManager:
 
             cloud_limit_bytes = cloud_limit * 1024 * 1024 * 1024
 
-            reserved = sum(
-                [
-                    size
-                    for size in self._upload_reservations.get(server_id, {}).values()
-                ],
+            lock = self._reservation_locks.setdefault(
+                server_id,
+                asyncio.Lock(),
             )
-            if reserved == cloud_limit_bytes:
-                return False
+            async with lock:
+                reserved = sum(
+                    [
+                        size
+                        for size in self._upload_reservations.get(
+                            server_id, {}
+                        ).values()
+                    ],
+                )
 
-            server_backups_folder = self.storage_path / f"server_{str(server_id)}"
-            if not server_backups_folder.exists():
-                server_backups_folder.mkdir(parents=True, exist_ok=True)
+                server_backups_folder = self.storage_path / f"server_{str(server_id)}"
+                if not server_backups_folder.exists():
+                    server_backups_folder.mkdir(parents=True, exist_ok=True)
 
-            used = await asyncio.to_thread(
-                self.get_folder_storage_usage, server_backups_folder
-            )
-            if (cloud_limit_bytes - used - reserved) < (size + 12 + 16):
-                return False
+                used = await asyncio.to_thread(
+                    self.get_folder_storage_usage, server_backups_folder
+                )
+                if (cloud_limit_bytes - used - reserved) < (size + 12 + 16):
+                    return False
 
             backup = (server_backups_folder / backup_name).with_suffix(".enc")
             if backup.exists():
@@ -131,7 +139,7 @@ class BackupManager:
                 self._upload_reservations[server_id] = {}
 
             self._upload_reservations[server_id][task_id] = size
-            self._accepted_tasks[task_id] = backup_name
+            self._accepted_tasks[task_id] = backup.name
 
             self.start_encrypt_backup(task_id, backup)
             return True
@@ -186,7 +194,7 @@ class BackupManager:
             for item in server_backups_folder.iterdir()
         ]
 
-    async def handle_chunk(self, bytes: bytes) -> None:
+    def handle_chunk(self, bytes: bytes) -> None:
         if len(bytes) < 24:
             return
 

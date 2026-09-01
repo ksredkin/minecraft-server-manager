@@ -134,7 +134,7 @@ class ConnectionManager:
 
             raw_bytes = message.get("bytes")
             if raw_bytes is not None and isinstance(raw_bytes, bytes):
-                await self.backup_manager.handle_chunk(raw_bytes)
+                self.backup_manager.handle_chunk(raw_bytes)
 
             raw_text = message.get("text")
             if raw_text is not None and isinstance(raw_text, str):
