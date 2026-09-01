@@ -3,7 +3,6 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
-from src.api.api_clients.payments.interface import PaymentResponse
 from src.api.exceptions.billing import (
     ActiveSubscriptionNotFound,
     NewPlanIsLowerThanCurrent,
@@ -12,7 +11,7 @@ from src.api.exceptions.billing import (
 )
 from src.api.services.payment_service import PaymentService
 from src.common.billing.plans import PLANS
-from src.common.database.models import Subscription
+from src.common.database.models import Payment, Subscription
 from src.common.enums import PaymentStatus, SubscriptionLevel, SubscriptionStatus
 from src.common.repositories.subscription_repository import SubscriptionRepository
 
@@ -129,10 +128,10 @@ class SubscriptionService:
                     payment_id
                 )
             )
-            if not payment or not isinstance(payment, PaymentResponse):
+            if not payment or not isinstance(payment, Payment):
                 return False
 
-            if payment.status == "succeeded":
+            if payment.status == PaymentStatus.SUCCEEDED:
                 return True
 
             yookassa_payment = self.payment_service.get_from_yookassa_by_payment_id(
@@ -148,12 +147,18 @@ class SubscriptionService:
                 payment_subscription = (
                     await self.subscription_repository.get_by_payment_id(payment.id)
                 )
+                if not isinstance(payment_subscription, Subscription):
+                    return False
+
                 actve_subscription = await self.get_active(payment_subscription.user_id)
                 await self.subscription_repository.update_by_id(
                     actve_subscription.id,
                     new_status=SubscriptionStatus.EXPIRED,
                     new_end_at=now,
                 )
+
+                if not payment.subscription_id:
+                    return False
 
                 await self.subscription_repository.update_by_id(
                     payment.subscription_id,

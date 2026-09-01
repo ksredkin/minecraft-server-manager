@@ -529,7 +529,6 @@ async def get_server_cloud_backups(
     current_user_id: int = Depends(get_current_user_id),
     server_service: ServerService = Depends(get_server_service),
     backup_manager: BackupManager = Depends(get_backup_manager),
-    # connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
     if not server_id or not await server_service.is_admin_or_above(
@@ -537,11 +536,56 @@ async def get_server_cloud_backups(
     ):
         raise ServerNotFoundError("Server not found or access denied")
 
-    backups = backup_manager.get_server_backups(uuid)
+    backups = backup_manager.get_server_backups(server_id)
     message: dict[str, bool | list[dict[str, str | int]]] = {
         "success": True,
         "backups": [{"name": backup.name, "size": backup.size} for backup in backups],
     }
+    return JSONResponse(content=message)
+
+
+@server_router.get(
+    "/{uuid}/backups/cloud/status",
+    status_code=200,
+    description="Получить статус облачного пространства.",
+)
+async def get_server_cloud_status(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    backup_manager: BackupManager = Depends(get_backup_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    status = await backup_manager.get_server_cloud_status(server_id)
+    message: dict[str, bool | int] = {"success": True, **status}
+    return JSONResponse(content=message)
+
+
+@server_router.delete(
+    "/{uuid}/backups/cloud/{backup}",
+    status_code=200,
+    description="Удалить бэкап в облачном пространстве.",
+)
+async def delete_server_cloud_backup(
+    uuid: UUID,
+    backup: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    backup_manager: BackupManager = Depends(get_backup_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    await backup_manager.delete_backup(server_id, backup)
+    message: dict[str, bool | str] = {"success": True, "backup": backup}
     return JSONResponse(content=message)
 
 

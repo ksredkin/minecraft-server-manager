@@ -17,6 +17,9 @@ class BackupCipher:
         if not isinstance(backup_encryption_key, str):
             raise ConfigurationError("backup_encryption_key is not set.")
 
+        if not len(backup_encryption_key) == 32:
+            raise ConfigurationError("backup_encryption_key must be 256 bits long.")
+
         self.key = backup_encryption_key.encode()
 
         self.encryptors: dict[UUID, AEADEncryptionContext] = {}

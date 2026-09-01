@@ -1,0 +1,5 @@
+import secrets
+
+token = secrets.token_hex(16)
+print(token, flush=True)
+print(len(token), flush=True)

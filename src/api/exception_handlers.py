@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from src.api.exceptions.api import ConfigurationError, MSMAPIError
+from src.api.exceptions.backup import BackupNotFoundError, NoFreeSpaceError
 from src.api.exceptions.billing import (
     ActiveSubscriptionNotFound,
     NewPlanIsLowerThanCurrent,
@@ -23,6 +24,8 @@ ERRORS = {
     ActiveSubscriptionNotFound: 500,
     PaymentInitializationError: 500,
     ConfigurationError: 500,
+    BackupNotFoundError: 404,
+    NoFreeSpaceError: 403,
 }
 
 

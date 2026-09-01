@@ -7,3 +7,7 @@ class BackupError(MSMAPIError):
 
 class NoFreeSpaceError(BackupError):
     pass
+
+
+class BackupNotFoundError(BackupError):
+    pass

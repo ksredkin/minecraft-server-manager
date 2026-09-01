@@ -9,12 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from src.api.dependencies.auth import get_password_service
 from src.api.dependencies.billing import get_yookassa_provider
 from src.api.exceptions.api import ConfigurationError
+from src.api.exceptions.backup import BackupNotFoundError
+from src.api.exceptions.server import ServerDoesNotHaveOwnerError
 from src.api.services.backup_cipher import BackupCipher, get_backup_cipher
 from src.api.services.payment_service import PaymentService
 from src.api.services.subscription_service import SubscriptionService
 from src.api.services.task_manager import TaskManager, get_task_manager
 from src.api.services.user_service import UserService
-from src.common.core.config import secrets as app_secrets
+from src.common.core.config import secrets as api_secrets
 from src.common.core.config import settings
 from src.common.database.connection import session
 from src.common.repositories.payment_repository import PaymentRepository
@@ -134,7 +136,46 @@ class BackupManager:
             self.start_encrypt_backup(task_id, backup)
             return True
 
-    def get_server_backups(self, server_id: UUID) -> list[Backup]:
+    async def get_server_cloud_status(self, server_id: int) -> dict[str, int]:
+        async with self.sessionmaker() as session:
+            subscription_service = SubscriptionService(
+                SubscriptionRepository(session),
+                PaymentService(PaymentRepository(session), get_yookassa_provider()),
+            )
+            user_service = UserService(
+                UserRespository(session), get_password_service(), subscription_service
+            )
+
+            owner = await user_service.get_server_owner(server_id)
+            if not owner:
+                raise ServerDoesNotHaveOwnerError("Server doesn't have owner.")
+
+            cloud_limit = await subscription_service.get_user_cloud_backups_limit(
+                owner.id
+            )
+
+            server_backups_folder = self.storage_path / f"server_{str(server_id)}"
+            cloud_limit_bytes = cloud_limit * 1024 * 1024 * 1024
+
+            return {
+                "limit": cloud_limit_bytes,
+                "used": await asyncio.to_thread(
+                    self.get_folder_storage_usage, server_backups_folder
+                ),
+            }
+
+    async def delete_backup(self, server_id: int, backup_name: str) -> None:
+        server_backups_folder = self.storage_path / f"server_{str(server_id)}"
+        if not server_backups_folder.exists():
+            raise BackupNotFoundError("Backup not found.")
+
+        backup = server_backups_folder / backup_name
+        if not backup.exists():
+            raise BackupNotFoundError("Backup not found.")
+
+        backup.unlink(missing_ok=True)
+
+    def get_server_backups(self, server_id: int) -> list[Backup]:
         server_backups_folder = self.storage_path / f"server_{str(server_id)}"
 
         if not server_backups_folder.exists():
@@ -200,7 +241,7 @@ if not settings.backup_storage_path or not isinstance(
     raise ConfigurationError("BACKUP_STORAGE_PATH must be a string!")
 
 backup_manager = BackupManager(
-    app_secrets.get("backup_encryption_key"),
+    api_secrets.get("backup_encryption_key"),
     settings.backup_storage_path,
     get_task_manager(),
     session,

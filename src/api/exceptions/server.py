@@ -7,3 +7,7 @@ class ServerError(MSMAPIError):
 
 class ServerNotFoundError(ServerError):
     pass
+
+
+class ServerDoesNotHaveOwnerError(ServerError):
+    pass
