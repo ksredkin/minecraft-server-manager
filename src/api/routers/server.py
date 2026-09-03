@@ -616,6 +616,35 @@ async def upload_server_backup_to_cloud(
     return JSONResponse(content=message, status_code=result.status_code)
 
 
+@server_router.post(
+    "/{uuid}/backups/cloud/{backup}/download",
+    description="Скачать бэкап с облака на сервер.",
+)
+async def download_server_backup_from_cloud(
+    uuid: UUID,
+    backup: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.download_server_backup_from_cloud(
+        server_id, backup
+    )
+    message: dict[str, str | bool] = {"success": result.accepted}
+    if result.error:
+        message["error"] = result.error
+    if result.data and isinstance(result.data, dict):
+        message["task_id"] = str(result.data.get("task_id"))
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
 @server_router.get(
     "/{uuid}/backups/tasks/{task_id}",
     status_code=200,
@@ -656,6 +685,12 @@ async def get_server_backup_task(
             task["error"] = task_result.get("error")
 
         await task_manager.remove(server_id, task_id)
+
+    if status == TaskStatus.ACCEPTED:
+        completion_percent = task_manager.get_task_completion_percent(
+            server_id, task_id
+        )
+        task["completion_percent"] = completion_percent
 
     task["status"] = str(status.value)
 

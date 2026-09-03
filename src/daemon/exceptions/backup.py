@@ -1,4 +1,4 @@
-from src.daemon.exceptions.server import MSMDaemonError
+from src.daemon.exceptions.server import MSMDaemonError, NoDiskSpaceError
 
 
 class BackupError(MSMDaemonError):
@@ -30,4 +30,12 @@ class InvalidBackupError(BackupError):
 
 
 class CleanupError(BackupError):
+    pass
+
+
+class BackupAlreadyExistsError(BackupError):
+    pass
+
+
+class BackupStorageFullError(NoDiskSpaceError):
     pass

@@ -57,13 +57,12 @@ class BackupCipher:
         encryptor.finalize()
         return encryptor.tag
 
-    def finalize_decryptor(self, decryptor_id: UUID) -> bytes | None:
-        decryptor = self.encryptors.pop(decryptor_id, None)
+    def finalize_decryptor(self, decryptor_id: UUID, tag: bytes) -> None:
+        decryptor = self.decryptors.pop(decryptor_id, None)
         if decryptor is None:
             return None
 
-        decryptor.finalize()
-        return decryptor.tag
+        decryptor.finalize_with_tag(tag)
 
 
 backup_cipher = BackupCipher()

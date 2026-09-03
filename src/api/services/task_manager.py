@@ -53,6 +53,26 @@ class TaskManager:
 
         return True
 
+    def set_rejected(
+        self,
+        server_id: int,
+        task_id: UUID,
+        data: dict[str, Any] = {"success": False},
+    ) -> bool:
+        if server_id not in self.tasks.keys():
+            return False
+
+        if task_id not in self.tasks[server_id].keys():
+            return False
+
+        self.tasks[server_id][task_id].status = TaskStatus.REJECTED
+
+        accepted_future = self.tasks[server_id][task_id].accepted_future
+        if not accepted_future.done():
+            accepted_future.set_result(data)
+
+        return True
+
     def set_completed(
         self, server_id: int, task_id: UUID, data: dict[str, Any]
     ) -> bool:
@@ -72,18 +92,28 @@ class TaskManager:
     def set_failed(
         self, server_id: int, task_id: UUID, error: str | dict[str, Any]
     ) -> bool:
-        if server_id not in self.tasks.keys():
+        if server_id not in self.tasks:
+            return False
+        if task_id not in self.tasks[server_id]:
             return False
 
-        if task_id not in self.tasks[server_id].keys():
-            return False
+        task = self.tasks[server_id][task_id]
 
-        if not self.tasks[server_id][task_id].status == TaskStatus.ACCEPTED:
-            return False
+        if task.status == TaskStatus.PENDING:
+            task.status = TaskStatus.REJECTED
+            if not task.accepted_future.done():
+                task.accepted_future.set_result({"success": False, "error": error})
+            if not task.future.done():
+                task.future.set_result(error)
+            return True
 
-        self.tasks[server_id][task_id].status = TaskStatus.FAILED
-        self.tasks[server_id][task_id].future.set_result(error)
-        return True
+        if task.status == TaskStatus.ACCEPTED:
+            task.status = TaskStatus.FAILED
+            if not task.future.done():
+                task.future.set_result(error)
+            return True
+
+        return False
 
     async def get_result(self, server_id: int, task_id: UUID) -> Any:
         if server_id not in self.tasks.keys():
@@ -131,13 +161,15 @@ class TaskManager:
         if task_id not in self.tasks[server_id].keys():
             return {"success": False}
 
-        if self.tasks[server_id][task_id].status != TaskStatus.PENDING:
+        task = self.tasks[server_id][task_id]
+        if task.status == TaskStatus.REJECTED:
+            return {"success": False}
+
+        if task.status != TaskStatus.PENDING:
             return {"success": True}
 
         try:
-            return await asyncio.wait_for(
-                self.tasks[server_id][task_id].accepted_future, timeout=timeout
-            )
+            return await asyncio.wait_for(task.accepted_future, timeout=timeout)
         except TimeoutError, CancelledError:
             return {"success": False}
 

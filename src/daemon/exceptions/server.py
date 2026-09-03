@@ -32,3 +32,7 @@ class ServerJarDoesNotExistError(ServerError):
 
 class ServerResponseTimeoutError(ServerError):
     pass
+
+
+class NoDiskSpaceError(MSMDaemonError):
+    pass

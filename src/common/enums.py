@@ -23,6 +23,7 @@ class TaskStatus(Enum):
     PENDING = "pending"
     COMPLETED = "completed"
     ACCEPTED = "accepted"
+    REJECTED = "rejected"
     FAILED = "failed"
 
 

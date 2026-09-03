@@ -230,3 +230,7 @@ class BackupService:
             raise e
 
         self._cleanup(server_old_dir, backup_name)
+
+    def handle_chunk(self, path: Path, chunk: bytes) -> None:
+        with path.open("ab") as f:
+            f.write(chunk)

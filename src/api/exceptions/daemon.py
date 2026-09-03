@@ -11,3 +11,7 @@ class DaemonDisconnectedError(DaemonError):
 
 class InvalidDaemonResponseError(DaemonError):
     pass
+
+
+class DaemonDiskFullError(DaemonError):
+    pass

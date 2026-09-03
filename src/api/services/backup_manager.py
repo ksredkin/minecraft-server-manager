@@ -2,14 +2,17 @@ import asyncio
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, AsyncGenerator
 from uuid import UUID
 
+import aiofiles
+from cryptography.exceptions import InvalidTag
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.api.dependencies.auth import get_password_service
 from src.api.dependencies.billing import get_yookassa_provider
 from src.api.exceptions.api import ConfigurationError
-from src.api.exceptions.backup import BackupNotFoundError
+from src.api.exceptions.backup import BackupCorruptedError, BackupNotFoundError
 from src.api.exceptions.server import ServerDoesNotHaveOwnerError
 from src.api.services.backup_cipher import BackupCipher, get_backup_cipher
 from src.api.services.payment_service import PaymentService
@@ -241,6 +244,48 @@ class BackupManager:
                     self._upload_reservations[server_id].pop(task_id, None)
 
             self.complete_backup_encryption(task_id, backup)
+
+    def get_backup(self, server_id: int, backup_name: str) -> Backup:
+        server_backups_folder = self.storage_path / f"server_{str(server_id)}"
+        if not server_backups_folder.exists():
+            raise BackupNotFoundError("Backup not found.")
+
+        backup = server_backups_folder / backup_name
+        if not backup.exists():
+            raise BackupNotFoundError("Backup not found.")
+
+        return Backup(backup.name, backup, backup.stat().st_size)
+
+    async def decrypt_backup(
+        self, server_id: int, backup_name: str, task_id: UUID
+    ) -> AsyncGenerator[Any, bytes]:
+        backup = self.get_backup(server_id, backup_name)
+        async with aiofiles.open(backup.path, "rb") as f:
+            nonce = await f.read(12)
+            self.backup_cipher.create_decryptor(task_id, nonce)
+
+            CHUNK_SIZE = 1024 * 1024
+            TAG_SIZE = 16
+
+            buffer = await f.read(CHUNK_SIZE)
+            while True:
+                next_data = await f.read(CHUNK_SIZE)
+
+                if not next_data:
+                    data = buffer[:-TAG_SIZE]
+                    valid_tag = buffer[-TAG_SIZE:]
+                    decrypted_data = self.backup_cipher.decode(task_id, data)
+
+                    try:
+                        self.backup_cipher.finalize_decryptor(task_id, valid_tag)
+                    except InvalidTag:
+                        raise BackupCorruptedError("Backup corrupred.")
+
+                    yield decrypted_data
+                    break
+                else:
+                    yield self.backup_cipher.decode(task_id, buffer)
+                    buffer = next_data
 
 
 if not settings.backup_storage_path or not isinstance(

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from src.api.exceptions.backup import NoFreeSpaceError
 from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
+    DaemonDiskFullError,
     InvalidDaemonResponseError,
 )
 from src.api.schemas.server import (
@@ -19,7 +20,7 @@ from src.api.schemas.server import (
     FolderCreate,
     FolderUpdate,
 )
-from src.api.services.backup_manager import BackupManager, get_backup_manager
+from src.api.services.backup_manager import Backup, BackupManager, get_backup_manager
 from src.api.services.key_service import KeyService, get_key_service
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
@@ -148,6 +149,7 @@ class ConnectionManager:
                         | "request_accepted"
                         | "request_completed"
                         | "request_failed"
+                        | "request_rejected"
                         | "status"
                     ):
                         async with self.sessionmaker() as session:
@@ -165,6 +167,7 @@ class ConnectionManager:
                                     "request_accepted"
                                     | "request_completed"
                                     | "request_failed"
+                                    | "request_rejected"
                                 ):
                                     task_id_str = payload.get("id")
                                     if not isinstance(task_id_str, str):
@@ -195,6 +198,10 @@ class ConnectionManager:
                                             )
                                         case "request_failed":
                                             self.task_manager.set_failed(
+                                                server_id, task_id, payload
+                                            )
+                                        case "request_rejected":
+                                            self.task_manager.set_rejected(
                                                 server_id, task_id, payload
                                             )
 
@@ -299,7 +306,10 @@ class ConnectionManager:
                                                     }
                                                 ),
                                             )
-        await connection.close()
+        try:
+            await connection.close()
+        except Exception:
+            pass
 
     async def connect_and_subscribe_to_server_channel(
         self, websocket: WebSocket, server_id: int
@@ -334,11 +344,36 @@ class ConnectionManager:
         if connection_id in self.connections.keys():
             self.connections.pop(connection_id)
 
+    async def send_bytes_to_server(self, server_id: int, data: bytes) -> bool:
+        if not (server_route := self.server_routes.get(server_id)):
+            return False
+
+        connection_id = server_route.get("connection_id")
+
+        if not isinstance(connection_id, int):
+            return False
+
+        if not (connection := self.connections.get(connection_id)):
+            return False
+
+        try:
+            await connection.send_bytes(data)
+            return True
+        except Exception as e:
+            raise e
+            return False
+
+    async def send_task_bytes_to_server(
+        self, server_id: int, task_id: UUID, data: bytes
+    ) -> bool:
+        payload = task_id.bytes + data
+        return await self.send_bytes_to_server(server_id, payload)
+
     async def send_message_to_server(
         self,
         server_id: int,
         message_type: str,
-        **payload: str | bool | None,
+        **payload: str | bool | None | int,
     ) -> bool:
         if not (server_route := self.server_routes.get(server_id)):
             return False
@@ -365,7 +400,7 @@ class ConnectionManager:
         message_type: str,
         task_id: UUID | None = None,
         /,
-        **payload: str | bool | None,
+        **payload: str | bool | None | int,
     ) -> UUID:
         if task_id is None:
             task_id = self.task_manager.add(server_id)
@@ -449,7 +484,7 @@ class ConnectionManager:
         message_type: str,
         status_code: int = 404,
         task_id: UUID | None = None,
-        **payload: str | None,
+        **payload: str | None | int,
     ) -> DaemonDataRequestResult:
         if not task_id:
             task_id = await self._send_request(server_id, message_type, **payload)
@@ -608,6 +643,49 @@ class ConnectionManager:
 
         self.task_manager.set_task_total(server_id, task_id, total)
         return result
+
+    async def _send_backup(self, server_id: int, backup: Backup, task_id: UUID) -> None:
+        async for chunk in self.backup_manager.decrypt_backup(
+            server_id, backup.name, task_id
+        ):
+            await self.send_task_bytes_to_server(server_id, task_id, chunk)
+
+    async def download_server_backup_from_cloud(
+        self, server_id: int, backup_name: str
+    ) -> DaemonDataRequestResult:
+        free_storage_result = await self._execute_data_request(
+            server_id, "backups.free_storage", 500
+        )
+        if not free_storage_result.data or not isinstance(
+            free_storage_result.data, dict
+        ):
+            return free_storage_result
+
+        free_storage = free_storage_result.data.get("free")
+        if not isinstance(free_storage, int):
+            raise InvalidDaemonResponseError("Free storage must be int.")
+
+        backup = self.backup_manager.get_backup(server_id, backup_name)
+
+        if free_storage < backup.size:
+            raise DaemonDiskFullError("Daemon disk is full.")
+
+        task_id = self.task_manager.add(server_id)
+        download_backup_result = await self._execute_task_request(
+            server_id,
+            "backups.download",
+            500,
+            task_id,
+            size=backup.size,
+            backup=backup.name,
+        )
+        if not isinstance(
+            download_backup_result.data, dict
+        ) or not download_backup_result.data.get("success"):
+            return download_backup_result
+
+        asyncio.create_task(self._send_backup(server_id, backup, task_id))
+        return download_backup_result
 
 
 connection_manager = ConnectionManager(

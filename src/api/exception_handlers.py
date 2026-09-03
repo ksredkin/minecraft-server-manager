@@ -2,7 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from src.api.exceptions.api import ConfigurationError, MSMAPIError
-from src.api.exceptions.backup import BackupNotFoundError, NoFreeSpaceError
+from src.api.exceptions.backup import (
+    BackupCorruptedError,
+    BackupNotFoundError,
+    NoFreeSpaceError,
+)
 from src.api.exceptions.billing import (
     ActiveSubscriptionNotFound,
     NewPlanIsLowerThanCurrent,
@@ -11,6 +15,7 @@ from src.api.exceptions.billing import (
 )
 from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
+    DaemonDiskFullError,
     InvalidDaemonResponseError,
 )
 from src.api.exceptions.server import ServerNotFoundError
@@ -26,6 +31,8 @@ ERRORS = {
     ConfigurationError: 500,
     BackupNotFoundError: 404,
     NoFreeSpaceError: 403,
+    DaemonDiskFullError: 403,
+    BackupCorruptedError: 500,
 }
 
 

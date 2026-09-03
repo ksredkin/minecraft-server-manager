@@ -11,3 +11,7 @@ class NoFreeSpaceError(BackupError):
 
 class BackupNotFoundError(BackupError):
     pass
+
+
+class BackupCorruptedError(BackupError):
+    pass

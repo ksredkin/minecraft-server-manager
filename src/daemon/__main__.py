@@ -11,6 +11,7 @@ from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileService
 from src.daemon.services.metrics_service import MetricsService
 from src.daemon.services.properties_service import PropertiesService
+from src.daemon.services.storage_service import get_storage_service
 
 logger = Logger(__name__)
 
@@ -60,6 +61,7 @@ async def main() -> None:
     properties_service = PropertiesService(file_service)
     eula_service = EulaService(file_service)
     backup_service = BackupService(backups_path)
+    storage_service = get_storage_service()
 
     api_client = APIClient(
         api_host,
@@ -70,6 +72,7 @@ async def main() -> None:
         properties_service,
         eula_service,
         backup_service,
+        storage_service,
     )
     await api_client.connect()
 
