@@ -2,12 +2,12 @@ from src.api.exceptions.api import MSMAPIError
 
 
 class ServerError(MSMAPIError):
-    pass
+    status_code = 500
 
 
 class ServerNotFoundError(ServerError):
-    pass
+    status_code = 404
 
 
 class ServerDoesNotHaveOwnerError(ServerError):
-    pass
+    status_code = 400

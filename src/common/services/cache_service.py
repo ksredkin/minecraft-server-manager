@@ -14,7 +14,7 @@ class CacheResult:
     def __init__(
         self,
         status: CacheResultStatus,
-        value: int | ServerUserRole | bool | None = None,
+        value: int | ServerUserRole | bool | str | None = None,
     ) -> None:
         self.status = status
         self.value = value
@@ -144,6 +144,32 @@ class CacheService:
 
     async def delete_server_accepted_for_cloud_uploading(self, server_id: UUID) -> None:
         await self._delete("backups", str(server_id))
+
+    async def set_server_minecraft_version(
+        self, server_id: int, minecraft_version: str, expire: int = 10
+    ) -> None:
+        await self._set(
+            "servers", str(server_id), minecraft_version, "minecraft_version", expire
+        )
+
+    async def get_server_minecraft_version(self, server_id: int) -> CacheResult:
+        value = await self._get("servers", str(server_id), "minecraft_version")
+        if not value:
+            return CacheResult(CacheResultStatus.MISS)
+        return CacheResult(CacheResultStatus.FOUND, value)
+
+    async def set_server_software(
+        self, server_id: int, server_software: str, expire: int = 10
+    ) -> None:
+        await self._set(
+            "servers", str(server_id), server_software, "server_software", expire
+        )
+
+    async def get_server_software(self, server_id: int) -> CacheResult:
+        value = await self._get("servers", str(server_id), "server_software")
+        if not value:
+            return CacheResult(CacheResultStatus.MISS)
+        return CacheResult(CacheResultStatus.FOUND, value)
 
 
 cache_service = CacheService()

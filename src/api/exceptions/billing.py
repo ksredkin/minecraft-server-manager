@@ -2,20 +2,20 @@ from src.api.exceptions.api import MSMAPIError
 
 
 class BillingError(MSMAPIError):
-    pass
+    status_code = 500
 
 
 class NewPlanIsLowerThanCurrent(BillingError):
-    pass
+    status_code = 400
 
 
 class PlanAlreadyActive(BillingError):
-    pass
+    status_code = 400
 
 
 class ActiveSubscriptionNotFound(BillingError):
-    pass
+    status_code = 404
 
 
 class PaymentInitializationError(BillingError):
-    pass
+    status_code = 500

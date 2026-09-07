@@ -2,16 +2,16 @@ from src.api.exceptions.api import MSMAPIError
 
 
 class DaemonError(MSMAPIError):
-    pass
+    status_code = 500
 
 
 class DaemonDisconnectedError(DaemonError):
-    pass
+    status_code = 503
 
 
 class InvalidDaemonResponseError(DaemonError):
-    pass
+    status_code = 500
 
 
 class DaemonDiskFullError(DaemonError):
-    pass
+    status_code = 507

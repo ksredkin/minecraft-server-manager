@@ -10,6 +10,7 @@ from fastapi.routing import APIRouter
 from src.api.dependencies.auth import get_current_user_id, get_current_user_id_ws
 from src.api.dependencies.server import get_server_service
 from src.api.exceptions.server import ServerNotFoundError
+from src.api.schemas.plugin import plugin_provider
 from src.api.schemas.server import (
     FileCreateRequest,
     FileUpdateRequest,
@@ -670,8 +671,8 @@ async def get_server_backup_task(
             status_code=404,
         )
 
-    task = {}
-    if status == TaskStatus.FAILED or status == TaskStatus.COMPLETED:
+    task: dict[str, Any] = {}
+    if status in (TaskStatus.FAILED, TaskStatus.COMPLETED, TaskStatus.REJECTED):
         task_result = await task_manager.get_result(server_id, task_id)
         if not task_result or not isinstance(task_result, dict):
             return JSONResponse(
@@ -679,10 +680,14 @@ async def get_server_backup_task(
                 status_code=404,
             )
 
-        if task_result.get("success") is not None:
-            task["success"] = task_result.get("success")
-        if task_result.get("error") is not None:
-            task["error"] = task_result.get("error")
+        result_data = task_result.get("data")
+        if status == TaskStatus.REJECTED and isinstance(result_data, dict):
+            task_result = result_data
+
+        for field in ("success", "error"):
+            value = task_result.get(field)
+            if value is not None:
+                task[field] = value
 
         await task_manager.remove(server_id, task_id)
 
@@ -690,8 +695,40 @@ async def get_server_backup_task(
         completion_percent = task_manager.get_task_completion_percent(
             server_id, task_id
         )
-        task["completion_percent"] = completion_percent
+        if completion_percent is not None:
+            task["completion_percent"] = completion_percent
 
     task["status"] = str(status.value)
 
     return JSONResponse(content={"success": True, "task": task}, status_code=200)
+
+
+@server_router.get(
+    "/{uuid}/plugins/{provider}/search",
+    description="Поиск доступных для сервера плагинов.",
+)
+async def search_plugins_for_server(
+    uuid: UUID,
+    query: str,
+    provider: plugin_provider = "modrinth",
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_admin_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.search_plugins_for_server(
+        server_id, query, provider
+    )
+
+    message: dict[str, str | bool | list[Any]] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    if isinstance(result.data, list):
+        message["plugins"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)

@@ -2,16 +2,16 @@ from src.api.exceptions.api import MSMAPIError
 
 
 class BackupError(MSMAPIError):
-    pass
+    status_code = 500
 
 
 class NoFreeSpaceError(BackupError):
-    pass
+    status_code = 507
 
 
 class BackupNotFoundError(BackupError):
-    pass
+    status_code = 404
 
 
 class BackupCorruptedError(BackupError):
-    pass
+    status_code = 500

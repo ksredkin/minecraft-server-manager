@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
+from typing import Any, AsyncGenerator
 
 
-class ApiClientInterface(ABC):
+class PluginsAPIClientInterface(ABC):
     @staticmethod
     @abstractmethod
     async def search_project(
@@ -24,5 +24,6 @@ class ApiClientInterface(ABC):
 
     @staticmethod
     @abstractmethod
-    async def download_plugin(url: str, file_path: Path) -> None:
-        pass
+    async def download_plugin(url: str, chunk_size: int) -> AsyncGenerator[bytes, Any]:
+        if False:
+            yield b""

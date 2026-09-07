@@ -122,16 +122,20 @@ class TaskManager:
         if task_id not in self.tasks[server_id].keys():
             return None
 
-        task_status = self.tasks[server_id][task_id].status
-        task_future = self.tasks[server_id][task_id].future
+        task = self.tasks[server_id][task_id]
+        task_status = task.status
 
-        if task_status == TaskStatus.FAILED or task_status == TaskStatus.COMPLETED:
-            try:
-                return task_future.result()
-            except CancelledError, InvalidStateError:
-                return None
+        if task_status == TaskStatus.REJECTED:
+            task_future = task.accepted_future
+        elif task_status == TaskStatus.FAILED or task_status == TaskStatus.COMPLETED:
+            task_future = task.future
+        else:
+            return None
 
-        return None
+        try:
+            return task_future.result()
+        except CancelledError, InvalidStateError:
+            return None
 
     async def wait_result(
         self, server_id: int, task_id: UUID, timeout: int = 10

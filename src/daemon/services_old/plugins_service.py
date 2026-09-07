@@ -2,15 +2,15 @@ from pathlib import Path
 from typing import Any
 
 from src.daemon.core.config import MINECRAFT_VERSION, SERVER_PATH, SERVER_SOFTWARE
-from src.daemon.exceptions.api_client import ApiClientInvalidResponseError
 from src.daemon.exceptions.plugins import (
     PluginJarNotFoundError,
     PluginsFolderDoesNotExistError,
     PluginVersionNotFoundError,
 )
 
-from src.api.api_clients.interfaces import ApiClientInterface
-from src.api.api_clients.modrinth import ModrinthApiClient
+from src.api.api_clients.plugins.interface import ApiClientInterface
+from src.api.api_clients.plugins.modrinth import ModrinthApiClient
+from src.daemon.exceptions.api_client import ApiClientInvalidResponseError
 from src.daemon.exceptions.server import (
     InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,

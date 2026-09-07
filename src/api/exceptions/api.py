@@ -1,6 +1,6 @@
 class MSMAPIError(Exception):
-    pass
+    status_code = 500
 
 
 class ConfigurationError(MSMAPIError):
-    pass
+    status_code = 500

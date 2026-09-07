@@ -6,12 +6,15 @@ from uuid import UUID
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from src.api.api_clients.plugins.modrinth import ModrinthAPIClient
+from src.api.exceptions.api_client import APIClientInvalidResponseError
 from src.api.exceptions.backup import NoFreeSpaceError
 from src.api.exceptions.daemon import (
     DaemonDisconnectedError,
     DaemonDiskFullError,
     InvalidDaemonResponseError,
 )
+from src.api.exceptions.plugin import UnsupportedPluginProviderError
 from src.api.schemas.server import (
     FileCreate,
     FileCreateRequest,
@@ -22,6 +25,7 @@ from src.api.schemas.server import (
 )
 from src.api.services.backup_manager import Backup, BackupManager, get_backup_manager
 from src.api.services.key_service import KeyService, get_key_service
+from src.api.services.plugin_service import PluginService
 from src.api.services.server_service import ServerService
 from src.api.services.server_user_service import ServerUserService
 from src.api.services.task_manager import TaskManager, get_task_manager
@@ -35,16 +39,38 @@ from src.common.repositories.server_user_repository import ServerUserRepository
 from src.common.services.cache_service import CacheService, get_cache_service
 
 
-class DaemonRequestResult:
+class RequestResult:
+    def __init__(
+        self,
+        status_code: int = 200,
+        error: str | None = None,
+    ):
+        self.status_code = status_code
+        self.error = error
+
+
+class DataRequestResult(RequestResult):
+    def __init__(
+        self,
+        data: Any = None,
+        success: bool = True,
+        status_code: int = 200,
+        error: str | None = None,
+    ):
+        super().__init__(status_code, error)
+        self.data = data
+        self.success = success
+
+
+class DaemonRequestResult(RequestResult):
     def __init__(
         self,
         status: DaemonRequestStatus,
         status_code: int = 200,
         error: str | None = None,
     ):
+        super().__init__(status_code, error)
         self.status = status
-        self.error = error
-        self.status_code = status_code
 
     @property
     def success(self) -> bool:
@@ -59,14 +85,12 @@ class DaemonDataRequestResult(DaemonRequestResult):
     def __init__(
         self,
         status: DaemonRequestStatus,
-        status_code: int = 200,
         data: Any = None,
+        status_code: int = 200,
         error: str | None = None,
     ):
-        self.status = status
-        self.error = error
+        super().__init__(status, status_code, error)
         self.data = data
-        self.status_code = status_code
 
 
 class ConnectionManager:
@@ -295,6 +319,27 @@ class ConnectionManager:
                                             metrics = server.get("metrics")
                                             if not isinstance(metrics, dict):
                                                 continue
+
+                                            minecraft_version = status.get(
+                                                "minecraft_version"
+                                            )
+                                            if not isinstance(minecraft_version, str):
+                                                continue
+
+                                            server_software = status.get(
+                                                "server_software"
+                                            )
+                                            if not isinstance(server_software, str):
+                                                continue
+
+                                            await self.cache_service.set_server_minecraft_version(
+                                                server_id, minecraft_version
+                                            )
+                                            await (
+                                                self.cache_service.set_server_software(
+                                                    server_id, server_software
+                                                )
+                                            )
 
                                             await self.cache_service.publish_to_server_channel(
                                                 server_id,
@@ -686,6 +731,63 @@ class ConnectionManager:
 
         asyncio.create_task(self._send_backup(server_id, backup, task_id))
         return download_backup_result
+
+    async def search_plugins_for_server(
+        self, server_id: int, query: str, plugin_provider: str
+    ) -> DataRequestResult:
+        minecraft_version = await self.cache_service.get_server_minecraft_version(
+            server_id
+        )
+        server_software = await self.cache_service.get_server_software(server_id)
+
+        if not isinstance(minecraft_version.value, str) or not isinstance(
+            server_software.value, str
+        ):
+            raise DaemonDisconnectedError(
+                "Daemon is disconnected or an internal error occurred"
+            )
+
+        match plugin_provider:
+            case "modrinth":
+                api_client = ModrinthAPIClient()
+            case _:
+                raise UnsupportedPluginProviderError(
+                    f'Unsupported plugin provider: "{plugin_provider}".'
+                )
+
+        plugin_service = PluginService(api_client)
+
+        try:
+            result = await plugin_service.search(
+                query, minecraft_version.value, server_software.value
+            )
+        except Exception as error:
+            return DataRequestResult(
+                success=False,
+                status_code=502,
+                error=str(error),
+            )
+
+        hits = result.get("hits")
+        if hits is None:
+            raise APIClientInvalidResponseError("API вернул некорректный ответ.")
+
+        ret: list[Any] = []
+        for plugin in hits:
+            item: dict[str, Any] = {
+                "id": plugin["project_id"],
+                "slug": plugin["slug"],
+                "title": plugin["title"],
+                "description": plugin["description"],
+                "downloads": plugin["downloads"],
+                "icon_url": plugin["icon_url"],
+            }
+            ret.append(item)
+
+        return DataRequestResult(
+            success=True,
+            data=ret,
+        )
 
 
 connection_manager = ConnectionManager(
