@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from src.api.schemas.plugin import plugin_provider
-from src.api.services.plugin_service import PluginService
 from fastapi.responses import JSONResponse
+
 from src.api.dependencies.plugin import get_plugin_service
+from src.api.schemas.plugin import plugin_provider
 
 plugin_router = APIRouter(prefix="/plugins")
 

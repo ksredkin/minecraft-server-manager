@@ -732,3 +732,56 @@ async def search_plugins_for_server(
         message["plugins"] = result.data
 
     return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.get(
+    "/{uuid}/plugins/",
+    description="Получить список плагинов сервера.",
+)
+async def get_server_plugins(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_viewer_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.get_server_plugins(server_id)
+
+    message: dict[str, str | bool | list[Any]] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+    if isinstance(result.data, list):
+        message["plugins"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.delete(
+    "/{uuid}/plugins/{file_name}",
+    description="Удалить плагин на сервере.",
+)
+async def delete_server_plugin(
+    uuid: UUID,
+    file_name: str,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_viewer_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.delete_server_plugin(server_id, file_name)
+
+    message: dict[str, str | bool | list[Any]] = {"success": result.success}
+    if result.error:
+        message["error"] = result.error
+
+    return JSONResponse(content=message, status_code=result.status_code)

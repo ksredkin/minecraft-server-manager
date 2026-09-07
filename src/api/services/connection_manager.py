@@ -404,8 +404,7 @@ class ConnectionManager:
         try:
             await connection.send_bytes(data)
             return True
-        except Exception as e:
-            raise e
+        except Exception:
             return False
 
     async def send_task_bytes_to_server(
@@ -787,6 +786,16 @@ class ConnectionManager:
         return DataRequestResult(
             success=True,
             data=ret,
+        )
+
+    async def get_server_plugins(self, server_id: int) -> DaemonDataRequestResult:
+        return await self._execute_data_request(server_id, "plugins.get_all", 404)
+
+    async def delete_server_plugin(
+        self, server_id: int, file_name: str
+    ) -> DaemonDataRequestResult:
+        return await self._execute_data_request(
+            server_id, "plugins.delete", 404, file_name=file_name
         )
 
 

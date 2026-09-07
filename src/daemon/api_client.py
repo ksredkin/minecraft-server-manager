@@ -28,6 +28,7 @@ from src.daemon.services.backup_service import Backup, BackupService
 from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
 from src.daemon.services.metrics_service import MetricsService
+from src.daemon.services.plugin_service import PluginService
 from src.daemon.services.properties_service import PropertiesService
 from src.daemon.services.storage_service import StorageService
 
@@ -57,6 +58,7 @@ class APIClient:
         eula_service: EulaService,
         backup_service: BackupService,
         storage_service: StorageService,
+        plugin_service: PluginService,
     ):
         if not api_host:
             raise InvalidConfigError('Missing "api_host" in daemon settings.')
@@ -78,6 +80,7 @@ class APIClient:
         self.eula_service = eula_service
         self.backup_service = backup_service
         self.storage_service = storage_service
+        self.plugin_service = plugin_service
 
         self._accepted_transfers: dict[UUID, Transfer] = {}
 
@@ -217,7 +220,8 @@ class APIClient:
                         | "backups.get_all"
                         | "backups.download"
                         | "backups.free_storage"
-                        | "backups.download"
+                        | "plugins.get_all"
+                        | "plugins.delete"
                     ):
                         key = message.get("key")
                         if not isinstance(key, str):
@@ -622,6 +626,40 @@ class APIClient:
                                 except Exception as e:
                                     await self._request_rejected(
                                         websocket, request_id, {"error": str(e)}
+                                    )
+                            case "plugins.get_all":
+                                try:
+                                    plugins = self.plugin_service.get_plugins(server)
+                                    await self._request_completed(
+                                        websocket,
+                                        request_id,
+                                        [
+                                            {
+                                                "file_name": plugin.path.name,
+                                                "display_name": plugin.name,
+                                                "size": plugin.size,
+                                            }
+                                            for plugin in plugins
+                                        ],
+                                    )
+                                except Exception as e:
+                                    await self._request_failed(
+                                        websocket, request_id, str(e)
+                                    )
+                            case "plugins.delete":
+                                try:
+                                    file_name = message.get("file_name")
+                                    if not isinstance(file_name, str):
+                                        continue
+
+                                    self.plugin_service.delete(server, file_name)
+                                    await self._request_completed(
+                                        websocket,
+                                        request_id,
+                                    )
+                                except Exception as e:
+                                    await self._request_failed(
+                                        websocket, request_id, str(e)
                                     )
                     case "registered":
                         logger.info("All servers are registered.")
