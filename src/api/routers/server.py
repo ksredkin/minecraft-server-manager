@@ -716,7 +716,7 @@ async def search_plugins_for_server(
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> JSONResponse:
     server_id = await server_service.get_server_id(uuid)
-    if not server_id or not await server_service.is_admin_or_above(
+    if not server_id or not await server_service.is_viewer_or_above(
         current_user_id, server_id
     ):
         raise ServerNotFoundError("Server not found or access denied")

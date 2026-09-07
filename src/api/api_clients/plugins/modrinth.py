@@ -63,6 +63,7 @@ class ModrinthAPIClient(PluginsAPIClientInterface):
                 r = await client.get(
                     f"https://api.modrinth.com/v2/project/{project_id_or_slug}"
                 )
+                r.raise_for_status()
                 return r.json()  # type: ignore
         except TimeoutException as e:
             raise APIClientTimeoutError("The API did not respond.") from e
