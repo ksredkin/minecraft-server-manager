@@ -17,6 +17,12 @@ class DaemonRequestStatus(Enum):
     ACCEPTED = "request_accepted"
     SUCCESS = "request_completed"
     FAILED = "request_failed"
+    REJECTED = "request_rejected"
+
+
+class DaemonTaskKind(Enum):
+    BACKUPS = "backups"
+    PLUGINS = "plugins"
 
 
 class TaskStatus(Enum):

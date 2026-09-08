@@ -80,8 +80,10 @@ class FileService:
             content = file.read_text(encoding="utf-8")
 
             return FileItem(file.name, file, size, content)
+        except UnicodeDecodeError:
+            return FileItem(file.name, file, size, None)
         except Exception as e:
-            logger.error(f"Failed to get a file item: {e}", exc_info=True)
+            logger.error(f"Failed to get a file item: {e}")
             return None
 
     def write_file(

@@ -1,7 +1,6 @@
 import asyncio
 import json
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -10,6 +9,7 @@ import aiofiles
 from websockets import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidMessage
 
+from src.common.enums import DaemonTaskKind
 from src.common.utils.logger import Logger
 from src.daemon.exceptions.api_client import NoValidDaemonKeysError
 from src.daemon.exceptions.backup import (
@@ -18,6 +18,7 @@ from src.daemon.exceptions.backup import (
     BackupStorageFullError,
 )
 from src.daemon.exceptions.config import InvalidConfigError
+from src.daemon.exceptions.plugin import PluginAlreadyExists, PluginStorageFullError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
     ServerIsNotRunningError,
@@ -35,15 +36,10 @@ from src.daemon.services.storage_service import StorageService
 logger = Logger(__name__)
 
 
-class TransferKind(Enum):
-    BACKUP = "backup"
-    PLUGIN = "plugin"
-
-
 @dataclass
 class Transfer:
     path: Path
-    kind: TransferKind
+    kind: DaemonTaskKind
 
 
 class APIClient:
@@ -159,12 +155,15 @@ class APIClient:
             await self._request_failed(websocket, request_id, str(e))
 
     def _accept_transfer(
-        self, request_id: UUID, path: Path, transfer_kind: TransferKind
+        self, request_id: UUID, path: Path, transfer_kind: DaemonTaskKind
     ) -> None:
         self._accepted_transfers[request_id] = Transfer(path, transfer_kind)
 
     def _accept_backup(self, request_id: UUID, path: Path) -> None:
-        self._accept_transfer(request_id, path, TransferKind.BACKUP)
+        self._accept_transfer(request_id, path, DaemonTaskKind.BACKUPS)
+
+    def _accept_plugin(self, request_id: UUID, path: Path) -> None:
+        self._accept_transfer(request_id, path, DaemonTaskKind.PLUGINS)
 
     async def _recieve_commands(self, websocket: ClientConnection) -> None:
         while True:
@@ -188,9 +187,17 @@ class APIClient:
 
                 transfer = self._accepted_transfers[request_id]
 
-                if transfer.kind == TransferKind.BACKUP:
+                if transfer.kind == DaemonTaskKind.BACKUPS:
                     self.backup_service.handle_chunk(transfer.path, chunk)
                     self.storage_service.add_progress(request_id, len(chunk))
+                elif transfer.kind == DaemonTaskKind.PLUGINS:
+                    self.plugin_service.handle_chunk(transfer.path, chunk)
+                    self.storage_service.add_progress(request_id, len(chunk))
+
+                if self.storage_service.is_complete(request_id):
+                    self.storage_service.remove_reservation(request_id)
+                    self._accepted_transfers.pop(request_id, None)
+                    await self._request_completed(websocket, request_id)
 
             if isinstance(recieved, str):
                 message: dict[str, str | list[dict[str, str]]] = json.loads(recieved)
@@ -222,6 +229,8 @@ class APIClient:
                         | "backups.free_storage"
                         | "plugins.get_all"
                         | "plugins.delete"
+                        | "plugins.free_storage"
+                        | "plugins.download"
                     ):
                         key = message.get("key")
                         if not isinstance(key, str):
@@ -618,7 +627,12 @@ class APIClient:
                                         self.backup_service.backups_dir / backup_name
                                     ).with_suffix(".zip")
                                     self.storage_service.reserve(
-                                        backup_path, request_id, size
+                                        backup_path,
+                                        request_id,
+                                        size,
+                                        server.key,
+                                        DaemonTaskKind.BACKUPS,
+                                        backup_name,
                                     )
                                     self._accept_backup(request_id, backup_path)
 
@@ -661,6 +675,68 @@ class APIClient:
                                     await self._request_failed(
                                         websocket, request_id, str(e)
                                     )
+                            case "plugins.free_storage":
+                                try:
+                                    free_storage = (
+                                        self.plugin_service.get_plugins_free_storage(
+                                            server
+                                        )
+                                    )
+                                    await self._request_completed(
+                                        websocket, request_id, free_storage
+                                    )
+                                except Exception as e:
+                                    await self._request_failed(
+                                        websocket, request_id, str(e)
+                                    )
+                            case "plugins.download":
+                                try:
+                                    size = message.get("size")
+                                    if not isinstance(size, int):
+                                        continue
+
+                                    plugin = message.get("plugin")
+                                    if not isinstance(plugin, str):
+                                        continue
+
+                                    existing_plugin = self.plugin_service.get_plugin(
+                                        server, plugin
+                                    )
+                                    if existing_plugin:
+                                        raise PluginAlreadyExists(
+                                            "Plugin already exists."
+                                        )
+
+                                    plugins_folder = server.server_dir / "plugins"
+
+                                    free_storage = (
+                                        self.storage_service.get_disk_free_space(
+                                            plugins_folder
+                                        )
+                                    )
+                                    if free_storage < size:
+                                        raise PluginStorageFullError(
+                                            "Plugin storage is full."
+                                        )
+
+                                    plugin_path = (plugins_folder / plugin).with_suffix(
+                                        ".jar"
+                                    )
+                                    self.storage_service.reserve(
+                                        plugin_path,
+                                        request_id,
+                                        size,
+                                        server.key,
+                                        DaemonTaskKind.PLUGINS,
+                                        plugin,
+                                    )
+                                    self._accept_plugin(request_id, plugin_path)
+
+                                    await self._request_accepted(websocket, request_id)
+                                except Exception as e:
+                                    await self._request_rejected(
+                                        websocket, request_id, {"error": str(e)}
+                                    )
                     case "registered":
                         logger.info("All servers are registered.")
                     case "registration_failed":
@@ -697,6 +773,7 @@ class APIClient:
                         "status": server.get_server_info(),
                         "metrics": self.metrics_service.get_metrics(server),
                         "logs": server.get_pending_logs(),
+                        "tasks": self.storage_service.get_tasks(str(server.key)),
                     }
                 )
 

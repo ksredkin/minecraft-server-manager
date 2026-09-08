@@ -7,6 +7,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.api.api_clients.plugins.modrinth import ModrinthAPIClient
+from src.api.dependencies.plugin import get_plugin_service
 from src.api.exceptions.api_client import APIClientInvalidResponseError
 from src.api.exceptions.backup import NoFreeSpaceError
 from src.api.exceptions.daemon import (
@@ -14,7 +15,11 @@ from src.api.exceptions.daemon import (
     DaemonDiskFullError,
     InvalidDaemonResponseError,
 )
-from src.api.exceptions.plugin import UnsupportedPluginProviderError
+from src.api.exceptions.plugin import (
+    PluginNotFoundError,
+    UnsupportedPluginProviderError,
+)
+from src.api.schemas.plugin import plugin_provider
 from src.api.schemas.server import (
     FileCreate,
     FileCreateRequest,
@@ -104,6 +109,7 @@ class ConnectionManager:
     ) -> None:
         self.connections: dict[int, WebSocket] = {}
         self.server_routes: dict[int, dict[str, str | int]] = {}
+        self.daemon_tasks: dict[int, dict[str, dict[str, dict[str, int]]]] = {}
         self.key_service = key_service
         self.sessionmaker = sessionmaker
         self.cache_service = cache_service
@@ -210,11 +216,8 @@ class ConnectionManager:
 
                                     match payload.get("type"):
                                         case "request_accepted":
-                                            data = payload.get(
-                                                "data", {"success": True}
-                                            )
                                             self.task_manager.set_accepted(
-                                                server_id, task_id, data
+                                                server_id, task_id, payload
                                             )
                                         case "request_completed":
                                             self.task_manager.set_completed(
@@ -320,6 +323,12 @@ class ConnectionManager:
                                             if not isinstance(metrics, dict):
                                                 continue
 
+                                            tasks = server.get("tasks", {})
+                                            if not isinstance(tasks, dict):
+                                                continue
+
+                                            self.daemon_tasks[server_id] = tasks
+
                                             minecraft_version = status.get(
                                                 "minecraft_version"
                                             )
@@ -348,6 +357,7 @@ class ConnectionManager:
                                                         "status": status,
                                                         "metrics": metrics,
                                                         "logs": logs,
+                                                        "tasks": tasks,
                                                     }
                                                 ),
                                             )
@@ -388,6 +398,20 @@ class ConnectionManager:
     async def disconnect(self, connection_id: int) -> None:
         if connection_id in self.connections.keys():
             self.connections.pop(connection_id)
+
+        disconnected_servers = [
+            server_id
+            for server_id, route in self.server_routes.items()
+            if route.get("connection_id") == connection_id
+        ]
+        for server_id in disconnected_servers:
+            self.server_routes.pop(server_id, None)
+            self.daemon_tasks.pop(server_id, None)
+
+    def get_daemon_tasks(
+        self, server_id: int
+    ) -> dict[str, dict[str, dict[str, int]]] | None:
+        return self.daemon_tasks.get(server_id)
 
     async def send_bytes_to_server(self, server_id: int, data: bytes) -> bool:
         if not (server_route := self.server_routes.get(server_id)):
@@ -536,18 +560,26 @@ class ConnectionManager:
             await self._send_request(server_id, message_type, task_id, **payload)
         result = await self.task_manager.wait_accepted(server_id, task_id)
 
-        if result:
+        type_str = result.get("type")
+        try:
+            status = DaemonRequestStatus(type_str)
+        except ValueError:
+            raise InvalidDaemonResponseError("Invalid message type.")
+
+        if status == DaemonRequestStatus.ACCEPTED:
             return DaemonDataRequestResult(
                 status=DaemonRequestStatus.ACCEPTED,
                 status_code=202,
                 data={**result, "task_id": task_id},
             )
 
+        data = result.setdefault("data", {})
+
         await self.task_manager.remove(server_id, task_id)
         return DaemonDataRequestResult(
-            status=DaemonRequestStatus.FAILED,
+            status=DaemonRequestStatus.REJECTED,
             status_code=status_code,
-            error="Daemon is not connected or internal error occured",
+            error=data.get("error"),
         )
 
     async def execute_server_action(
@@ -715,6 +747,7 @@ class ConnectionManager:
             raise DaemonDiskFullError("Daemon disk is full.")
 
         task_id = self.task_manager.add(server_id)
+        self.task_manager.set_task_total(server_id, task_id, backup.size)
         download_backup_result = await self._execute_task_request(
             server_id,
             "backups.download",
@@ -769,7 +802,7 @@ class ConnectionManager:
 
         hits = result.get("hits")
         if hits is None:
-            raise APIClientInvalidResponseError("API вернул некорректный ответ.")
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
 
         ret: list[Any] = []
         for plugin in hits:
@@ -797,6 +830,85 @@ class ConnectionManager:
         return await self._execute_data_request(
             server_id, "plugins.delete", 404, file_name=file_name
         )
+
+    async def _send_plugin(
+        self,
+        server_id: int,
+        plugin_service: PluginService,
+        download_url: str,
+        task_id: UUID,
+    ) -> None:
+        async for chunk in plugin_service.download_plugin(download_url):
+            await self.send_task_bytes_to_server(server_id, task_id, chunk)
+
+    async def download_plugin_to_server(
+        self,
+        server_id: int,
+        project_id_or_slug: str,
+        provider: plugin_provider = "modrinth",
+    ) -> DaemonDataRequestResult:
+        plugin_service = get_plugin_service(provider)
+
+        free_storage_result = await self._execute_data_request(
+            server_id, "plugins.free_storage", 500
+        )
+        if not isinstance(free_storage_result.data, int):
+            raise InvalidDaemonResponseError("Free storage must be int.")
+
+        free_storage = free_storage_result.data
+        plugin_info = await plugin_service.get_plugin_info(project_id_or_slug)
+
+        if not isinstance(plugin_info, dict):
+            raise PluginNotFoundError("Plugin not found.")
+
+        versions = await plugin_service.get_plugin_versions(project_id_or_slug)
+        if not versions:
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        version = versions[0]
+        if not isinstance(version, dict):
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        files = version.get("files")
+        if not isinstance(files, list) or not files:
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        file = files[0]
+        if not isinstance(file, dict):
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        file_size = file.get("size")
+        if not isinstance(file_size, int):
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        download_url = file.get("url")
+        if not isinstance(download_url, str):
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        slug = plugin_info.get("slug")
+        if not isinstance(slug, str):
+            raise APIClientInvalidResponseError("Invalid API response recieved.")
+
+        if free_storage < file_size:
+            raise DaemonDiskFullError("Daemon disk is full.")
+
+        task_id = self.task_manager.add(server_id)
+        self.task_manager.set_task_total(server_id, task_id, file_size)
+        download_plugin_result = await self._execute_task_request(
+            server_id,
+            "plugins.download",
+            500,
+            task_id,
+            size=file_size,
+            plugin=f"{slug}.jar",
+        )
+        if not download_plugin_result.accepted:
+            return download_plugin_result
+
+        asyncio.create_task(
+            self._send_plugin(server_id, plugin_service, download_url, task_id)
+        )
+        return download_plugin_result
 
 
 connection_manager = ConnectionManager(

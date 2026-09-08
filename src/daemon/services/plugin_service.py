@@ -8,6 +8,7 @@ from src.daemon.exceptions.plugin import (
 )
 from src.daemon.server import Server
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
+from src.daemon.services.storage_service import StorageService
 
 logger = Logger(__name__)
 
@@ -20,7 +21,10 @@ class Plugin:
 
 
 class PluginService:
-    def __init__(self, file_service: FileService) -> None:
+    def __init__(
+        self, file_service: FileService, storage_service: StorageService
+    ) -> None:
+        self.storage_service = storage_service
         self.file_service = file_service
 
     def _get_plugins_folder_item(self, server: Server) -> FolderItem:
@@ -29,6 +33,19 @@ class PluginService:
             logger.error(f'Plugins folder of server "{server.key}" doesn\'t exist.')
             raise PluginsFolderDoesNotExistError("Plugins folder doesn't exist.")
         return plugins_folder
+
+    def get_plugins_free_storage(self, server: Server) -> int:
+        plugins_folder = self._get_plugins_folder_item(server)
+        return self.storage_service.get_disk_free_space(plugins_folder.path)
+
+    def get_plugin(self, server: Server, file_name: str) -> Plugin | None:
+        plugins_folder = Path("plugins")
+        file = self.file_service.get_file_item(server, str(plugins_folder / file_name))
+
+        if not file:
+            return None
+
+        return Plugin(file.path.stem.capitalize(), file.path, file.size)
 
     def get_plugins(self, server: Server) -> list[Plugin]:
         plugins_folder = self._get_plugins_folder_item(server)

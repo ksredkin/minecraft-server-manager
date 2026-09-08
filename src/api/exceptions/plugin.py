@@ -7,3 +7,7 @@ class PluginError(MSMAPIError):
 
 class UnsupportedPluginProviderError(PluginError):
     status_code = 400
+
+
+class PluginNotFoundError(PluginError):
+    status_code = 404

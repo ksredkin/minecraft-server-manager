@@ -647,11 +647,11 @@ async def download_server_backup_from_cloud(
 
 
 @server_router.get(
-    "/{uuid}/backups/tasks/{task_id}",
+    "/{uuid}/tasks/{task_id}",
     status_code=200,
-    description="Получить статус задачи бэкапа сервера и удалить задачу, если есть результат.",
+    description="Получить статус задачи сервера и удалить задачу, если есть результат.",
 )
-async def get_server_backup_task(
+async def get_server_task(
     uuid: UUID,
     task_id: UUID,
     current_user_id: int = Depends(get_current_user_id),
@@ -704,6 +704,33 @@ async def get_server_backup_task(
 
 
 @server_router.get(
+    "/{uuid}/daemon/tasks",
+    status_code=200,
+    description="Получить прогресс задач, выполняемых daemon.",
+)
+async def get_daemon_tasks(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_viewer_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    tasks = connection_manager.get_daemon_tasks(server_id)
+    if tasks is None:
+        return JSONResponse(
+            content={"success": False, "error": "Daemon is disconnected"},
+            status_code=404,
+        )
+
+    return JSONResponse(content={"success": True, "tasks": tasks}, status_code=200)
+
+
+@server_router.get(
     "/{uuid}/plugins/{provider}/search",
     description="Поиск доступных для сервера плагинов.",
 )
@@ -730,6 +757,38 @@ async def search_plugins_for_server(
         message["error"] = result.error
     if isinstance(result.data, list):
         message["plugins"] = result.data
+
+    return JSONResponse(content=message, status_code=result.status_code)
+
+
+@server_router.post(
+    "/{uuid}/plugins/{provider}/download",
+    description="Скачать плагин на сервер.",
+)
+async def download_plugin_to_server(
+    uuid: UUID,
+    project_id_or_slug: str,
+    provider: plugin_provider = "modrinth",
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
+    server_id = await server_service.get_server_id(uuid)
+    if not server_id or not await server_service.is_viewer_or_above(
+        current_user_id, server_id
+    ):
+        raise ServerNotFoundError("Server not found or access denied")
+
+    result = await connection_manager.download_plugin_to_server(
+        server_id, project_id_or_slug, provider
+    )
+    message: dict[str, str | bool] = {"success": result.accepted}
+    if result.error:
+        message["error"] = result.error
+
+    data = result.data
+    if isinstance(data, dict):
+        message["task_id"] = str(data.get("task_id"))
 
     return JSONResponse(content=message, status_code=result.status_code)
 

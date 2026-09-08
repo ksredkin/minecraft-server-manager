@@ -1,4 +1,4 @@
-from src.daemon.exceptions.server import MSMDaemonError
+from src.daemon.exceptions.server import MSMDaemonError, NoDiskSpaceError
 
 
 class PluginError(MSMDaemonError):
@@ -10,4 +10,12 @@ class PluginsFolderDoesNotExistError(PluginError):
 
 
 class PluginNotFoundError(PluginError):
+    pass
+
+
+class PluginAlreadyExists(PluginError):
+    pass
+
+
+class PluginStorageFullError(NoDiskSpaceError):
     pass

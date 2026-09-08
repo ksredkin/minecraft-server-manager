@@ -112,7 +112,7 @@ class ModrinthAPIClient(PluginsAPIClientInterface):
                 async with client.stream("GET", url) as response:
                     response.raise_for_status()
 
-                    for chunk in response.iter_bytes(chunk_size):
+                    async for chunk in response.aiter_bytes(chunk_size):
                         yield chunk
         except TimeoutException as e:
             raise APIClientTimeoutError("The API did not respond.") from e
