@@ -1,4 +1,5 @@
 from src.common.utils.logger import Logger
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from src.daemon.services.file_service import FileService
 
@@ -10,8 +11,11 @@ class PropertiesService:
         self.file_service = file_service
 
     def get_properties(self, server: Server) -> dict[str, str] | None:
-        properties_file = self.file_service.get_file_item(server, "server.properties")
-        if not properties_file or properties_file.content is None:
+        try:
+            properties_file = self.file_service.get_file_item(server, "server.properties")
+        except FileServiceError:
+            return None
+        if properties_file.content is None:
             return None
 
         properties: dict[str, str] = {}
@@ -23,8 +27,11 @@ class PropertiesService:
         return properties
 
     def set_property(self, server: Server, property: str, new_value: str) -> bool:
-        properties_file = self.file_service.get_file_item(server, "server.properties")
-        if not properties_file or properties_file.content is None:
+        try:
+            properties_file = self.file_service.get_file_item(server, "server.properties")
+        except FileServiceError:
+            return False
+        if properties_file.content is None:
             return False
 
         properties = properties_file.content.splitlines()

@@ -3,6 +3,18 @@ from pathlib import Path
 
 from src.common.utils.logger import Logger
 from src.daemon.server import Server
+from src.daemon.exceptions.file_service import (
+    FileReadError,
+    FileServiceError,
+    FileWriteError,
+    FolderReadError,
+    FolderWriteError,
+    InvalidPathError,
+    ItemAlreadyExistsError,
+    ItemDeleteError,
+    ItemNotFoundError,
+    ItemTypeError,
+)
 import shutil
 
 logger = Logger(__name__)
@@ -26,7 +38,7 @@ class FolderItem(FileSystemItem):
 
 
 class FileService:
-    def _get_safe_path(self, server: Server, user_path: str | None) -> Path | None:
+    def _get_safe_path(self, server: Server, user_path: str | None) -> Path:
         server_dir = server.server_dir.resolve()
 
         if user_path is None:
@@ -35,7 +47,7 @@ class FileService:
         target_file = (server.server_dir / user_path).resolve()
 
         if not target_file.is_relative_to(server_dir):
-            return None
+            raise InvalidPathError("Path is outside the server directory.")
 
         return target_file
 
@@ -53,10 +65,12 @@ class FileService:
 
     def get_folder_item(
         self, server: Server, folder_path: str | None = None
-    ) -> FolderItem | None:
+    ) -> FolderItem:
         folder = self._get_safe_path(server, folder_path)
-        if not folder or not folder.exists() or not folder.is_dir():
-            return None
+        if not folder.exists():
+            raise ItemNotFoundError("Folder not found.")
+        if not folder.is_dir():
+            raise ItemTypeError("Item is not a folder.")
 
         try:
             items: list[FileSystemItem] = []
@@ -70,12 +84,14 @@ class FileService:
             return FolderItem(folder.name, folder, items)
         except Exception as e:
             logger.error(f"Failed to get a folder item: {e}", exc_info=True)
-            return None
+            raise FolderReadError("Failed to read folder.") from e
 
-    def get_file_item(self, server: Server, file_path: str) -> FileItem | None:
+    def get_file_item(self, server: Server, file_path: str) -> FileItem:
         file = self._get_safe_path(server, file_path)
-        if not file or not file.exists() or not file.is_file():
-            return None
+        if not file.exists():
+            raise ItemNotFoundError("File not found.")
+        if not file.is_file():
+            raise ItemTypeError("Item is not a file.")
 
         try:
             size = file.stat().st_size
@@ -86,14 +102,14 @@ class FileService:
             return FileItem(file.name, file, size, None)
         except Exception as e:
             logger.error(f"Failed to get a file item: {e}")
-            return None
+            raise FileReadError("Failed to read file.") from e
 
     def write_file(
         self, server: Server, file_path: str, content: str | None = None
-    ) -> FileItem | None:
+    ) -> FileItem:
         file = self._get_safe_path(server, file_path)
-        if not file or file.exists():
-            return None
+        if file.exists():
+            raise ItemAlreadyExistsError("File already exists.")
 
         try:
             file.write_text(content if content is not None else "", encoding="utf-8")
@@ -104,7 +120,7 @@ class FileService:
             return FileItem(file.name, file, size, content)
         except Exception as e:
             logger.error(f"Failed to create a new file: {e}", exc_info=True)
-            return None
+            raise FileWriteError("Failed to create file.") from e
 
     def update_file(
         self,
@@ -112,17 +128,19 @@ class FileService:
         file_path: str,
         new_path: str | None = None,
         new_content: str | None = None,
-    ) -> FileItem | None:
+    ) -> FileItem:
         file = self._get_safe_path(server, file_path)
 
-        if not file or not file.exists() or not file.is_file():
-            return None
+        if not file.exists():
+            raise ItemNotFoundError("File not found.")
+        if not file.is_file():
+            raise ItemTypeError("Item is not a file.")
 
         new_file = None
         if new_path is not None:
             new_file = self._get_safe_path(server, new_path)
-            if not new_file or new_file.exists():
-                return None
+            if new_file.exists():
+                raise ItemAlreadyExistsError("File already exists.")
 
         try:
             name = file.name
@@ -152,20 +170,21 @@ class FileService:
             )
         except Exception as e:
             logger.error(f"Failed to update a file: {e}", exc_info=True)
-            return None
+            if isinstance(e, FileServiceError):
+                raise
+            raise FileWriteError("Failed to update file.") from e
 
     def update_folder(
         self, server: Server, folder_path: str, new_path: str
-    ) -> FolderItem | None:
+    ) -> FolderItem:
         folder = self._get_safe_path(server, folder_path)
         new_folder = self._get_safe_path(server, new_path)
-        if (
-            not folder
-            or not folder.is_dir()
-            or not new_folder
-            or new_folder.exists()
-        ):
-            return None
+        if not folder.exists():
+            raise ItemNotFoundError("Folder not found.")
+        if not folder.is_dir():
+            raise ItemTypeError("Item is not a folder.")
+        if new_folder.exists():
+            raise ItemAlreadyExistsError("Folder already exists.")
 
         try:
             folder.rename(new_folder)
@@ -189,30 +208,31 @@ class FileService:
             )
         except Exception as e:
             logger.error(f"Failed to update a folder: {e}", exc_info=True)
-            return None
+            raise FolderWriteError("Failed to update folder.") from e
 
     def get_item(
         self, server: Server, item_path: str | None = None
-    ) -> FileSystemItem | None:
+    ) -> FileSystemItem:
         item = self._get_safe_path(server, item_path)
-        if not item or not item.exists():
-            return None
+        if not item.exists():
+            raise ItemNotFoundError("Item not found.")
 
         if item.is_dir():
             return self.get_folder_item(server, item_path)
 
         if item.is_file():
-            if item_path:
-                return self.get_file_item(server, item_path)
+            if item_path is None:
+                raise ItemTypeError("A file path is required.")
+            return self.get_file_item(server, item_path)
 
-        return None
+        raise ItemTypeError("Unsupported filesystem item.")
 
     def create_folder(
         self, server: Server, folder_path: str | None = None
-    ) -> FolderItem | None:
+    ) -> FolderItem:
         folder = self._get_safe_path(server, folder_path)
-        if not folder or folder.exists():
-            return None
+        if folder.exists():
+            raise ItemAlreadyExistsError("Folder already exists.")
 
         try:
             folder.mkdir()
@@ -222,12 +242,12 @@ class FileService:
             return FolderItem(folder.name, folder, [])
         except Exception as e:
             logger.error(f"Failed to create a folder: {e}", exc_info=True)
-            return None
+            raise FolderWriteError("Failed to create folder.") from e
 
-    def delete_item(self, server: Server, path: str) -> bool:
+    def delete_item(self, server: Server, path: str) -> None:
         safe_path = self._get_safe_path(server, path)
-        if not safe_path or not safe_path.exists():
-            return False
+        if not safe_path.exists():
+            raise ItemNotFoundError("Item not found.")
 
         try:
             if safe_path.is_dir():
@@ -242,6 +262,4 @@ class FileService:
                 )
         except Exception as e:
             logger.error(f"Failed to delete a file: {e}", exc_info=True)
-            return False
-
-        return True
+            raise ItemDeleteError("Failed to delete item.") from e

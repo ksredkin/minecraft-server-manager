@@ -18,6 +18,8 @@ from src.daemon.exceptions.backup import (
     BackupStorageFullError,
 )
 from src.daemon.exceptions.config import InvalidConfigError
+from src.daemon.exceptions.eula_service import EulaServiceError
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.exceptions.plugin import PluginAlreadyExists, PluginStorageFullError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
@@ -311,7 +313,11 @@ class APIClient:
                                 if not isinstance(path, str) and path is not None:
                                     continue
 
-                                item = self.file_service.get_item(server, path)
+                                try:
+                                    item = self.file_service.get_item(server, path)
+                                except FileServiceError as e:
+                                    await self._request_failed(websocket, request_id, str(e))
+                                    continue
                                 if isinstance(item, FolderItem):
                                     data = {
                                         "type": "folder",
@@ -353,30 +359,24 @@ class APIClient:
                                 if content is not None and not isinstance(content, str):
                                     continue
 
-                                file = self.file_service.write_file(
-                                    server, path, content
-                                )
-                                if isinstance(file, FileItem):
+                                try:
+                                    self.file_service.write_file(server, path, content)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except FileServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File exists or access denied",
+                                        websocket, request_id, str(e)
                                     )
                             case "files.create_folder":
                                 path = message.get("path")
                                 if not isinstance(path, str):
                                     continue
 
-                                folder = self.file_service.create_folder(server, path)
-                                if isinstance(folder, FolderItem):
+                                try:
+                                    self.file_service.create_folder(server, path)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except FileServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "Folder exists or access denied",
+                                        websocket, request_id, str(e)
                                     )
                             case "files.update_file":
                                 path = message.get("path")
@@ -395,16 +395,12 @@ class APIClient:
                                 ):
                                     continue
 
-                                file = self.file_service.update_file(
-                                    server, path, new_path, new_content
-                                )
-                                if isinstance(file, FileItem):
+                                try:
+                                    self.file_service.update_file(server, path, new_path, new_content)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except FileServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File not found or access denied",
+                                        websocket, request_id, str(e)
                                     )
                             case "files.update_folder":
                                 path = message.get("path")
@@ -415,30 +411,24 @@ class APIClient:
                                 if new_path is None or not isinstance(new_path, str):
                                     continue
 
-                                folder = self.file_service.update_folder(
-                                    server, path, new_path
-                                )
-                                if isinstance(folder, FolderItem):
+                                try:
+                                    self.file_service.update_folder(server, path, new_path)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except FileServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "Folder not found or access denied",
+                                        websocket, request_id, str(e)
                                     )
                             case "files.delete":
                                 path = message.get("path")
                                 if not isinstance(path, str):
                                     continue
 
-                                deleted = self.file_service.delete_item(server, path)
-                                if deleted:
+                                try:
+                                    self.file_service.delete_item(server, path)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except FileServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File not found or access denied",
+                                        websocket, request_id, str(e)
                                     )
                             case "properties.get":
                                 properties = self.properties_service.get_properties(
@@ -473,30 +463,26 @@ class APIClient:
                                         "File or property not found",
                                     )
                             case "eula.get":
-                                eula = self.eula_service.get(server)
-                                if eula is not None:
+                                try:
+                                    eula = self.eula_service.get(server)
                                     await self._request_completed(
                                         websocket, request_id, eula
                                     )
-                                else:
+                                except EulaServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File or property not found",
+                                        websocket, request_id, str(e)
                                     )
                             case "eula.set":
                                 accept = message.get("accept")
                                 if not isinstance(accept, bool):
                                     continue
 
-                                setted = self.eula_service.set(server, accept)
-                                if setted:
+                                try:
+                                    self.eula_service.set(server, accept)
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except EulaServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File or property not found",
+                                        websocket, request_id, str(e)
                                     )
                             case "backups.create":
                                 asyncio.create_task(

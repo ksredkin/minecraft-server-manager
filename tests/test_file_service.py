@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from src.daemon.services.file_service import FileService, FolderItem, FileItem
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from unittest import mock
 
@@ -61,7 +62,8 @@ def test_get_safe_path(tmp_path: Path) -> None:
         file_service._get_safe_path(server, Path("folder/file.txt"))
         == server_folder / "folder" / "file.txt"
     )
-    assert file_service._get_safe_path(server, "C://") is None
+    with pytest.raises(FileServiceError):
+        file_service._get_safe_path(server, "C://")
 
 
 def test_get_folder_item(tmp_path: Path) -> None:
@@ -78,9 +80,12 @@ def test_get_folder_item(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.get_folder_item(server, "C://") == None
-    assert file_service.get_folder_item(server, "not_existing_folder") == None
-    assert file_service.get_folder_item(server, "not_a_folder") == None
+    with pytest.raises(FileServiceError):
+        file_service.get_folder_item(server, "C://")
+    with pytest.raises(FileServiceError):
+        file_service.get_folder_item(server, "not_existing_folder")
+    with pytest.raises(FileServiceError):
+        file_service.get_folder_item(server, "not_a_folder")
 
     assert file_service.get_folder_item(server, "folder") == FolderItem(
         "folder",
@@ -100,7 +105,8 @@ def test_get_folder_item_returns_none_when_reading_folder_fails(tmp_path: Path) 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "iterdir", side_effect=OSError):
-        assert file_service.get_folder_item(server) is None
+        with pytest.raises(FileServiceError):
+            file_service.get_folder_item(server)
 
 def test_write_file(tmp_path: Path) -> None:
     file_service = FileService()
@@ -119,9 +125,12 @@ def test_write_file(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.write_file(server, "C://", "123") is None
-    assert file_service.write_file(server, "file", "123") is None
-    assert file_service.write_file(server, "folder", "123") is None
+    with pytest.raises(FileServiceError):
+        file_service.write_file(server, "C://", "123")
+    with pytest.raises(FileServiceError):
+        file_service.write_file(server, "file", "123")
+    with pytest.raises(FileServiceError):
+        file_service.write_file(server, "folder", "123")
     assert file_service.write_file(server, not_existing_file.name, "123") == FileItem(not_existing_file.name, not_existing_file, not_existing_file.stat().st_size, "123")
     assert file_service.write_file(server, "empty_file") == FileItem(
         "empty_file", server_folder / "empty_file", 0, None
@@ -136,7 +145,8 @@ def test_write_file_returns_none_when_writing_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "write_text", side_effect=OSError):
-        assert file_service.write_file(server, "file", "content") is None
+        with pytest.raises(FileServiceError):
+            file_service.write_file(server, "file", "content")
 
 def test_update_file(tmp_path: Path) -> None:
     file_service = FileService()
@@ -157,12 +167,16 @@ def test_update_file(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.update_file(server, "C://", new_content="123") is None
-    assert file_service.update_file(server, not_existing_file.name, new_content="123") is None
-    assert file_service.update_file(server, folder.name, new_content="123") is None
+    with pytest.raises(FileServiceError):
+        file_service.update_file(server, "C://", new_content="123")
+    with pytest.raises(FileServiceError):
+        file_service.update_file(server, not_existing_file.name, new_content="123")
+    with pytest.raises(FileServiceError):
+        file_service.update_file(server, folder.name, new_content="123")
     assert file_service.update_file(server, file.name, new_content="new content") == FileItem(file.name, file, file.stat().st_size, "new content")
     assert file_service.update_file(server, file.name, new_path=new_file_path.name) == FileItem(new_file_path.name, new_file_path, new_file_path.stat().st_size, "new content")
-    assert file_service.update_file(server, "file", new_path="new_file") is None
+    with pytest.raises(FileServiceError):
+        file_service.update_file(server, "file", new_path="new_file")
 
 
 def test_update_file_returns_none_when_reading_fails(tmp_path: Path) -> None:
@@ -175,7 +189,8 @@ def test_update_file_returns_none_when_reading_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "read_text", side_effect=OSError):
-        assert file_service.update_file(server, file.name) is None
+        with pytest.raises(FileServiceError):
+            file_service.update_file(server, file.name)
 
 
 def test_update_file_rejects_existing_destination(tmp_path: Path) -> None:
@@ -189,7 +204,8 @@ def test_update_file_rejects_existing_destination(tmp_path: Path) -> None:
     destination.touch()
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.update_file(server, file.name, destination.name) is None
+    with pytest.raises(FileServiceError):
+        file_service.update_file(server, file.name, destination.name)
 
 def test_update_folder(tmp_path: Path) -> None:
     file_service = FileService()
@@ -205,7 +221,8 @@ def test_update_folder(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.update_folder(server, "C://", new_path=new_folder_path.name) is None
+    with pytest.raises(FileServiceError):
+        file_service.update_folder(server, "C://", new_path=new_folder_path.name)
     assert file_service.update_folder(server, folder.name, new_path=new_folder_path.name) == FolderItem(new_folder_path.name, new_folder_path, [])
 
 
@@ -220,7 +237,8 @@ def test_update_folder_rejects_existing_destination(tmp_path: Path) -> None:
     destination.mkdir()
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.update_folder(server, folder.name, destination.name) is None
+    with pytest.raises(FileServiceError):
+        file_service.update_folder(server, folder.name, destination.name)
 
 
 def test_update_folder_returns_none_when_renaming_fails(tmp_path: Path) -> None:
@@ -233,7 +251,8 @@ def test_update_folder_returns_none_when_renaming_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "rename", side_effect=OSError):
-        assert file_service.update_folder(server, folder.name, "new_folder") is None
+        with pytest.raises(FileServiceError):
+            file_service.update_folder(server, folder.name, "new_folder")
 
 
 def test_update_folder_returns_items_after_renaming(tmp_path: Path) -> None:
@@ -272,8 +291,10 @@ def test_get_item(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.get_item(server, "C://") is None
-    assert file_service.get_item(server, "not_existing") is None
+    with pytest.raises(FileServiceError):
+        file_service.get_item(server, "C://")
+    with pytest.raises(FileServiceError):
+        file_service.get_item(server, "not_existing")
     assert isinstance(file_service.get_item(server, folder.name), FolderItem)
     assert isinstance(file_service.get_item(server, file.name), FileItem)
 
@@ -284,7 +305,8 @@ def test_get_item_returns_none_for_file_without_item_path(tmp_path: Path) -> Non
     file.touch()
 
     with mock.patch.object(file_service, "_get_safe_path", return_value=file):
-        assert file_service.get_item(object(), None) is None
+        with pytest.raises(FileServiceError):
+            file_service.get_item(object(), None)
 
 def test_create_folder(tmp_path: Path) -> None:
     file_service = FileService()
@@ -300,8 +322,10 @@ def test_create_folder(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.create_folder(server, "C://") is None
-    assert file_service.create_folder(server, folder.name) is None
+    with pytest.raises(FileServiceError):
+        file_service.create_folder(server, "C://")
+    with pytest.raises(FileServiceError):
+        file_service.create_folder(server, folder.name)
     assert file_service.create_folder(server, new_folder_path.name) == FolderItem(new_folder_path.name, new_folder_path, [])
 
 
@@ -313,7 +337,8 @@ def test_create_folder_returns_none_when_creation_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "mkdir", side_effect=OSError):
-        assert file_service.create_folder(server, "folder") is None
+        with pytest.raises(FileServiceError):
+            file_service.create_folder(server, "folder")
 
 def test_delete_item(tmp_path: Path) -> None:
     file_service = FileService()
@@ -331,10 +356,12 @@ def test_delete_item(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.delete_item(server, "C://") == False
-    assert file_service.delete_item(server, "not_existing") == False
-    assert file_service.delete_item(server, folder.name) == True
-    assert file_service.delete_item(server, file.name) == True
+    with pytest.raises(FileServiceError):
+        file_service.delete_item(server, "C://")
+    with pytest.raises(FileServiceError):
+        file_service.delete_item(server, "not_existing")
+    file_service.delete_item(server, folder.name)
+    file_service.delete_item(server, file.name)
 
 
 def test_delete_item_returns_false_when_deletion_fails(tmp_path: Path) -> None:
@@ -347,7 +374,8 @@ def test_delete_item_returns_false_when_deletion_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "unlink", side_effect=OSError):
-        assert file_service.delete_item(server, file.name) is False
+        with pytest.raises(FileServiceError):
+            file_service.delete_item(server, file.name)
 
 def test_get_file_item(tmp_path: Path) -> None:
     file_service = FileService()
@@ -361,8 +389,10 @@ def test_get_file_item(tmp_path: Path) -> None:
 
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
-    assert file_service.get_file_item(server, "C://") is None
-    assert file_service.get_file_item(server, "not_existing") is None
+    with pytest.raises(FileServiceError):
+        file_service.get_file_item(server, "C://")
+    with pytest.raises(FileServiceError):
+        file_service.get_file_item(server, "not_existing")
     assert isinstance(file_service.get_file_item(server, file.name), FileItem)
 
 
@@ -390,4 +420,5 @@ def test_get_file_item_returns_none_when_reading_fails(tmp_path: Path) -> None:
     server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
 
     with mock.patch.object(Path, "read_text", side_effect=OSError):
-        assert file_service.get_file_item(server, file.name) is None
+        with pytest.raises(FileServiceError):
+            file_service.get_file_item(server, file.name)

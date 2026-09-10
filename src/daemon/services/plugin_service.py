@@ -6,6 +6,7 @@ from src.daemon.exceptions.plugin import (
     PluginNotFoundError,
     PluginsFolderDoesNotExistError,
 )
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
 from src.daemon.services.storage_service import StorageService
@@ -28,8 +29,9 @@ class PluginService:
         self.file_service = file_service
 
     def _get_plugins_folder_item(self, server: Server) -> FolderItem:
-        plugins_folder = self.file_service.get_folder_item(server, "plugins")
-        if not plugins_folder:
+        try:
+            plugins_folder = self.file_service.get_folder_item(server, "plugins")
+        except FileServiceError:
             logger.error(f'Plugins folder of server "{server.key}" doesn\'t exist.')
             raise PluginsFolderDoesNotExistError("Plugins folder doesn't exist.")
         return plugins_folder
@@ -40,9 +42,9 @@ class PluginService:
 
     def get_plugin(self, server: Server, file_name: str) -> Plugin | None:
         plugins_folder = Path("plugins")
-        file = self.file_service.get_file_item(server, str(plugins_folder / file_name))
-
-        if not file:
+        try:
+            file = self.file_service.get_file_item(server, str(plugins_folder / file_name))
+        except FileServiceError:
             return None
 
         return Plugin(file.path.stem.capitalize(), file.path, file.size)
@@ -61,8 +63,9 @@ class PluginService:
         if not plugin.endswith(".jar"):
             raise PluginNotFoundError("Plugin not found.")
         file = server.server_dir / "plugins" / plugin
-        deleted = self.file_service.delete_item(server, str(file))
-        if not deleted:
+        try:
+            self.file_service.delete_item(server, str(file))
+        except FileServiceError:
             raise PluginNotFoundError("Plugin not found.")
 
     def handle_chunk(self, path: Path, chunk: bytes) -> None:
