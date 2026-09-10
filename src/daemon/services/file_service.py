@@ -1,8 +1,8 @@
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 from src.common.utils.logger import Logger
-from src.daemon.server import Server
 from src.daemon.exceptions.file_service import (
     FileReadError,
     FileServiceError,
@@ -15,7 +15,7 @@ from src.daemon.exceptions.file_service import (
     ItemNotFoundError,
     ItemTypeError,
 )
-import shutil
+from src.daemon.server import Server
 
 logger = Logger(__name__)
 
@@ -191,11 +191,11 @@ class FileService:
 
             items: list[FileSystemItem] = []
             for item in new_folder.iterdir():
-                    if item.is_dir():
-                        items.append(FolderItem(item.name, item, []))
-                    elif item.is_file():
-                        size = item.stat().st_size
-                        items.append(FileItem(item.name, item, size))
+                if item.is_dir():
+                    items.append(FolderItem(item.name, item, []))
+                elif item.is_file():
+                    size = item.stat().st_size
+                    items.append(FileItem(item.name, item, size))
 
             logger.info(
                 f"Updated folder at: {str(self._get_relative_path(server, new_folder))}"
@@ -210,9 +210,7 @@ class FileService:
             logger.error(f"Failed to update a folder: {e}", exc_info=True)
             raise FolderWriteError("Failed to update folder.") from e
 
-    def get_item(
-        self, server: Server, item_path: str | None = None
-    ) -> FileSystemItem:
+    def get_item(self, server: Server, item_path: str | None = None) -> FileSystemItem:
         item = self._get_safe_path(server, item_path)
         if not item.exists():
             raise ItemNotFoundError("Item not found.")

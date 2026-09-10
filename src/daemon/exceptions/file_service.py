@@ -39,4 +39,3 @@ class FolderWriteError(FileServiceError):
 
 class ItemDeleteError(FileServiceError):
     pass
-

@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.common.utils.logger import Logger
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.exceptions.plugin import (
     PluginNotFoundError,
     PluginsFolderDoesNotExistError,
 )
-from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from src.daemon.services.file_service import FileItem, FileService, FolderItem
 from src.daemon.services.storage_service import StorageService
@@ -43,7 +43,9 @@ class PluginService:
     def get_plugin(self, server: Server, file_name: str) -> Plugin | None:
         plugins_folder = Path("plugins")
         try:
-            file = self.file_service.get_file_item(server, str(plugins_folder / file_name))
+            file = self.file_service.get_file_item(
+                server, str(plugins_folder / file_name)
+            )
         except FileServiceError:
             return None
 

@@ -21,6 +21,7 @@ from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.exceptions.eula_service import EulaServiceError
 from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.exceptions.plugin import PluginAlreadyExists, PluginStorageFullError
+from src.daemon.exceptions.properties_service import PropertiesServiceError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
     ServerIsNotRunningError,
@@ -316,7 +317,9 @@ class APIClient:
                                 try:
                                     item = self.file_service.get_item(server, path)
                                 except FileServiceError as e:
-                                    await self._request_failed(websocket, request_id, str(e))
+                                    await self._request_failed(
+                                        websocket, request_id, str(e)
+                                    )
                                     continue
                                 if isinstance(item, FolderItem):
                                     data = {
@@ -396,7 +399,9 @@ class APIClient:
                                     continue
 
                                 try:
-                                    self.file_service.update_file(server, path, new_path, new_content)
+                                    self.file_service.update_file(
+                                        server, path, new_path, new_content
+                                    )
                                     await self._request_completed(websocket, request_id)
                                 except FileServiceError as e:
                                     await self._request_failed(
@@ -412,7 +417,9 @@ class APIClient:
                                     continue
 
                                 try:
-                                    self.file_service.update_folder(server, path, new_path)
+                                    self.file_service.update_folder(
+                                        server, path, new_path
+                                    )
                                     await self._request_completed(websocket, request_id)
                                 except FileServiceError as e:
                                     await self._request_failed(
@@ -431,36 +438,34 @@ class APIClient:
                                         websocket, request_id, str(e)
                                     )
                             case "properties.get":
-                                properties = self.properties_service.get_properties(
-                                    server
-                                )
-                                if properties:
+                                try:
+                                    properties = self.properties_service.get_properties(
+                                        server
+                                    )
                                     await self._request_completed(
                                         websocket, request_id, properties
                                     )
-                                else:
+                                except PropertiesServiceError as e:
                                     await self._request_failed(
-                                        websocket, request_id, "File not found"
+                                        websocket, request_id, str(e)
                                     )
                             case "properties.set":
-                                property = message.get("property")
-                                if not isinstance(property, str):
-                                    continue
+                                try:
+                                    property = message.get("property")
+                                    if not isinstance(property, str):
+                                        continue
 
-                                new_value = message.get("new_value")
-                                if not isinstance(new_value, str):
-                                    continue
+                                    new_value = message.get("new_value")
+                                    if not isinstance(new_value, str):
+                                        continue
 
-                                setted = self.properties_service.set_property(
-                                    server, property, new_value
-                                )
-                                if setted:
+                                    self.properties_service.set_property(
+                                        server, property, new_value
+                                    )
                                     await self._request_completed(websocket, request_id)
-                                else:
+                                except PropertiesServiceError as e:
                                     await self._request_failed(
-                                        websocket,
-                                        request_id,
-                                        "File or property not found",
+                                        websocket, request_id, str(e)
                                     )
                             case "eula.get":
                                 try:

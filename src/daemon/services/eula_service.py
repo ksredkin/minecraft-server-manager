@@ -10,7 +10,7 @@ from src.daemon.exceptions.file_service import (
     ItemNotFoundError,
 )
 from src.daemon.server import Server
-from src.daemon.services.file_service import FileService
+from src.daemon.services.file_service import FileItem, FileService
 
 logger = Logger(__name__)
 
@@ -19,17 +19,24 @@ class EulaService:
     def __init__(self, file_service: FileService) -> None:
         self.file_service = file_service
 
-    def get(self, server: Server) -> bool:
+    def _get_eula_file(self, server: Server) -> FileItem:
         try:
             eula_file = self.file_service.get_file_item(server, "eula.txt")
         except ItemNotFoundError as e:
             raise EulaFileNotFoundError("EULA file not found.") from e
         except FileServiceError as e:
             raise EulaFileReadError("Failed to read EULA file.") from e
+
         if eula_file.content is None:
             raise InvalidEulaFileError("EULA file cannot be read as text.")
+        if "eula=" not in eula_file.content:
+            raise InvalidEulaFileError("EULA status is not set.")
 
-        lines = eula_file.content.splitlines()
+        return eula_file
+
+    def get(self, server: Server) -> bool:
+        eula_file = self._get_eula_file(server)
+        lines = eula_file.content.splitlines()  # type: ignore
 
         for line in lines:
             if line.startswith("eula="):
@@ -38,18 +45,9 @@ class EulaService:
         raise InvalidEulaFileError("EULA status is not set.")
 
     def set(self, server: Server, accept: bool) -> bool:
-        try:
-            eula_file = self.file_service.get_file_item(server, "eula.txt")
-        except ItemNotFoundError as e:
-            raise EulaFileNotFoundError("EULA file not found.") from e
-        except FileServiceError as e:
-            raise EulaFileReadError("Failed to read EULA file.") from e
-        if eula_file.content is None:
-            raise InvalidEulaFileError("EULA file cannot be read as text.")
-        if "eula=" not in eula_file.content:
-            raise InvalidEulaFileError("EULA status is not set.")
+        eula_file = self._get_eula_file(server)
+        lines = eula_file.content.splitlines()  # type: ignore
 
-        lines = eula_file.content.splitlines()
         target_value = "true" if accept else "false"
         target_line = f"eula={target_value}"
 

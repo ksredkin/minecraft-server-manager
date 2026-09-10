@@ -1,13 +1,14 @@
+from pathlib import Path
+
 import pytest
+
 from src.daemon.exceptions.eula_service import (
     EulaFileNotFoundError,
-    EulaFileUpdateError,
     InvalidEulaFileError,
 )
-from src.daemon.services.eula_service import EulaService
-from src.daemon.services.eula_service import FileService
 from src.daemon.server import Server
-from pathlib import Path
+from src.daemon.services.eula_service import EulaService
+from src.daemon.services.file_service import FileService
 
 SERVER_TEST_SETTINGS = {
     "java": "java",
@@ -17,6 +18,7 @@ SERVER_TEST_SETTINGS = {
     "server_software": "spigot",
 }
 
+
 def test_get_eula_status(tmp_path: Path) -> None:
     file_service = FileService()
     eula_service = EulaService(file_service)
@@ -24,8 +26,8 @@ def test_get_eula_status(tmp_path: Path) -> None:
     server_folder = tmp_path / "server"
     server_folder.mkdir()
     (server_folder / "server.jar").touch()
-    
-    server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
+
+    server = Server({**SERVER_TEST_SETTINGS, "path": str(server_folder)})
 
     with pytest.raises(EulaFileNotFoundError):
         eula_service.get(server)
@@ -43,6 +45,7 @@ def test_get_eula_status(tmp_path: Path) -> None:
     eula_file.write_text("eula=false\n")
     assert eula_service.get(server) is False
 
+
 def test_set_eula_status(tmp_path: Path) -> None:
     file_service = FileService()
     eula_service = EulaService(file_service)
@@ -50,8 +53,8 @@ def test_set_eula_status(tmp_path: Path) -> None:
     server_folder = tmp_path / "server"
     server_folder.mkdir()
     (server_folder / "server.jar").touch()
-    
-    server = Server({**SERVER_TEST_SETTINGS, "path": server_folder})
+
+    server = Server({**SERVER_TEST_SETTINGS, "path": str(server_folder)})
 
     with pytest.raises(EulaFileNotFoundError):
         eula_service.set(server, False)
