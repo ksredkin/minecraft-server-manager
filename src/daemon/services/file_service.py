@@ -3,6 +3,7 @@ from pathlib import Path
 
 from src.common.utils.logger import Logger
 from src.daemon.server import Server
+import shutil
 
 logger = Logger(__name__)
 
@@ -25,14 +26,6 @@ class FolderItem(FileSystemItem):
 
 
 class FileService:
-    def get_path(self, server: Server, user_path: str | None) -> Path:
-        server_dir = server.server_dir.resolve()
-
-        if user_path is None:
-            return server_dir
-
-        return (server.server_dir / user_path).resolve()
-
     def _get_safe_path(self, server: Server, user_path: str | None) -> Path | None:
         server_dir = server.server_dir.resolve()
 
@@ -47,7 +40,16 @@ class FileService:
         return target_file
 
     def _get_relative_path(self, server: Server, path: Path) -> Path:
-        return Path(server.server_dir.name) / path.relative_to(server.server_dir)
+        server_dir = server.server_dir.resolve()
+        resolved_path = path.resolve()
+
+        if not resolved_path.is_relative_to(server_dir):
+            logger.warning(
+                f"Path is outside the server directory: {str(resolved_path)}"
+            )
+            return resolved_path
+
+        return Path(server_dir.name) / resolved_path.relative_to(server_dir)
 
     def get_folder_item(
         self, server: Server, folder_path: str | None = None
@@ -123,18 +125,20 @@ class FileService:
                 return None
 
         try:
+            name = file.name
+            path = file
+            size = file.stat().st_size
+            content = file.read_text(encoding="utf-8")
+
             if new_content is not None:
                 file.write_text(new_content, encoding="utf-8")
+                content = new_content
+                size = file.stat().st_size
 
             if new_file:
                 file.rename(new_file)
-
-            name = file.name if new_file is None else new_file.name
-            path = file if new_file is None else new_file
-            size = file.stat().st_size if new_file is None else new_file.stat().st_size
-            content = (
-                file.read_text(encoding="utf-8") if not new_content else new_content
-            )
+                name = new_file.name
+                path = new_file
 
             logger.info(
                 f"Updated file at: {str(self._get_relative_path(server, path))}"
@@ -157,7 +161,6 @@ class FileService:
         new_folder = self._get_safe_path(server, new_path)
         if (
             not folder
-            or not folder.exists()
             or not folder.is_dir()
             or not new_folder
             or new_folder.exists()
@@ -165,19 +168,10 @@ class FileService:
             return None
 
         try:
-            if new_folder:
-                folder.rename(new_folder)
+            folder.rename(new_folder)
 
             items: list[FileSystemItem] = []
-            if new_path is None:
-                for item in folder.iterdir():
-                    if item.is_dir():
-                        items.append(FolderItem(item.name, item, []))
-                    elif item.is_file():
-                        size = item.stat().st_size
-                        items.append(FileItem(item.name, item, size))
-            else:
-                for item in new_folder.iterdir():
+            for item in new_folder.iterdir():
                     if item.is_dir():
                         items.append(FolderItem(item.name, item, []))
                     elif item.is_file():
@@ -185,12 +179,12 @@ class FileService:
                         items.append(FileItem(item.name, item, size))
 
             logger.info(
-                f"Updated folder at: {str(self._get_relative_path(server, folder if new_path is None else new_folder))}"
+                f"Updated folder at: {str(self._get_relative_path(server, new_folder))}"
             )
 
             return FolderItem(
-                folder.name if new_path is None else new_folder.name,
-                folder if new_path is None else new_folder,
+                new_folder.name,
+                new_folder,
                 items,
             )
         except Exception as e:
@@ -237,7 +231,7 @@ class FileService:
 
         try:
             if safe_path.is_dir():
-                safe_path.rmdir()
+                shutil.rmtree(safe_path)
                 logger.info(
                     f"Deleted folder at: {str(self._get_relative_path(server, safe_path))}"
                 )
