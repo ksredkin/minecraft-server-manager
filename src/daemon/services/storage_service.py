@@ -4,6 +4,10 @@ from pathlib import Path
 from uuid import UUID
 
 from src.common.enums import DaemonTaskKind
+from src.daemon.exceptions.storage_service import (
+    ReservationNotFoundError,
+    StorageAccessError,
+)
 
 
 @dataclass
@@ -20,8 +24,12 @@ class StorageService:
         self._reservations: dict[UUID, Reservation] = {}
 
     def get_disk_free_space(self, path: Path) -> int:
-        usage = shutil.disk_usage(path.root)
-        return usage.free
+        try:
+            return shutil.disk_usage(path.anchor or path.resolve().anchor).free
+        except OSError as error:
+            raise StorageAccessError(
+                f'Cannot get free space for "{path}".'
+            ) from error
 
     def get_reserved(self) -> int:
         return sum(
@@ -53,23 +61,23 @@ class StorageService:
     def remove_reservation(self, reservation_id: UUID) -> None:
         self._reservations.pop(reservation_id, None)
 
-    def add_progress(self, reservation_id: UUID, progress: int) -> None:
+    def _get_reservation(self, reservation_id: UUID) -> Reservation:
         reservation = self._reservations.get(reservation_id)
         if not reservation:
-            return
+            raise ReservationNotFoundError("Reservation not found.")
+        return reservation
 
+    def add_progress(self, reservation_id: UUID, progress: int) -> None:
+        reservation = self._get_reservation(reservation_id)
         reservation.processed += progress
 
     def get_progress(self, reservation_id: UUID) -> int | None:
-        reservation = self._reservations.get(reservation_id)
-        if not reservation:
-            return None
-
+        reservation = self._get_reservation(reservation_id)
         return reservation.processed
 
     def is_complete(self, reservation_id: UUID) -> bool:
-        reservation = self._reservations.get(reservation_id)
-        return reservation is not None and reservation.processed >= reservation.total
+        reservation = self._get_reservation(reservation_id)
+        return reservation.processed >= reservation.total
 
     def get_tasks(self, server_key: str) -> dict[str, dict[str, dict[str, int]]]:
         tasks: dict[str, dict[str, dict[str, int]]] = {

@@ -5,10 +5,14 @@ import pytest
 from src.daemon.exceptions.eula_service import (
     EulaFileNotFoundError,
     InvalidEulaFileError,
+    EulaFileUpdateError,
+    InvalidEulaFileError
 )
+from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileService
+from unittest import mock
 
 SERVER_TEST_SETTINGS = {
     "java": "java",
@@ -45,6 +49,10 @@ def test_get_eula_status(tmp_path: Path) -> None:
     eula_file.write_text("eula=false\n")
     assert eula_service.get(server) is False
 
+    eula_file.write_text("-eula=agagag\n")
+    with pytest.raises(InvalidEulaFileError):
+        eula_service.get(server)
+
 
 def test_set_eula_status(tmp_path: Path) -> None:
     file_service = FileService()
@@ -72,3 +80,7 @@ def test_set_eula_status(tmp_path: Path) -> None:
 
     assert eula_service.set(server, True)
     assert eula_service.get(server)
+
+    with pytest.raises(EulaFileUpdateError):
+        with mock.patch.object(FileService, "update_file", side_effect=FileServiceError):
+            eula_service.set(server, False)

@@ -22,6 +22,7 @@ from src.daemon.exceptions.eula_service import EulaServiceError
 from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.exceptions.plugin import PluginAlreadyExists, PluginStorageFullError
 from src.daemon.exceptions.properties_service import PropertiesServiceError
+from src.daemon.exceptions.storage_service import StorageServiceError
 from src.daemon.exceptions.server import (
     ServerIsAlreadyRunningError,
     ServerIsNotRunningError,
@@ -580,12 +581,17 @@ class APIClient:
                                         websocket, request_id, {"error": str(e)}
                                     )
                             case "backups.free_storage":
-                                free_storage = self.storage_service.get_disk_free_space(
-                                    self.backup_service.backups_dir
-                                )
-                                await self._request_completed(
-                                    websocket, request_id, {"free": free_storage}
-                                )
+                                try:
+                                    free_storage = self.storage_service.get_disk_free_space(
+                                        self.backup_service.backups_dir
+                                    )
+                                    await self._request_completed(
+                                        websocket, request_id, {"free": free_storage}
+                                    )
+                                except StorageServiceError as e:
+                                    await self._request_failed(
+                                        websocket, request_id, str(e)
+                                    )
                             case "backups.download":
                                 try:
                                     size = message.get("size")
