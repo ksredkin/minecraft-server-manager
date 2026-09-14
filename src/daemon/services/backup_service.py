@@ -106,7 +106,10 @@ class BackupService:
 
         try:
             shutil.make_archive(
-                str(archive_path), "zip", base_dir=str(server.server_dir)
+                str(archive_path),
+                "zip",
+                root_dir=str(server.server_dir.parent),
+                base_dir=server.server_dir.name,
             )
         except PermissionError:
             self._remove_archive(archive_path.with_suffix(".zip"))
@@ -131,7 +134,7 @@ class BackupService:
 
         logger.info(f'Created backup: "{archive_name}.zip"')
         return Backup(
-            archive_name,
+            archive_path.with_suffix(".zip").name,
             archive_path.with_suffix(".zip"),
             archive_path.with_suffix(".zip").stat().st_size,
         )
@@ -154,9 +157,9 @@ class BackupService:
                 found = True
 
         if not found:
-            logger.error(f'Backup "{backup.name}" not found or access denied.')
+            logger.error(f'Backup "{backup_name}" not found or access denied.')
             raise BackupNotFoundError(
-                f'Backup "{backup.name}" not found or access denied.'
+                f'Backup "{backup_name}" not found or access denied.'
             )
 
         backup_path = self.backups_dir / backup_name
@@ -190,9 +193,9 @@ class BackupService:
                 found = True
 
         if not found:
-            logger.error(f'Backup "{backup.name}" not found or access denied.')
+            logger.error(f'Backup "{backup_name}" not found or access denied.')
             raise BackupNotFoundError(
-                f'Backup "{backup.name}" not found or access denied.'
+                f'Backup "{backup_name}" not found or access denied.'
             )
 
         server_old_dir = server.server_dir.with_name(f"{server.server_dir.name}_old")
