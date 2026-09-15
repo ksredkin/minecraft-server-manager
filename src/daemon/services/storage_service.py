@@ -27,9 +27,7 @@ class StorageService:
         try:
             return shutil.disk_usage(path.anchor or path.resolve().anchor).free
         except OSError as error:
-            raise StorageAccessError(
-                f'Cannot get free space for "{path}".'
-            ) from error
+            raise StorageAccessError(f'Cannot get free space for "{path}".') from error
 
     def get_reserved(self) -> int:
         return sum(

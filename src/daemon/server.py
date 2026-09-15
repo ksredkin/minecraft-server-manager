@@ -10,8 +10,8 @@ from threading import Event, Thread
 import psutil
 
 from src.common.utils.logger import Logger
-from src.daemon.exceptions.config import InvalidConfigError
 from src.daemon.exceptions.server import (
+    InvalidServerConfigurationError,
     ServerFolderDoesNotExistError,
     ServerIsAlreadyRunningError,
     ServerIsNotRunningError,
@@ -36,7 +36,7 @@ class Server:
         needed = [item for item in needed_settings if item not in server_settings]
 
         if needed:
-            raise InvalidConfigError(
+            raise InvalidServerConfigurationError(
                 f"Server configuration is missing values for: {', '.join(needed)}."
             )
 
@@ -82,7 +82,8 @@ class Server:
         self._max_players: int | None = None
         self._uptime: str | None = None
 
-    def parse_memory(self, value: str) -> float | None:
+    @staticmethod
+    def parse_memory(value: str) -> float | None:
         match = re.fullmatch(r"(\d+(?:\.\d+)?)([KMG])B?", value.upper())
         if not match:
             return None
@@ -110,7 +111,7 @@ class Server:
                 *self._jar_args,
             ]
             self.process = Popen(
-                start_command,
+                args=start_command,
                 cwd=str(self.server_dir),
                 stdin=PIPE,
                 stdout=PIPE,
@@ -151,8 +152,10 @@ class Server:
                 break
 
             if "players online: " in line:
-                self._players = line.split("players online: ")[1].split()
-                self._max_players = line.split("max of ")[1].split()[0]  # type: ignore
+                self._players = (
+                    line.split("players online: ")[1].replace(",", "").split()
+                )
+                self._max_players = int(line.split("max of ")[1].split()[0])
                 self._players_event.set()
             else:
                 self._logs.append(line)
@@ -245,7 +248,9 @@ class Server:
         self.execute_command("list")
 
         if not self._players_event.wait(timeout=5):
-            raise ServerResponseTimeoutError("Сервер не ответил на команду list.")
+            raise ServerResponseTimeoutError(
+                "The server did not respond to the list command."
+            )
 
         return self._players
 

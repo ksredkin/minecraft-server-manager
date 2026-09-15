@@ -1,5 +1,6 @@
 from src.daemon.exceptions.server import MSMDaemonError
 
+
 class StorageServiceError(MSMDaemonError):
     pass
 

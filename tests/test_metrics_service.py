@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from src.daemon.services.metrics_service import MetricsService
 
 
-def test_get_metrics_with_no_process():
+def test_get_metrics_with_no_process() -> None:
     metrics_service = MetricsService()
     server = type("Server", (), {"process": None, "ram_limit": 4, "pcu_percent": 0})()
 
@@ -14,7 +14,7 @@ def test_get_metrics_with_no_process():
     assert metrics["cpu_percent"] is None
 
 
-def test_get_metrics_with_process():
+def test_get_metrics_with_process() -> None:
     metrics_service = MetricsService()
     metrics_service.cpu_cores = 4
     process = MagicMock(pid=123)
@@ -28,4 +28,3 @@ def test_get_metrics_with_process():
 
     process_factory.assert_called_once_with(123)
     assert metrics == {"ram_usage": 2.0, "ram_limit": 4, "cpu_percent": 9.4}
-    

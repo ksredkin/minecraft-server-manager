@@ -14,7 +14,7 @@ from src.daemon.exceptions.server import ServerFolderDoesNotExistError
 from src.daemon.server import Server
 from src.daemon.services.backup_service import BackupService
 
-SERVER_SETTINGS = {
+SERVER_SETTINGS: dict[str, str | list[str]] = {
     "java": "java",
     "jar_name": "server.jar",
     "key": "123-456-789",
@@ -30,7 +30,7 @@ def make_server(path: Path) -> Server:
     return Server({**SERVER_SETTINGS, "path": str(path)})
 
 
-def test_get_backups_and_get_backup(tmp_path: Path):
+def test_get_backups_and_get_backup(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     backups_dir = tmp_path / "backups"
     backups_dir.mkdir()
@@ -52,7 +52,7 @@ def test_get_backups_and_get_backup(tmp_path: Path):
     assert service.get_backup(server, unrelated.name) is None
 
 
-def test_create_and_delete_backup(tmp_path: Path):
+def test_create_and_delete_backup(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     (server.server_dir / "world.txt").write_text("world")
     backups_dir = tmp_path / "backups"
@@ -71,7 +71,7 @@ def test_create_and_delete_backup(tmp_path: Path):
     assert not backup.path.exists()
 
 
-def test_restore_backup_replaces_server_files(tmp_path: Path):
+def test_restore_backup_replaces_server_files(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     (server.server_dir / "world.txt").write_text("old")
     backups_dir = tmp_path / "backups"
@@ -86,7 +86,7 @@ def test_restore_backup_replaces_server_files(tmp_path: Path):
     assert not server.server_dir.with_name("survival_old").exists()
 
 
-def test_handle_chunk_appends_bytes(tmp_path: Path):
+def test_handle_chunk_appends_bytes(tmp_path: Path) -> None:
     path = tmp_path / "backup.zip"
     service = BackupService(tmp_path)
 
@@ -96,7 +96,7 @@ def test_handle_chunk_appends_bytes(tmp_path: Path):
     assert path.read_bytes() == b"first second"
 
 
-def test_create_rejects_backups_inside_server_folder(tmp_path: Path):
+def test_create_rejects_backups_inside_server_folder(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     service = BackupService(server.server_dir / "backups")
 
@@ -104,7 +104,7 @@ def test_create_rejects_backups_inside_server_folder(tmp_path: Path):
         service.create(server)
 
 
-def test_create_rejects_missing_folders(tmp_path: Path):
+def test_create_rejects_missing_folders(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     service = BackupService(tmp_path / "missing-backups")
 
@@ -118,20 +118,23 @@ def test_create_rejects_missing_folders(tmp_path: Path):
         existing_backups.create(missing_server)
 
 
-def test_create_maps_permission_error(tmp_path: Path):
+def test_create_maps_permission_error(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     backups_dir = tmp_path / "backups"
     backups_dir.mkdir()
     service = BackupService(backups_dir)
 
-    with patch(
-        "src.daemon.services.backup_service.shutil.make_archive",
-        side_effect=PermissionError,
-    ), pytest.raises(BackupPermissionError):
+    with (
+        patch(
+            "src.daemon.services.backup_service.shutil.make_archive",
+            side_effect=PermissionError,
+        ),
+        pytest.raises(BackupPermissionError),
+    ):
         service.create(server)
 
 
-def test_delete_missing_backup_raises_backup_not_found(tmp_path: Path):
+def test_delete_missing_backup_raises_backup_not_found(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     backups_dir = tmp_path / "backups"
     backups_dir.mkdir()
@@ -141,7 +144,7 @@ def test_delete_missing_backup_raises_backup_not_found(tmp_path: Path):
         service.delete_backup(server, "missing.zip")
 
 
-def test_restore_invalid_backup_rolls_back(tmp_path: Path):
+def test_restore_invalid_backup_rolls_back(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     (server.server_dir / "world.txt").write_text("old")
     backups_dir = tmp_path / "backups"
@@ -156,7 +159,7 @@ def test_restore_invalid_backup_rolls_back(tmp_path: Path):
     assert (server.server_dir / "world.txt").read_text() == "old"
 
 
-def test_delete_permission_error_is_mapped(tmp_path: Path):
+def test_delete_permission_error_is_mapped(tmp_path: Path) -> None:
     server = make_server(tmp_path / "survival")
     backups_dir = tmp_path / "backups"
     backups_dir.mkdir()
@@ -164,7 +167,8 @@ def test_delete_permission_error_is_mapped(tmp_path: Path):
     backup.touch()
     service = BackupService(backups_dir)
 
-    with patch.object(Path, "unlink", side_effect=PermissionError), pytest.raises(
-        BackupPermissionError
+    with (
+        patch.object(Path, "unlink", side_effect=PermissionError),
+        pytest.raises(BackupPermissionError),
     ):
         service.delete_backup(server, backup.name)

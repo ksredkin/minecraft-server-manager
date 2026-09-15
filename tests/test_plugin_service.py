@@ -37,9 +37,7 @@ def test_get_plugins_free_storage(tmp_path: Path) -> None:
     service, file_service, storage_service = make_service()
     server = make_server(tmp_path / "server")
     plugins_path = server.server_dir / "plugins"
-    file_service.get_folder_item.return_value = FolderItem(
-        "plugins", plugins_path, []
-    )
+    file_service.get_folder_item.return_value = FolderItem("plugins", plugins_path, [])
     storage_service.get_disk_free_space.return_value = 123
 
     assert service.get_plugins_free_storage(server) == 123
@@ -65,9 +63,7 @@ def test_get_plugin_returns_plugin_and_none_when_file_is_missing(
     service, file_service, _ = make_service()
     server = make_server(tmp_path / "server")
     plugin_path = server.server_dir / "plugins" / "luckperms.jar"
-    file_service.get_file_item.return_value = FileItem(
-        "luckperms.jar", plugin_path, 42
-    )
+    file_service.get_file_item.return_value = FileItem("luckperms.jar", plugin_path, 42)
 
     assert service.get_plugin(server, "luckperms.jar") == Plugin(
         "Luckperms", plugin_path, 42

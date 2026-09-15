@@ -1,18 +1,17 @@
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
 from src.daemon.exceptions.eula_service import (
     EulaFileNotFoundError,
-    InvalidEulaFileError,
     EulaFileUpdateError,
-    InvalidEulaFileError
+    InvalidEulaFileError,
 )
 from src.daemon.exceptions.file_service import FileServiceError
 from src.daemon.server import Server
 from src.daemon.services.eula_service import EulaService
 from src.daemon.services.file_service import FileService
-from unittest import mock
 
 SERVER_TEST_SETTINGS = {
     "java": "java",
@@ -82,5 +81,7 @@ def test_set_eula_status(tmp_path: Path) -> None:
     assert eula_service.get(server)
 
     with pytest.raises(EulaFileUpdateError):
-        with mock.patch.object(FileService, "update_file", side_effect=FileServiceError):
+        with mock.patch.object(
+            FileService, "update_file", side_effect=FileServiceError
+        ):
             eula_service.set(server, False)
