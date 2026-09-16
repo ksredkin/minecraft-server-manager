@@ -5,5 +5,9 @@ class ConfigError(MSMDaemonError):
     pass
 
 
-class InvalidConfigError(MSMDaemonError):
+class InvalidConfigError(ConfigError):
+    pass
+
+
+class ConfigNotFoundError(ConfigError):
     pass
