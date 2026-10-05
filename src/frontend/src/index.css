@@ -1,7 +1,8 @@
+/*
 html, body, #root {
   margin: 0;
   height: 100%;
-  background-color: #07101A;
+  background-color: #090D1B;
 }
 
 button {
@@ -107,12 +108,6 @@ button:active {
   border-radius: 8px;
   flex: 1;
   box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-}
-
-.logo {
-  width: 50px;
-  height: 50px;
-  margin: 15px;
 }
 
 .tool-name-div {
@@ -2206,4 +2201,199 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+*/
+
+:root {
+  --bg: #080C16;
+  --surface: #111827;
+  --surface-border: #202938;
+
+  --text: #F3F4F6;
+  --text-second: #8B95A7;
+
+  --button: #171F2D;
+  --button-hover: #202A3A;
+  --button-border: #263142;
+  --button-border-hover: #344155;
+
+  --accent: #55E98A;
+  --accent-hover: #70F3A0;
+
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --radius-card: 24px;
+  --radius-button: 14px;
+  --radius-small: 10px;
+}
+
+.light {
+  --bg: #F5F7FA;
+  --surface: #FFFFFF;
+  --surface-border: #E3E8EF;
+
+  --text: #111827;
+  --text-second: #667085;
+
+  --button: #F1F4F8;
+  --button-hover: #E5EAF0;
+  --button-border: #D7DEE8;
+  --button-border-hover: #B8C3D1;
+
+  --accent: #16B96F;
+  --accent-hover: #0FA463;
+
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --radius-card: 24px;
+  --radius-button: 14px;
+  --radius-small: 10px;
+}
+
+html, body, #root {
+  margin: 0;
+  background-color: var(--bg);
+}
+
+html.theme-ready,
+html.theme-ready body,
+html.theme-ready #root {
+  transition: background-color 0.15s ease;
+}
+
+* {
+  transition: box-shadow 0.15s ease;
+}
+
+.link-no-underline {
+  text-decoration: none; /* Убирает подчеркивание у ссылки */
+  display: inline-block; /* Помогает избежать лишних отступов под картинкой */
+}
+
+.link-no-underline img {
+  display: block; /* Убирает возможный микро-отступ снизу картинки */
+}
+
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--font-main);
+  font-weight: 600;
+  color: var(--text);
+  transition:
+    color 0.15s ease;
+}
+
+button {
+  border-radius: var(--radius-button);
+  padding: 10px 20px;
+  color: var(--bg);
+  font-family: var(--font-main);
+  font-weight: 600;
+  background-color: var(--button);
+  border: 2px solid var(--button-border);
+  flex-direction: row;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+button:hover {
+  cursor: pointer;
+  background-color: var(--button-hover);
+  border: 2px solid var(--button-border-hover);
+}
+
+.small-padding {
+  padding: 10px;
+}
+
+.primary-button {
+  background-color: var(--accent);
+  border: 2px solid transparent;
+}
+
+.primary-button:hover {
+  background-color: var(--accent-hover);
+  border: 2px solid transparent;
+}
+
+.secondary-button {
+  background-color: var(--button);
+  border: 2px solid var(--accent);
+  color: var(--text);
+}
+
+.secondary-button:hover {
+  border: 2px solid var(--accent-hover);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background: var(--surface);
+  min-height: 60px;
+  border: 2px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  margin: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
+  gap: 20px;
+  box-shadow: 0px 0px 15px 0px var(--surface);
+  transition:
+    background-color 0.15s ease;
+}
+
+.header-left,
+.header-center,
+.header-right {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  align-items: center; 
+}
+
+
+.header-left {
+  justify-content: flex-start;
+}
+
+.header-center {
+  justify-content: center;
+}
+
+.header-right {
+  justify-content: flex-end;
+}
+
+.header-logo {
+  width: 45px;
+  height: 45px;
+}
+
+.header-left-text {
+  font-size: 25px;
+}
+
+.header-left-text-divider {
+  font-size: 20px;
+  font-weight: 100;
+  color: var(--text-second);
+}
+
+.header-left-long-text {
+  font-size: 15px;
+  color: var(--text-second);
+}
+
+.icon {
+  color: var(--text);
+  width: 20px;
+  height: 20px;
+  display: block; 
 }

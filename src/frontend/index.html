@@ -10,4 +10,11 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
+  <script>
+    const theme = localStorage.getItem("theme")
+
+    if (theme === "light") {
+      document.documentElement.classList.add("light")
+    }
+  </script>
 </html>

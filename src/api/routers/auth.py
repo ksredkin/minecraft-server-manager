@@ -22,10 +22,21 @@ async def register(
             content={"success": False, "error": "User already exists"}, status_code=409
         )
 
-    return JSONResponse(
-        content={"success": True, "access_token": token, "token_type": "Bearer"},
+    response = JSONResponse(
+        content={"success": True},
         status_code=201,
     )
+    
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+    )
+    
+    return response
 
 
 @auth_router.post("/login", description="Войти в аккаунт.")
@@ -40,7 +51,18 @@ async def login(
             status_code=401,
         )
 
-    return JSONResponse(
-        content={"success": True, "access_token": token, "token_type": "Bearer"},
+    response = JSONResponse(
+        content={"success": True},
         status_code=200,
     )
+
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+    )
+
+    return response

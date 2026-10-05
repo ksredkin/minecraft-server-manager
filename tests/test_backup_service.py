@@ -49,7 +49,8 @@ def test_get_backups_and_get_backup(tmp_path: Path) -> None:
     assert found is not None
     assert found.path == first
     assert found.size == len(b"first")
-    assert service.get_backup(server, unrelated.name) is None
+    with pytest.raises(BackupNotFoundError):
+        service.get_backup(server, unrelated.name)
 
 
 def test_create_and_delete_backup(tmp_path: Path) -> None:

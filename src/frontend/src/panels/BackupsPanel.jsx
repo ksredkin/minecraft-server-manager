@@ -1,6 +1,4 @@
-import { useState } from "react"
-import { File} from "lucide-react"
-import { deleteBackup, restoreBackup } from "../api/backups"
+import { File } from "lucide-react"
 
 
 const BackupsPanel = ({searchBackups, apiWorks, createBackup, backups, backupCreates, setBackupCreates, showConfirm, deleteBackup, restoreBackup, setSearchBackups}) => {

@@ -1,4 +1,4 @@
-from fastapi import Depends, WebSocket, WebSocketException
+from fastapi import Depends, WebSocket, WebSocketException, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from src.common.database.connection import get_db_session
 from src.common.repositories.payment_repository import PaymentRepository
 from src.common.repositories.subscription_repository import SubscriptionRepository
 from src.common.repositories.user_repository import UserRespository
+from fastapi import Cookie
 
 
 def get_password_service() -> PasswordService:
@@ -54,10 +55,12 @@ security = HTTPBearer()
 
 
 def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    access_token: str | None = Cookie(default=None),
     jwt_service: JwtService = Depends(get_jwt_service),
 ) -> int:
-    return jwt_service.decode(credentials.credentials)
+    if access_token is None:
+        raise HTTPException(status_code=401)
+    return jwt_service.decode(access_token)
 
 
 def get_current_user_id_ws(

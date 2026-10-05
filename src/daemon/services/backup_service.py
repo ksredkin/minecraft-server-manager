@@ -33,16 +33,15 @@ class BackupService:
     def _get_relative_path(self, server: Server, path: Path) -> Path:
         return Path(server.server_dir.name) / path.relative_to(server.server_dir)
 
-    def get_backup(self, server: Server, backup: str) -> Backup | None:
+    def get_backup(self, server: Server, backup: str) -> Backup:
         if not self.backups_dir.exists():
             raise BackupsFolderDoesNotExistError("Backups folder does not exist.")
 
-        backup_found = None
         for item in self.backups_dir.glob("*.zip"):
             if backup == item.name and server.server_dir.name in item.name:
-                backup_found = Backup(item.name, item, item.stat().st_size)
+                return Backup(item.name, item, item.stat().st_size)
 
-        return backup_found
+        raise BackupNotFoundError("Backup not found.")
 
     def get_backups(self, server: Server) -> list[Backup]:
         if not self.backups_dir.exists():
