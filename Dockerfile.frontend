@@ -1,0 +1,8 @@
+FROM node:24.21.0-alpine3.24
+
+COPY ./src/frontend /app
+WORKDIR /app
+
+RUN npm install
+
+CMD ["npm", "run", "dev"]

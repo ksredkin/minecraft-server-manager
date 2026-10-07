@@ -74,6 +74,21 @@ services:
     networks:
       - msm-net
 
+  frontend:
+    container_name: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    ports:
+      - 8000:8000
+    networks:
+      - msm-net
+
 volumes:
   postgres-data:
     name: postgres-data

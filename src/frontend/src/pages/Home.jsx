@@ -1,11 +1,7 @@
 import Header from "../components/Header.jsx"
 
 const Home = () => {
-  requestAnimationFrame(() => {
-    document.documentElement.classList.add("theme-ready")
-  })
-  
-  return (<div>
+  return (<div className="background">
     <Header />
   </div>)
 }
