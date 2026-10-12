@@ -10,6 +10,8 @@ const Header = () => {
   const location = useLocation()
   const { authInfo } = useAuth()
 
+  console.log(authInfo)
+
   let showLogin = false 
   let showRegiser = false
 
@@ -21,6 +23,8 @@ const Header = () => {
   } else if (!authInfo && location.pathname == "/register") {
     showLogin = true
   }
+
+  const showUser = authInfo ? true : false
 
   const [dark, setDark] = useState(() => {
     return localStorage.getItem("theme") !== "light"
@@ -46,8 +50,10 @@ const Header = () => {
       </div>
       <div className="header-right">
         <button className="small-padding" onClick={() => dark ? setDark(false) : setDark(true)}>{dark ? <Sun className="icon" /> : <Moon className="icon" />}</button>
-        {showLogin && <button className="secondary-button" onClick={() => {navigate("/login")}}>Войти</button>}
-        {showRegiser && <button className="primary-button" onClick={() => {navigate("/register")}}>Регистрация</button>}
+        {showLogin && <button className={location.pathname == "/" ? "secondary-button" : "secondary-button"} onClick={() => {navigate("/login")}}>Войти</button>}
+        {showRegiser && <button className={location.pathname == "/" ? "primary-button" : "secondary-button"} onClick={() => {navigate("/register")}}>Регистрация</button>}
+        {showUser && <button className="primary-button" onClick={() => {navigate("/servers")}}>Мои серверы</button>}
+        {showUser && <div className="header-user-div"><img src="logo.png" className="user-icon" /></div>}
       </div>
     </div>)
 }

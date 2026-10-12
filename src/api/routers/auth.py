@@ -2,8 +2,9 @@ from fastapi import Depends
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
-from src.api.dependencies.auth import get_auth_service
+from src.api.dependencies.auth import get_auth_service, get_current_user_id, get_user_service
 from src.api.services.auth_service import AuthService
+from src.api.services.user_service import UserService
 
 auth_router = APIRouter(prefix="/auth")
 
@@ -31,7 +32,7 @@ async def register(
         key="access_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         path="/",
     )
@@ -60,9 +61,20 @@ async def login(
         key="access_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         path="/",
     )
 
     return response
+
+
+@auth_router.get("/me")
+async def me(current_user_id: int = Depends(get_current_user_id), user_service: UserService = Depends(get_user_service)):
+    user = await user_service.get_user(current_user_id)
+    if not user:
+        response = JSONResponse(content={"success": False, "error": "User associated with this token format or ID was not found."}, status_code=401)
+        response.delete_cookie("access_token")
+        return response
+    
+    return JSONResponse(content={"success": True, "user": {"login": user.login, "email": user.email, "email_confirmed": user.email_confirmed}}, status_code=200)

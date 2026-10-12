@@ -2432,6 +2432,11 @@ button:hover {
     border 0.15s ease;
 }
 
+.card:has(> .login) {
+  width: fit-content;
+  max-width: calc(100vw - 40px);
+}
+
 .remove-header-padding {
   transform: translateY(-40px);
 }
@@ -2483,25 +2488,84 @@ label {
 .login {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 20px;
+  width: fit-content;
+}
+
+.login-image-div {
+  flex: 0 0 var(--auth-image-size, 300px);
+  width: var(--auth-image-size, 300px);
+  height: var(--auth-image-size, 300px);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .login-image {
-  border-top-left-radius: var(--radius-card);
-  border-bottom-left-radius: var(--radius-card);
-  border-bottom-right-radius: var(--radius-card);
-  border-top-right-radius: var(--radius-card);
-  width: 300px;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-card);
 }
 
 .gap {
   gap: 20px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .header-logo-link {
   display: inline-flex;
+}
+
+.password-items {
+  display: flex;
+  flex-direction: row;
+}
+
+.password-items {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.password-button {
+  right: 4px;
+
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--text-second);
+  margin-top: auto;
+}
+
+.password-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.password-eye-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.user-icon {
+  border-radius: 999px;
+  width: 40px;
+  display: block;
+}
+
+.header-user-div {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
 }
