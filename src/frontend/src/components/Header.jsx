@@ -1,28 +1,20 @@
-import { Sun, Moon } from "lucide-react"
+import { Sun, Moon, Settings, SquareArrowRightExit } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from "../context/AuthContext.jsx"
 import { useLocation } from "react-router-dom"
 import { Link } from 'react-router-dom'
+import { authExit } from '../api/auth.js'
+import Dropdown from "../components/Dropdown.jsx"
 
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { authInfo } = useAuth()
+  const { authInfo, logout } = useAuth()
 
-  console.log(authInfo)
-
-  let showLogin = false 
-  let showRegiser = false
-
-  if (!authInfo && location.pathname == "/") {
-    showLogin = true
-    showRegiser = true
-  } else if (!authInfo && location.pathname == "/login") {
-    showRegiser = true
-  } else if (!authInfo && location.pathname == "/register") {
-    showLogin = true
-  }
+  const showLogin = !authInfo && location.pathname !== "/login"
+  const showRegister = !authInfo && location.pathname !== "/register"
+  let showMyServers = authInfo && location.pathname === "/"
 
   const showUser = authInfo ? true : false
 
@@ -51,9 +43,12 @@ const Header = () => {
       <div className="header-right">
         <button className="small-padding" onClick={() => dark ? setDark(false) : setDark(true)}>{dark ? <Sun className="icon" /> : <Moon className="icon" />}</button>
         {showLogin && <button className={location.pathname == "/" ? "secondary-button" : "secondary-button"} onClick={() => {navigate("/login")}}>Войти</button>}
-        {showRegiser && <button className={location.pathname == "/" ? "primary-button" : "secondary-button"} onClick={() => {navigate("/register")}}>Регистрация</button>}
-        {showUser && <button className="primary-button" onClick={() => {navigate("/servers")}}>Мои серверы</button>}
-        {showUser && <div className="header-user-div"><img src="logo.png" className="user-icon" /></div>}
+        {showRegister && <button className={location.pathname == "/" ? "primary-button" : "secondary-button"} onClick={() => {navigate("/register")}}>Регистрация</button>}
+        {showMyServers && <button className="primary-button" onClick={() => {navigate("/servers")}}>Мои серверы</button>}
+        {showUser && <Dropdown trigger={<img src="logo.png" className="user-icon" />} addtitionalGap={10} options={[
+          {text: "Настройки", icon: Settings, action: () => {console.log("Настройки")}},
+          {text: "Выйти", icon: SquareArrowRightExit, action: () => {logout(); authExit()}, styles: "red"},
+        ]} position="left" />}
       </div>
     </div>)
 }

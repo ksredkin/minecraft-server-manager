@@ -1,8 +1,10 @@
 import Header from "../components/Header.jsx"
 
 const Home = () => {
-  return (<div className="background">
-    <Header />
+  return (<div>
+    <div className="sticky">
+      <Header />      
+    </div>
   </div>)
 }
 

@@ -1,6 +1,17 @@
 import { apiUrl } from '../constants/api.js'
 
 
+export const getServers = async () => {
+  const response = await fetch(`${apiUrl}/servers/`, {"credentials": "include"})
+  return await response.json()
+}
+
+export const deleteServer = async (uuid) => {
+  const response = await fetch(`${apiUrl}/servers/${uuid}`, {"method": "DELETE", "credentials": "include"})
+  return await response.json()
+}
+
+
 export const startServer = async () => {
   await fetch(`${apiUrl}/start`, {method: "POST"})
 }

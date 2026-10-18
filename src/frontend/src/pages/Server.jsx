@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import "../App.css"
 
 import { getBackups, createBackup, deleteBackup, restoreBackup } from "../api/backups.js"
-import { getServerInfo, startServer, stopServer, restartServer, executeCommand } from "../api/server.js"
+import { getServerInfo, startServer, stopServer, restartServer, executeCommand } from "../api/servers.js"
 import { getEulaStatus, setEulaStatus as setEulaStatusApi } from "../api/eula.js"
 import { getCpuPercent, getRamUsage } from "../api/metrics.js"
 import { getPlugins, deletePlugin, searchPlugins, installPlugin } from "../api/plugins.js"

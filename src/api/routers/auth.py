@@ -78,3 +78,19 @@ async def me(current_user_id: int = Depends(get_current_user_id), user_service: 
         return response
     
     return JSONResponse(content={"success": True, "user": {"login": user.login, "email": user.email, "email_confirmed": user.email_confirmed}}, status_code=200)
+
+
+
+@auth_router.post("/exit")
+async def exit():
+    resp = JSONResponse(content={"success": True}, status_code=200)
+
+    resp.delete_cookie(
+        key="access_token", 
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+
+    return resp
