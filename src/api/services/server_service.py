@@ -3,8 +3,8 @@ from uuid import UUID, uuid4
 
 from src.api.schemas.server import ServerCreated
 from src.api.services.key_service import KeyService
-from src.api.services.server_user_service import ServerUserService
-from src.common.database.models import Server
+from src.api.services.server_user_service import ServerUserService, NOT_SET
+from src.common.database.models import Server, ServerUser
 from src.common.enums import CacheResultStatus, ServerUserRole
 from src.common.repositories.server_repository import ServerRepository
 from src.common.services.cache_service import CacheResult, CacheService
@@ -40,6 +40,13 @@ class ServerService:
             daemon_key=daemon_key,
             created_at=server.created_at,
         )
+
+    async def update_by_uuid(self, server_uuid: UUID, user_id: int, new_display_name: str|None) -> None|ServerUser:
+        server_id = await self.get_server_id(server_uuid)
+        if not server_id:
+            return None
+
+        return await self.server_user_service.update_by_user_and_server(user_id, server_id, new_display_name or NOT_SET)
 
     async def get_server_id(self, server_uuid: UUID) -> int | None:
         cache_result: CacheResult = await self.cache_service.get_server_id(server_uuid)
@@ -89,6 +96,9 @@ class ServerService:
             return None
 
         return await self.server_repository.delete_by_uuid(uuid)
+
+    async def leave_for_user(self, user_id: int, uuid: UUID) -> ServerUser | None:
+        return await self.server_user_service.delete_by_user_and_server(user_id, uuid)
 
     async def is_owner(self, user_id: int, server_id: int) -> bool:
         role_cache_result = await self.cache_service.get_server_user_role(

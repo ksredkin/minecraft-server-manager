@@ -16,6 +16,7 @@ from src.common.repositories.payment_repository import PaymentRepository
 from src.common.repositories.subscription_repository import SubscriptionRepository
 from src.common.repositories.user_repository import UserRespository
 from fastapi import Cookie
+from jwt import ExpiredSignatureError
 
 
 def get_password_service() -> PasswordService:
@@ -60,7 +61,10 @@ def get_current_user_id(
 ) -> int:
     if access_token is None:
         raise HTTPException(status_code=401)
-    return jwt_service.decode(access_token)
+    try:
+        return jwt_service.decode(access_token)
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401)
 
 
 def get_current_user_id_ws(

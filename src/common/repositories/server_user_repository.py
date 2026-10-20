@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.common.database.models import ServerUser
 from src.common.enums import ServerUserRole
 
+NOT_SET = object()
 
 class ServerUserRepository:
     def __init__(self, session: AsyncSession):
@@ -28,6 +29,24 @@ class ServerUserRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def update_by_user_and_server(self, user_id: int, server_id: int, new_display_name: str | object = NOT_SET) -> ServerUser|None:
+        server_user = await self.get_by_user_and_server(user_id, server_id)
+        if not server_user:
+            return None
+        
+        if new_display_name is not NOT_SET:
+            server_user.display_name = new_display_name
+
+        return server_user
+
+    async def delete_by_user_and_server(self, user_id: int, server_id: int) -> ServerUser|None:
+            server_user = await self.get_by_user_and_server(user_id, server_id)
+            if not server_user:
+                return None
+            
+            await self.session.delete(server_user)
+            return server_user
 
     async def get_by_user(self, user_id: int) -> list[ServerUser]:
         result = await self.session.execute(

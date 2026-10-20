@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react"
 import Header from "../components/Header.jsx"
 import CustomSelect from "../components/CustomSelect.jsx"
 import { getServers } from "../api/servers.js"
-import { ChevronRight, Crown, Shield, Eye, MoreVertical, Trash } from "lucide-react"
+import { ChevronRight, Crown, Shield, Eye, MoreVertical, Trash, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext.jsx"
 import Dropdown from "../components/Dropdown.jsx"
 import ConfirmDialog from "../components/ConfirmDialog.jsx"
-import { deleteServer } from "../api/servers.js"
+import { deleteServer, updateServer } from "../api/servers.js"
+import EditableText from "../components/EditableText.jsx"
 
 const Servers = () => {
   const [search, setSearch] = useState("")
@@ -15,7 +16,7 @@ const Servers = () => {
   const navigate = useNavigate()
   const pointerStartedOnExcludedElement = useRef(false)
 
-  const confirmActionRef = useRef(undefined)
+  const confirmActionRef = useRef(null)
   const [confirmDialog, setConfirmDialog] = useState({
     show: false,
     title: "",
@@ -25,6 +26,7 @@ const Servers = () => {
   })
 
   const [servers, setServers] = useState([])
+  const [currentEditingServer, setCurrentEditingServer] = useState(null)
 
   const getUserServers = async () => {
     const APIServers = await getServers()
@@ -95,26 +97,26 @@ const Servers = () => {
         className="server"
         onPointerDown={(event) => {
           pointerStartedOnExcludedElement.current = Boolean(
-            event.target.closest("h3, h4, .server-image, .dropdown")
+            event.target.closest("h3, h4, .server-image, .dropdown, .editable-text-input")
           )
         }}
         onClick={(event) => {
           const shouldIgnoreClick = pointerStartedOnExcludedElement.current
           pointerStartedOnExcludedElement.current = false
-          if (shouldIgnoreClick || event.target.closest("h3, h4, .server-image, .dropdown")) return
+          if (shouldIgnoreClick || event.target.closest("h3, h4, .server-image, .dropdown, .editable-text-input")) return
           navigate(`/servers/${server.uuid}`)
         }}
       >
         <div className="server-left">
           <img className="server-image" src="server.png" />
           <div className="column">
-            <h3 className="server-name">{server.display_name}</h3>
+            <EditableText currentEditing={currentEditingServer} setCurrentEditing={setCurrentEditingServer} id={server.uuid} text={server.display_name} textClass={"server-name"} func={updateServer} />
             <h4 className="server-created-date">Создан {formattedDate}</h4>
           </div>
         </div>
         <div className="server-right">
           {roleItem}
-          <Dropdown trigger={<MoreVertical />} options={[{"text": "Удалить", "icon": Trash, "styles": "red", "action": () => {showConfirm(async () => {await deleteServer(server.uuid)}, "Удалить сервер?", "Отменить действие невозможно.", "Удалить", "danger")}}]} />
+          <Dropdown trigger={<MoreVertical />} options={[{"text": "Переименовать", "icon": Pencil, "styles": "", "action": () => {setCurrentEditingServer(server.uuid)}}, {"text": "Удалить", "icon": Trash, "styles": "red", "action": () => {showConfirm(async () => {if (server.role == "owner") {await deleteServer(server.uuid)} else {await leaveServer(server.uuid)}}, "Удалить сервер?", "Отменить действие невозможно.", "Удалить", "danger")}}]} />
           <ChevronRight />
         </div>
       </div>

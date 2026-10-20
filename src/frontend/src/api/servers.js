@@ -6,8 +6,19 @@ export const getServers = async () => {
   return await response.json()
 }
 
+export const updateServer = async (uuid, new_display_name) => {
+  const params = new URLSearchParams({ new_display_name })
+  const response = await fetch(`${apiUrl}/servers/${uuid}?${params.toString()}`, {"method": "PUT", "credentials": "include"})
+  return await response.json()
+}
+
 export const deleteServer = async (uuid) => {
   const response = await fetch(`${apiUrl}/servers/${uuid}`, {"method": "DELETE", "credentials": "include"})
+  return await response.json()
+}
+
+export const leaveServer = async (uuid) => {
+  const response = await fetch(`${apiUrl}/servers/${uuid}/members/me`, {"method": "DELETE", "credentials": "include"})
   return await response.json()
 }
 

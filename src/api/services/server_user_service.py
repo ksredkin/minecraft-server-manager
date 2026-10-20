@@ -1,6 +1,6 @@
 from src.common.database.models import ServerUser
 from src.common.enums import CacheResultStatus, ServerUserRole
-from src.common.repositories.server_user_repository import ServerUserRepository
+from src.common.repositories.server_user_repository import ServerUserRepository, NOT_SET
 from src.common.services.cache_service import CacheService
 
 
@@ -45,6 +45,16 @@ class ServerUserService:
             user_id, server_id, server_user.role
         )
         return server_user
+
+    async def delete_by_user_and_server(
+            self, user_id: int, server_id: int
+        ) -> ServerUser | None:
+            return await self.server_user_repository.delete_by_user_and_server(user_id, server_id)
+
+    async def update_by_user_and_server(
+        self, user_id: int, server_id: int, new_display_name: str|object = NOT_SET
+    ) -> ServerUser | None:
+        return await self.server_user_repository.update_by_user_and_server(user_id, server_id, new_display_name)
 
     async def get_by_user(self, user_id: int) -> list[ServerUser]:
         return await self.server_user_repository.get_by_user(user_id)

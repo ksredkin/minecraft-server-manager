@@ -29,6 +29,14 @@ class ServerDeletedResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ServerMemberLeavedResponse(BaseModel):
+    role: ServerUserRole
+    display_name: str
+    joined_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FileCreate(BaseModel):
     type: Literal["file"]
     path: str

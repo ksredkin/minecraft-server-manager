@@ -16,6 +16,7 @@ from src.api.schemas.server import (
     FileUpdateRequest,
     ServerDeletedResponse,
     ServerInfoResponse,
+    ServerMemberLeavedResponse,
 )
 from src.api.services.backup_manager import BackupManager, get_backup_manager
 from src.api.services.connection_manager import (
@@ -61,6 +62,34 @@ async def create_server(
     }
 
 
+@server_router.put(
+    "/{uuid}",
+    status_code=200,
+    description="Обновить сервер.",
+)
+async def update_server(
+    uuid: UUID,
+    new_display_name: str|None = None,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+) -> dict[str, dict[str, str]]:
+    server_user = await server_service.update_by_uuid(uuid, current_user_id, new_display_name)
+
+    if not server_user:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Server not found or you don't have permission to update it",
+            },
+            status_code=404,
+        )
+    
+    return JSONResponse(content={"success": True, "server": {
+        "uuid": str(uuid),
+        "display_name": new_display_name or server_user.display_name,
+    }}, status_code=200)
+
+
 @server_router.delete(
     "/{uuid}",
     response_model=ServerDeletedResponse,
@@ -84,6 +113,31 @@ async def delete_server(
         )
 
     return deleted
+
+
+@server_router.delete(
+    "/{uuid}/members/me",
+    response_model=ServerMemberLeavedResponse,
+    status_code=200,
+    description="Покинуть сервер.",
+)
+async def leave_server(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+) -> JSONResponse | Server:
+    leaved = await server_service.leave_for_user(current_user_id, uuid)
+
+    if not leaved:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Server not found or you are not its member.",
+            },
+            status_code=404,
+        )
+
+    return leaved
 
 
 @server_router.websocket("/{uuid}/ws")
