@@ -17,6 +17,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/servers" element={<Servers />} />
+          <Route path="/servers/:uuid" element={<Server />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

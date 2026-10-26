@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react"
 import "../App.css"
+import { useParams } from "react-router-dom"
 
 import { getBackups, createBackup, deleteBackup, restoreBackup } from "../api/backups.js"
-import { getServerInfo, startServer, stopServer, restartServer, executeCommand } from "../api/servers.js"
+import { getServerInfo, getServer, updateServer, startServer, stopServer, restartServer, executeCommand, connectServerWebsocket } from "../api/servers.js"
 import { getEulaStatus, setEulaStatus as setEulaStatusApi } from "../api/eula.js"
 import { getCpuPercent, getRamUsage } from "../api/metrics.js"
 import { getPlugins, deletePlugin, searchPlugins, installPlugin } from "../api/plugins.js"
 import { getServerProperties, updateServerProperty } from "../api/properties.js"
-import createLogsWebSocket from "../api/logs.js"
-
+import Header from "../components/Header.jsx"
 import HomePanel from "../panels/HomePanel.jsx"
 import TerminalPanel from "../panels/TerminalPanel.jsx"
 import PlayersPanel from "../panels/PlayersPanel.jsx"
@@ -20,8 +20,17 @@ import Sidebar from "../components/Sidebar.jsx"
 
 
 const Server = () => {
-  const [serverSoftware, setServerSoftware] = useState(undefined)
-  const [minecraftVersion, setMinecraftVersion] = useState(undefined)
+  const { uuid } = useParams()
+
+  const serverWebsocket = useRef(null)
+  const [serverStatus, setServerStatus] = useState(null)
+  const [displayName, setDisplayName] = useState(null)
+  const [role, setRole] = useState(null)
+  const [serverCreatedDate, setServerCreatedDate] = useState(null)
+  const [serverSoftware, setServerSoftware] = useState(null)
+  const [minecraftVersion, setMinecraftVersion] = useState(null)
+
+
   const [maxPlayers, setMaxPlayers] = useState(0)
   const [eulaStatus, setEulaStatus] = useState(true)
 
@@ -62,18 +71,18 @@ const Server = () => {
 
 
   const handleStartServer = async () => {
-    await startServer()
-    setServerWorksLevel(1)
+    await startServer(uuid)
+    setServerStatus("starting")
   }
 
   const handleStopServer = async () => {
-    await stopServer()
-    setServerWorksLevel(3)
+    await stopServer(uuid)
+    setServerStatus("stopping")
   }
 
   const handleRestartServer = async () => {
-    await restartServer()
-    setServerWorksLevel(3)
+    await restartServer(uuid)
+    setServerStatus("stopping")
   }
 
   const handleAcceptEula = async () => {
@@ -186,23 +195,55 @@ const Server = () => {
     setActiveSection(3)
   }
 
+  const handleServerWebSocketMessage = (message) => {
+    console.log(message)
+    const status = message.status
+
+    setServerStatus(status.status)
+    setMinecraftVersion(status.minecraft_version)
+    setServerSoftware(status.server_software)
+  }
+
+  const connectWebSocket = async () => {
+    if (serverWebsocket.current) return
+
+    const websocket = await connectServerWebsocket(uuid)
+    websocket.onmessage = (e) => {handleServerWebSocketMessage(JSON.parse(e.data))}
+    websocket.onclose = () => {serverWebsocket.current = null}
+
+    serverWebsocket.current = websocket
+  }
+
+  const refreshServerInfo = async () => {
+    const info = (await getServer(uuid))
+    console.log(info)
+    setDisplayName(info.display_name)
+    setRole(info.role)
+
+    const dateObject = new Date(info.created_at)
+    const formatter = new Intl.DateTimeFormat('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    const formattedDate = formatter.formatToParts(dateObject)
+      .map(part => part.type === 'literal' && part.value.includes('в') ? ' ' : part.value)
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim()
+    setServerCreatedDate(formattedDate)
+  }
 
   useEffect(() => {
-    createLogsWebSocket(updateLogs, () => {logsWebsocket.close()}, logsWebsocket)
-    
-    checkBackups()
-    checkServerPlugins()
-    checkServerInfo()
-    checkMetrics()
-
-    checkServerProperties()
-    checkEulaStatus()
-    const interval = setInterval(async () => {
-      await checkBackups()
-      await checkServerPlugins()
-      await checkServerInfo()
-      await checkMetrics()
+    const interval = setInterval(() => {
+      connectWebSocket()
+      refreshServerInfo()
     }, 1000)
+
+    refreshServerInfo()
     return () => {clearInterval(interval)}
   }, [])
 
@@ -211,17 +252,21 @@ const Server = () => {
   const propertiesPanelProps = {showConfirm, setEditedServerProperties, serverProperties, editedServerProperties, apiWorks, updateServerProperties}
   const pluginsPanelProps = {setSearchInstalledPlugins, plugins, searchInstalledPlugins, apiWorks, deletePlugin, searchPlugins, installPlugin}
   const homePanelProps = {
+    uuid,
+    displayName,
+    role,
+    serverCreatedDate,
+    updateServer,
+    serverSoftware,
+    minecraftVersion,
     activeSection,
     apiWorks,
-    serverWorksLevel,
+    serverStatus,
     onPlayerClick: openPlayer,
-    setServerWorksLevel,
     logs,
     players,
     backups,
     plugins,
-    serverSoftware,
-    minecraftVersion,
     maxPlayers,
     eulaStatus,
     ramTotal,
@@ -240,16 +285,23 @@ const Server = () => {
 
 
   return (
-    <div className="background">
-      <Sidebar apiWorks={apiWorks} activeSection={activeSection} setActiveSection={setActiveSection} />
-      <div className="content">
-        {(activeSection == 1) && <HomePanel {...homePanelProps} />}
-        {(activeSection == 2) && <TerminalPanel executeCommand={executeCommand} apiWorks={apiWorks} logs={logs} />}
-        {(activeSection == 3) && <PlayersPanel players={players} executeCommand={executeCommand} searchPlayers={searchPlayers} setSearchPlayers={setSearchPlayers} apiWorks={apiWorks} />}
-        {(activeSection == 4) && <PluginsPanel {...pluginsPanelProps} />}
-        {(activeSection == 5) && <BackupsPanel {...backupsPanelProps} />}
-        {(activeSection == 6) && <PropertiesPanel {...propertiesPanelProps} />}
-        <ConfirmDialog dialog={confirmDialog} onConfirm={handleConfirm} onCancel={handleCancel} />
+    <div>
+      <div className="sticky-header">
+        {role ? <Header role={role} /> : <Header />}
+      </div>
+      <div className="wrapper">
+        <div className="sticky-sidebar">
+          <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+        </div>
+        <div className="content">
+          {(activeSection == 1) && <HomePanel {...homePanelProps} />}
+          {(activeSection == 2) && <TerminalPanel executeCommand={executeCommand} apiWorks={apiWorks} logs={logs} />}
+          {(activeSection == 3) && <PlayersPanel players={players} executeCommand={executeCommand} searchPlayers={searchPlayers} setSearchPlayers={setSearchPlayers} apiWorks={apiWorks} />}
+          {(activeSection == 4) && <PluginsPanel {...pluginsPanelProps} />}
+          {(activeSection == 5) && <BackupsPanel {...backupsPanelProps} />}
+          {(activeSection == 6) && <PropertiesPanel {...propertiesPanelProps} />}
+          <ConfirmDialog dialog={confirmDialog} onConfirm={handleConfirm} onCancel={handleCancel} />
+        </div>
       </div>
     </div>
   )

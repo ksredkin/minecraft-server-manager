@@ -2144,6 +2144,10 @@ h1, h2, h3, h4, h5, h6 {
   --radius-button: 14px;
   --radius-small: 10px;
 
+  --status-stopped: #EF4444;
+  --status-starting: #3B82F6;
+  --status-running: #22C55E;
+  --status-stopping: #F97316;
   --exit: red;
   --surface-shadow: 0px 0px 15px 0px var(--surface);
 
@@ -2195,6 +2199,10 @@ h1, h2, h3, h4, h5, h6 {
   --radius-button: 14px;
   --radius-small: 10px;
 
+  --status-stopped: #DC2626;
+  --status-starting: #2563EB;
+  --status-running: #16A34A;
+  --status-stopping: #EA580C;
   --exit: red;
   --surface-shadow: 0px 0px 15px 0px var(--surface);
 
@@ -2454,6 +2462,7 @@ button:hover {
   gap: 20px;
 
   box-shadow: var(--surface-shadow);
+  color: var(--text);
   
   transition:
     background-color 0.15s ease,
@@ -2891,7 +2900,7 @@ label {
   }
 }
 
-.sticky {
+.sticky-header {
   position: sticky;
   left: 20px;
   right: 20px;
@@ -2900,7 +2909,7 @@ label {
   pointer-events: none;
 }
 
-.sticky::after {
+.sticky-header::after {
   content: "";
   position: absolute;
   top: -20px;
@@ -3173,5 +3182,131 @@ label {
 }
 
 .editable-text-input::placeholder {
+  color: var(--text-second);
+}
+
+.sidebar {
+  background-color: var(--surface);
+  border: 2px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  max-width: max-content;
+  box-shadow: var(--surface-shadow);
+  padding: 10px;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+}
+
+.sidebar button {
+  justify-content: start;
+}
+
+.sticky-sidebar {
+  position: sticky;
+  top: 100px;
+  z-index: 1000;
+}
+
+.wrapper {
+  margin: 20px;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  gap: 20px;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status {
+  border-radius: 999px;
+  width: 10px;
+  height: 10px;
+  transition: background-color 0.15s ease;
+  background-color: var(--surface-secondary);
+}
+
+.status.stopped {
+  background-color: var(--status-stopped);
+}
+
+.status.starting {
+  background-color: var(--status-starting);
+}
+
+.status.running {
+  background-color: var(--status-running);
+}
+
+.status.stopping {
+  background-color: var(--status-stopping);
+}
+
+.status-text.stopped {
+  color: var(--status-stopped);
+}
+
+.status-text.starting {
+  color: var(--status-starting);
+}
+
+.status-text.running {
+  color: var(--status-running);
+}
+
+.status-text.stopping {
+  color: var(--status-stopping);
+}
+
+.start-server-button {
+  background-color: var(--success-surface);
+  border: 2px solid var(--success-surface-border);
+  color: var(--text);
+}
+
+.start-server-button:hover {
+  background-color: var(--success-surface-hover);
+  border-color: var(--success-surface-border-hover);
+}
+
+.stop-server-button {
+  background-color: var(--error-surface);
+  border: 2px solid var(--error-surface-border);
+  color: var(--text);
+}
+
+.stop-server-button:hover {
+  background-color: var(--error-surface-hover);
+  border-color: var(--error-surface-border-hover);
+}
+
+.restart-server-button {
+  background-color: var(--button);
+  border: 2px solid var(--button-border);
+  color: var(--text);
+}
+
+.restart-server-button:hover {
+  background-color: var(--button-hover);
+  border-color: var(--button-border-hover);
+}
+
+.center {
+  align-items: center;
+}
+
+.secondary-text {
   color: var(--text-second);
 }

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import Depends, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import Depends, WebSocket, WebSocketDisconnect, WebSocketException, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
@@ -45,6 +45,24 @@ async def get_servers(
     if not user_servers or not isinstance(user_servers, list):
         return []
     return [ServerInfoResponse.model_validate(server) for server in user_servers]
+
+
+@server_router.get(
+    "/{uuid}",
+    status_code=200,
+    description="Получить информацию о сервере.",
+)
+async def get_server(
+    uuid: UUID,
+    current_user_id: int = Depends(get_current_user_id),
+    server_service: ServerService = Depends(get_server_service),
+) -> ServerInfoResponse:
+    server_user = await server_service.get_for_user(current_user_id, uuid)
+
+    if not server_user:
+        raise HTTPException(status_code=404, detail="Server not found or access denied.")
+        
+    return ServerInfoResponse.model_validate(server_user)
 
 
 @server_router.post("/", status_code=201, description="Создать сервер.")
@@ -144,7 +162,7 @@ async def leave_server(
 async def server_websocket(
     uuid: UUID,
     websocket: WebSocket,
-    current_user_id: int = Depends(get_current_user_id_ws),
+    current_user_id: int = Depends(get_current_user_id),
     connection_manager: ConnectionManager = Depends(get_connection_manager),
     server_service: ServerService = Depends(get_server_service),
 ) -> None:

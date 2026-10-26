@@ -84,6 +84,9 @@ class ServerService:
         await self.cache_service.set_server_id(server.id, server.uuid)
         return server.id
 
+    async def get_for_user(self, user_id: int, uuid: UUID) -> dict[str, str | datetime | UUID] | None:
+        return await self.server_repository.get_server_by_user(user_id, uuid)
+
     async def get_by_user(self, user_id: int) -> list[dict[str, str | datetime | UUID]]:
         return await self.server_repository.get_by_user(user_id)
 

@@ -36,12 +36,23 @@ class ServerRepository:
     async def get_by_user(self, user_id: int) -> list[dict[str, str | datetime | UUID]]:
         result = await self.session.execute(
             select(
-                Server.uuid, Server.created_at, ServerUser.display_name, ServerUser.role
+                Server.uuid, Server.created_at, ServerUser.joined_at, ServerUser.display_name, ServerUser.role
             )
             .join(Server.server_users)
             .where(ServerUser.user_id == user_id)
         )
         return [dict(row) for row in result.mappings().all()]
+
+    async def get_server_by_user(self, user_id: int, uuid: UUID) -> list[dict[str, str | datetime | UUID]]:
+        result = await self.session.execute(
+            select(
+                Server.uuid, Server.created_at, ServerUser.joined_at, ServerUser.display_name, ServerUser.role
+            )
+            .join(Server.server_users)
+            .where(ServerUser.user_id == user_id, Server.uuid == uuid)
+            )
+        row = result.mappings().first()
+        return dict(row) if row else None
 
     async def delete_by_uuid(self, uuid: UUID) -> Server | None:
         result = await self.session.execute(

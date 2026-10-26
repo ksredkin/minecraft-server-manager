@@ -189,7 +189,11 @@ class Server:
                 self._players = []
             self._status = self.status()
             if self.psutil_process:
-                self.pcu_percent = self.psutil_process.cpu_percent()
+                try:
+                    self.pcu_percent = self.psutil_process.cpu_percent()
+                except psutil.NoSuchProcess:
+                    self.pcu_percent = 0.0
+                    self.psutil_process = None
             time.sleep(1)
 
     def stop(self) -> None:
@@ -201,6 +205,33 @@ class Server:
             )
             raise e
         logger.info(f'Server with daemon key "{self.key}" is stopping.')
+
+    def shutdown(self) -> None:
+        if self.process is None or self.process.poll() is not None:
+            return
+
+        try:
+            self.stop()
+        except ServerIsNotRunningError:
+            return
+
+        try:
+            self.process.wait(timeout=self._server_stop_timeout)
+            return
+        except psutil.TimeoutExpired:
+            logger.warning(
+                f'Server with daemon key "{self.key}" did not stop gracefully; terminating.'
+            )
+
+        self.process.terminate()
+        try:
+            self.process.wait(timeout=5)
+        except psutil.TimeoutExpired:
+            logger.warning(
+                f'Server with daemon key "{self.key}" did not terminate; killing.'
+            )
+            self.process.kill()
+            self.process.wait()
 
     def get_uptime(self) -> str:
         if not self._start_time:

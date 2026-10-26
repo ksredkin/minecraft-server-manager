@@ -10,6 +10,7 @@ from src.common.enums import ServerUserRole
 class ServerInfoResponse(BaseModel):
     uuid: UUID
     created_at: datetime
+    joined_at: datetime
     display_name: str
     role: ServerUserRole
 

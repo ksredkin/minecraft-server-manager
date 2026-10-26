@@ -77,7 +77,11 @@ async def main() -> None:
         storage_service,
         plugin_service,
     )
-    await api_client.connect()
+    try:
+        await api_client.connect()
+    finally:
+        for server in servers:
+            server.shutdown()
 
 
 if __name__ == "__main__":

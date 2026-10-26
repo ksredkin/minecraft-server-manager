@@ -35,7 +35,7 @@ const Register = () => {
 
   return (
     <div>
-      <div className="sticky">
+      <div className="sticky-header">
         <Header />      
       </div>
       <div className="background login-background">

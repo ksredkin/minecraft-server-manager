@@ -1,14 +1,20 @@
-import { Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, FileText } from "lucide-react"
-import { useRef, useLayoutEffect } from "react"
+import { Clock, User, Save, Package, Settings, File, MemoryStick, Cpu, FileText, MoreVertical, Pencil, Trash, Play, RefreshCw, Square } from "lucide-react"
+import { useRef, useLayoutEffect, useState } from "react"
+import EditableText from "../components/EditableText.jsx"
+import Dropdown from "../components/Dropdown.jsx"
 
-const serverWorksLevelTexts = {0: "Сервер выключен", 1: "Сервер запускается", 2: "Сервер работает", 3: "Сервер выключается"}
+const serverWorksLevelTexts = {"stopped": "Сервер выключен", "starting": "Сервер запускается", "running": "Сервер работает", "stopping": "Сервер выключается"}
 
 const HomePanel = ({
+  uuid,
+  displayName,
+  role,
+  serverCreatedDate,
+  updateServer,
   activeSection,
   apiWorks,
-  serverWorksLevel,
+  serverStatus,
   onPlayerClick,
-  setServerWorksLevel,
   logs = [],
   players = [],
   backups = [],
@@ -31,6 +37,7 @@ const HomePanel = ({
   handleRestartServer,
   executeCommand
 }) => {
+  const [currentEditingServer, setCurrentEditingServer] = useState(null)
   const terminalRef = useRef(undefined)
   const terminalInputRef = useRef(undefined)
   const shouldAutoScroll = useRef(true)
@@ -87,23 +94,31 @@ const HomePanel = ({
   })
 
   return (<div className="panel">
-    <h2>Панель управления</h2>
-    <div className="blocks1-div">
-      <div className="block-background">
-        <div style={{display: "flex"}}>
-          <div className={"circle server-works-circle-level-" + serverWorksLevel}></div>
-          <div style={{marginLeft: "5px"}}>
-            <h2 className={"server-works-status server-works-status-level-" + serverWorksLevel}>{serverWorksLevelTexts[serverWorksLevel]}</h2>
-            <h5 className="software-and-version-text">{(serverSoftware !== undefined) ? serverSoftware : "-"} {(minecraftVersion !== undefined) ? minecraftVersion : "-"}</h5>
+    <div className="server">
+      <div className="server-left">
+        <img className="server-image" src="/server.png" />
+        <div className="column">
+          {displayName ? <EditableText currentEditing={currentEditingServer} setCurrentEditing={setCurrentEditingServer} id={uuid} text={displayName} textClass={"server-name"} func={updateServer} /> : <h3>Загрузка...</h3>}
+          <div className="row small-gap">
+            <h4 className="secondary-text">{serverSoftware ? serverSoftware : ""}</h4>
+            <h4 className="secondary-text">{minecraftVersion ? minecraftVersion : ""}</h4>
           </div>
+          {/*<h4 className="server-created-date">Создан {serverCreatedDate}</h4>*/}
+          {serverStatus && <div className="row small-gap center">
+            <div className={`status ${serverStatus}`}></div>
+            <h4 className={`status-text ${serverStatus}`}>{serverWorksLevelTexts[serverStatus]}</h4>
+          </div>}
         </div>
-
-        {(serverWorksLevel == 0) && <button className={"start-server-button button-enabled-" + (apiWorks && eulaStatus)} onClick={handleStartServer}>Запустить</button>}
-        {(serverWorksLevel == 2) && <button className={"stop-server-button button-enabled-" + apiWorks} onClick={handleStopServer}>Стоп</button>}
-        {(serverWorksLevel == 2) && <button className={"restart-server-button button-enabled-" + apiWorks} onClick={handleRestartServer}>Перезапуск</button>}
       </div>
-
-      {!eulaStatus && <div className="eula-card">
+      <div className="server-right">
+        {(serverStatus == "stopped") && <button className="start-server-button" onClick={handleStartServer}><Play /> Запустить</button>}
+        {(serverStatus == "running") && <button className="stop-server-button" onClick={handleStopServer}><Square /> Остановить</button>}
+        {(serverStatus == "running") && <button className="restart-server-button" onClick={handleRestartServer}><RefreshCw /> Перезапустить</button>}
+        <Dropdown trigger={<MoreVertical />} options={[{"text": "Переименовать", "icon": Pencil, "styles": "", "action": () => {setCurrentEditingServer(uuid)}}, {"text": "Удалить", "icon": Trash, "styles": "red", "action": () => {showConfirm(async () => {if (role == "owner") {await deleteServer(uuid)} else {await leaveServer(uuid)}}, "Удалить сервер?", "Отменить действие невозможно.", "Удалить", "danger")}}]} />
+      </div>
+    </div>
+    <div className="row">
+      {!eulaStatus && <div className="card">
         <div className="eula-card-header">
           <FileText className="eula-card-header-icon" />
           <h5 className="eula-card-header-text">EULA</h5>
@@ -115,7 +130,7 @@ const HomePanel = ({
         </div>
       </div>}
 
-      <div className="short-block-background">
+      <div className="card">
         <div className="online-card">
           <div className="online-header">
             <User className="user-icon"/>
@@ -128,7 +143,7 @@ const HomePanel = ({
           </div>
         </div>
       </div>
-      <div className="short-block-background">
+      <div className="card">
         <div className="uptime-card">
           <div className="uptime-card-header">
             <Clock className="clock-icon"/>
@@ -147,7 +162,7 @@ const HomePanel = ({
         </div>
       </div>
 
-      <div className="ram-card">
+      <div className="card">
         <div className="ram-card-header-div">
           <MemoryStick className="ram-card-memory-stick-svg" />
           <h5>RAM</h5>
@@ -155,7 +170,7 @@ const HomePanel = ({
         <h2 style={{marginTop: "8px"}}>{ramUsed ? ramUsed : "-"}GB / {ramTotal ? ramTotal : "-"}GB</h2>
       </div>
 
-      <div className="cpu-card">
+      <div className="card">
         <div className="cpu-card-header-div">
           <Cpu className="cpu-card-cpu-svg"/>
           <h5>CPU</h5>

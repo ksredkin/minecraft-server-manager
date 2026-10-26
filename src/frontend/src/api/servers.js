@@ -6,6 +6,11 @@ export const getServers = async () => {
   return await response.json()
 }
 
+export const getServer = async (uuid) => {
+  const response = await fetch(`${apiUrl}/servers/${uuid}`, {"credentials": "include"})
+  return await response.json()
+}
+
 export const updateServer = async (uuid, new_display_name) => {
   const params = new URLSearchParams({ new_display_name })
   const response = await fetch(`${apiUrl}/servers/${uuid}?${params.toString()}`, {"method": "PUT", "credentials": "include"})
@@ -22,18 +27,23 @@ export const leaveServer = async (uuid) => {
   return await response.json()
 }
 
-
-export const startServer = async () => {
-  await fetch(`${apiUrl}/start`, {method: "POST"})
+export const connectServerWebsocket = async (uuid) => {
+  const websocket = new WebSocket(`${apiUrl}/servers/${uuid}/ws`)
+  return websocket
 }
 
-export const stopServer = async () => {
-  await fetch(`${apiUrl}/stop`, {method: "POST"})
+export const startServer = async (uuid) => {
+  await fetch(`${apiUrl}/servers/${uuid}/start`, {method: "POST", "credentials": "include"})
 }
 
-export const restartServer = async () => {
-  await fetch(`${apiUrl}/restart`, {method: "POST"})
+export const stopServer = async (uuid) => {
+  await fetch(`${apiUrl}/servers/${uuid}/stop`, {method: "POST", "credentials": "include"})
 }
+
+export const restartServer = async (uuid) => {
+  await fetch(`${apiUrl}/servers/${uuid}/restart`, {method: "POST", "credentials": "include"})
+}
+
 
 export const executeCommand = async (command) => {
   await fetch(`${apiUrl}/command?command=${encodeURIComponent(command)}`, {method: "POST"})

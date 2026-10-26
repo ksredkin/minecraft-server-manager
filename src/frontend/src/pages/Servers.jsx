@@ -142,7 +142,7 @@ const Servers = () => {
 
   return (
     <div>
-      <div className="sticky">
+      <div className="sticky-header">
         <Header />
         <div className="card without-background">
           <div className="row">

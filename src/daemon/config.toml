@@ -4,7 +4,7 @@ api_port = 8080
 backups_path = 'D:/backups'
 
 [[servers]]
-key = 'cA9YD6-H_3inBrXCJpLlt3GXZQvE9SSpRPeXRmy3U70'
+key = 'KUPtEn7bbpoCKeC3f5XUYR0vIeMWRLNUlkiW2lfMBE8'
 path = 'D:\server'
 java = 'java'
 java_args = ['-Xms4G', '-Xmx6G']
