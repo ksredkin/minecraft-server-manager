@@ -29,7 +29,8 @@ const Server = () => {
   const [serverCreatedDate, setServerCreatedDate] = useState(null)
   const [serverSoftware, setServerSoftware] = useState(null)
   const [minecraftVersion, setMinecraftVersion] = useState(null)
-
+  const [serverUptime, setServerUptime] = useState({days: 0, hours: 0, minutes: 0, seconds: 0})
+  console.log(serverUptime)
 
   const [maxPlayers, setMaxPlayers] = useState(0)
   const [eulaStatus, setEulaStatus] = useState(true)
@@ -202,6 +203,10 @@ const Server = () => {
     setServerStatus(status.status)
     setMinecraftVersion(status.minecraft_version)
     setServerSoftware(status.server_software)
+
+    const [days, hours, minutes, seconds] = uptime.split(":").map(Number)
+    setServerUptime({ days, hours, minutes, seconds })
+    console.log(serverUptime)
   }
 
   const connectWebSocket = async () => {
@@ -259,8 +264,8 @@ const Server = () => {
     updateServer,
     serverSoftware,
     minecraftVersion,
+    serverUptime,
     activeSection,
-    apiWorks,
     serverStatus,
     onPlayerClick: openPlayer,
     logs,

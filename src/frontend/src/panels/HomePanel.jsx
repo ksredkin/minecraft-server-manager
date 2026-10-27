@@ -12,7 +12,7 @@ const HomePanel = ({
   serverCreatedDate,
   updateServer,
   activeSection,
-  apiWorks,
+  serverUptime,
   serverStatus,
   onPlayerClick,
   logs = [],
@@ -126,40 +126,21 @@ const HomePanel = ({
 
         <div className="eula-card-content">
           <h5 className="eula-card-content-text">Для запуска сервера необходимо принять <a className="eula-card-content-text-mojang-eula-link" href="https://aka.ms/MinecraftEULA">лицензионное соглашение Minecraft (EULA)</a>.</h5>
-          <button className={"eula-card-content-accept-eula-button button-enabled-" + (apiWorks && eulaStatus)} onClick={handleAcceptEula}>Принять EULA</button>
+          <button className={"eula-card-content-accept-eula-button button-enabled-" + (eulaStatus)} onClick={handleAcceptEula}>Принять EULA</button>
         </div>
       </div>}
 
-      <div className="card">
-        <div className="online-card">
-          <div className="online-header">
-            <User className="user-icon"/>
-            <h5 className="online-card-title">Онлайн</h5>
-          </div>
-
-          <div style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
-            <h2 style={{fontSize: "30px", marginTop: "10px"}}>{players.length} / {(maxPlayers > 0) ? maxPlayers : "-"}</h2>
-            <h2 style={{fontSize: "13px", marginTop: "10px", color: "rgb(215, 215, 215)"}}>игроков</h2>
-          </div>
-        </div>
-      </div>
-      <div className="card">
-        <div className="uptime-card">
-          <div className="uptime-card-header">
+      <div className="card centered hover">
+          <div className="row">
             <Clock className="clock-icon"/>
-            <h5 className="uptime-card-title">Время работы</h5>
+            <h4>Время работы</h4>
           </div>
-          <div style={{display: "flex", flexDirection: "row", alignItems: "center"}}>
-            <h3 style={{fontSize: "30px", marginTop: "10px"}}>{uptime && typeof uptime === 'string' ? (
-              <>
-                {uptime.split(":")[0] !== "0" ? uptime.split(":")[0] + "д " : ""}
-                {uptime.split(":")[1] !== "0" ? uptime.split(":")[1] + "ч " : ""}
-                {uptime.split(":")[2] !== "0" ? uptime.split(":")[2] + "м " : ""}
-                {uptime.split(":")[3] !== "0" ? uptime.split(":")[3] + "с " : "0с"}
-              </>) : "0с"}
-            </h3>
-          </div>
-        </div>
+          <h2>
+            {serverUptime.days > 0 ? serverUptime.days + "д " : ""}
+            {serverUptime.hours > 0 ? serverUptime.hours + "ч " : ""}
+            {serverUptime.minutes > 0 ? serverUptime.minutes + "м " : ""}
+            {serverUptime.seconds > 0 ? serverUptime.seconds + "с " : "0с"}
+          </h2>
       </div>
 
       <div className="card">
@@ -178,6 +159,18 @@ const HomePanel = ({
         <h2 style={{marginTop: "8px"}}>{cpuPercent ? cpuPercent : "-"}%</h2>
       </div>
     </div>
+
+    <div className="card">
+        <div className="online-header">
+          <User className="user-icon"/>
+          <h5 className="online-card-title">Онлайн</h5>
+        </div>
+
+        <div style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
+          <h2 style={{fontSize: "30px", marginTop: "10px"}}>{players.length} / {(maxPlayers > 0) ? maxPlayers : "-"}</h2>
+          <h2 style={{fontSize: "13px", marginTop: "10px", color: "rgb(215, 215, 215)"}}>игроков</h2>
+        </div>
+      </div>
 
     <div className="blocks2-div">
       <div className="online-players-card">
@@ -211,7 +204,7 @@ const HomePanel = ({
               terminalInputRef.current.value = ""
             }
           }}/>
-          <button className={"logs-card-send-button button-enabled-" + apiWorks} onClick={() => {
+          <button className={"logs-card-send-button button-enabled-"} onClick={() => {
             handleTerminalSendButton(terminalInputRef.current.value)
             terminalInputRef.current.value = ""
           }}>Отправить</button>

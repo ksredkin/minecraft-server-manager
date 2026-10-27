@@ -3310,3 +3310,15 @@ label {
 .secondary-text {
   color: var(--text-second);
 }
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hover:hover {
+  background-color: var(--surface-hover);
+  border: 2px solid var(--surface-border-hover);
+}

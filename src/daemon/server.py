@@ -80,7 +80,7 @@ class Server:
         self._stop_event: Event = Event()
         self._start_time: datetime | None = None
         self._max_players: int | None = None
-        self._uptime: str | None = None
+        self._uptime: str = "0:0:0:0"
 
     @staticmethod
     def parse_memory(value: str) -> float | None:
